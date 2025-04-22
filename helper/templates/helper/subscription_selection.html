@@ -1,0 +1,107 @@
+<!-- helper/templates/helper/subscription_selection.html -->
+{% extends 'helper/base.html' %}
+{% block title %}{% if is_upgrade %}Upgrade Your Subscription{% else %}Select Your Subscription{% endif %}{% endblock %}
+
+{% block content %}
+<style>
+    .subscription-section {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .subscription-section h1 {
+        font-size: 2rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+
+    .card {
+        margin-bottom: 1.5rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        transition: transform 0.2s;
+    }
+
+    .card:hover {
+        transform: scale(1.02);
+    }
+
+    .card-header {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .card-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+    }
+
+    .card-body {
+        padding: 1rem;
+    }
+
+    .card-body p {
+        margin: 0.5rem 0;
+    }
+
+    .btn-select {
+        width: 100%;
+        padding: 0.75rem;
+        font-size: 1rem;
+    }
+
+    @media (max-width: 576px) {
+        .subscription-section {
+            padding: 10px;
+        }
+
+        .subscription-section h1 {
+            font-size: 1.5rem;
+        }
+
+        .card-header h3 {
+            font-size: 1.1rem;
+        }
+
+        .card-body p {
+            font-size: 0.9rem;
+        }
+
+        .btn-select {
+            font-size: 0.9rem;
+            padding: 0.5rem;
+        }
+    }
+</style>
+
+<div class="subscription-section">
+    <h1>{% if is_upgrade %}Upgrade Your Subscription Plan{% else %}Select Your Subscription Plan{% endif %}</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'warning' %}alert-warning{% else %}alert-danger{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        {% for package in packages %}
+            <div class="card">
+                <div class="card-header">
+                    <h3>{{ package.name }} - {{ package.price }}</h3>
+                </div>
+                <div class="card-body">
+                    <p><strong>Includes:</strong> {{ package.includes }}</p>
+                    <button type="submit" name="package" value="{{ package.value }}" class="btn btn-primary btn-select">
+                        {% if is_upgrade %}Upgrade to {{ package.name }}{% else %}Select {{ package.name }}{% endif %}
+                    </button>
+                </div>
+            </div>
+        {% endfor %}
+    </form>
+</div>
+{% endblock %}

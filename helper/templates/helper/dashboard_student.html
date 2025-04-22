@@ -1,0 +1,211 @@
+{% extends 'helper/base.html' %}
+{% load static helper_tags %}
+
+{% block content %}
+<div class="dashboard-container">
+    <h1>Student Dashboard</h1>
+
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Marks Section -->
+    <div class="section">
+        <h2>Your Marks</h2>
+        <form method="POST" id="marksForm" action="{% url 'dashboard_student' %}">
+            {% csrf_token %}
+            <input type="hidden" name="submit_marks" value="1">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Mark (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mark in marks_list %}
+                    <tr>
+                        <td>
+                            {% if mark.subject == 'Life Orientation' %}
+                                <input type="text" value="{{ mark.subject }}" readonly class="form-control">
+                            {% else %}
+                                <select name="subject_{{ forloop.counter0 }}" class="form-control" required>
+                                    <option value="">Select Subject</option>
+                                    {% for option in mark.options %}
+                                        <option value="{{ option }}" {% if option == mark.subject %}selected{% endif %}>{{ option }}</option>
+                                    {% endfor %}
+                                </select>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if mark.subject == 'Life Orientation' %}
+                                <input type="number" name="mark_{{ forloop.counter0 }}" value="0" readonly class="form-control">
+                            {% else %}
+                                <input type="number" name="mark_{{ forloop.counter0 }}" value="{{ mark.mark }}" min="0" max="100" class="form-control" required>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="button" class="btn btn-primary" onclick="showPopup('marks')">Update Marks</button>
+        </form>
+        <p><strong>APS Score:</strong> {{ student_profile.aps_score|default:"Not calculated" }}</p>
+    </div>
+
+    <!-- Document Upload Section -->
+    <div class="section">
+        <h2>Upload Documents</h2>
+        <form method="POST" enctype="multipart/form-data" id="uploadForm" action="{% url 'dashboard_student' %}">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="button" class="btn btn-primary" onclick="showPopup('upload')">Upload Document</button>
+        </form>
+        {% if documents %}
+            <h3 class="mt-4">Uploaded Documents</h3>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Document Type</th>
+                        <th>Document Name</th>
+                        <th>Uploaded On</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doc in documents %}
+                        <tr>
+                            <td>{{ doc.get_document_type_display|default:"Unknown" }}</td>
+                            <td>{{ doc.file.name|cut:"documents/"|default:"No file" }}</td>
+                            <td>{{ doc.uploaded_at|date:"Y-m-d H:i"|default:"N/A" }}</td>
+                            <td>
+                                <!-- Edit Button -->
+                                <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editModal{{ doc.id }}">
+                                    Edit
+                                </button>
+                                <!-- Delete Button -->
+                                <form action="{% url 'delete_document' doc.id %}" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this document?');">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="document_id" value="{{ doc.id }}">
+                                    <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="mt-4">No documents uploaded yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- Recommendations Section -->
+    <div class="section">
+        <h2>University Recommendations</h2>
+        {% if recommendations %}
+            <div class="slideshow-container">
+                <div class="slides" id="slides">
+                    {% for rec in recommendations %}
+                        <div class="slide">{{ rec.university }}</div>
+                    {% endfor %}
+                </div>
+                <div class="slide-navigation">
+                    <button onclick="moveSlide(-1)">❮</button>
+                    <button onclick="moveSlide(1)">❯</button>
+                </div>
+                <div class="dots">
+                    {% for rec in recommendations %}
+                        <span class="dot" onclick="currentSlide({{ forloop.counter0 }})"></span>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <p>No recommendations available. Please update your marks.</p>
+        {% endif %}
+    </div>
+
+    <!-- Selected Universities -->
+    <div class="section">
+        <h2>Selected Universities</h2>
+        {% if selected_universities %}
+            <ul>
+                {% for uni in selected_universities %}
+                    <li>{{ uni.name }} - Due Date: {{ UNIVERSITY_DUE_DATES|get_item:uni.name|default:"TBD" }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No universities selected.</p>
+        {% endif %}
+        <a href="{% url 'universities_list' %}" class="btn btn-primary">Select Universities</a>
+    </div>
+</div>
+
+<!-- Edit Document Modals -->
+{% for doc in documents %}
+<div class="modal fade" id="editModal{{ doc.id }}" tabindex="-1" aria-labelledby="editModalLabel{{ doc.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editModalLabel{{ doc.id }}">Edit Document: {{ doc.get_document_type_display|default:"Document" }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" enctype="multipart/form-data" action="{% url 'edit_document' doc.id %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="document_type{{ doc.id }}" class="form-label">Document Type</label>
+                        <select name="document_type" id="document_type{{ doc.id }}" class="form-control" required>
+                            {% for value, label in doc.DOCUMENT_TYPE_CHOICES %}
+                                <option value="{{ value }}" {% if value == doc.document_type %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="file{{ doc.id }}" class="form-label">Upload New Document (optional)</label>
+                        <input type="file" class="form-control" id="file{{ doc.id }}" name="file" accept=".pdf,.jpg,.png">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Form Confirmation Pop-up -->
+<div class="popup-overlay" id="popupOverlay">
+    <div class="popup-content">
+        <p id="popupMessage"></p>
+        <div class="popup-buttons">
+            <button class="confirm" onclick="confirmAction()">Confirm</button>
+            <button class="cancel" onclick="hidePopup()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Pop-up -->
+<div class="notification-popup" id="notificationPopup">
+    <span id="notificationMessage"></span>
+</div>
+
+<!-- Chat Widget -->
+<div class="chat-container" id="chatContainer">
+    <div class="chat-header" onclick="toggleChat()">Chat with Varsity Assistant</div>
+    <div class="chat-body" id="chatBody">
+        <div class="chat-message ai">Hello! I'm here to help you navigate Varsity Plug. Ask me anything!</div>
+    </div>
+    <div class="chat-input" id="chatInput">
+        <input type="text" id="chatMessage" placeholder="Type your question..." onkeypress="if(event.key === 'Enter') sendMessage()">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+</div>
+
+<link rel="stylesheet" href="{% static 'helper/dashboard_student.css' %}">
+<script src="{% static 'helper/dashboard_student.js' %}"></script>
+{% endblock %}

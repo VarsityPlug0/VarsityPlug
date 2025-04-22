@@ -1,0 +1,35 @@
+<!-- helper/templates/registration/register.html -->
+{% extends 'helper/base.html' %}
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-6 mx-auto">
+        <h1 class="mb-4">Register</h1>
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="id_username" class="form-label">Username</label>
+                {{ form.username }}
+            </div>
+            <div class="mb-3">
+                <label for="id_password1" class="form-label">Password</label>
+                {{ form.password1 }}
+            </div>
+            <div class="mb-3">
+                <label for="id_password2" class="form-label">Confirm Password</label>
+                {{ form.password2 }}
+            </div>
+            <button type="submit" class="btn btn-primary">Register</button>
+        </form>
+        <p class="mt-3">Already have an account? <a href="{% url 'login' %}">Login here</a>.</p>
+    </div>
+</div>
+{% endblock %}

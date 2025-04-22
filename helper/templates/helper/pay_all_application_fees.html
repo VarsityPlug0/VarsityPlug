@@ -1,0 +1,143 @@
+<!-- helper/templates/helper/pay_all_application_fees.html -->
+{% extends 'helper/base.html' %}
+{% block title %}Pay All Application Fees{% endblock %}
+
+{% block content %}
+<style>
+    .payment-section {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .payment-section h1 {
+        font-size: 2rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .payment-breakdown {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .payment-breakdown h3 {
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .payment-breakdown table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .payment-breakdown th, .payment-breakdown td {
+        padding: 0.5rem;
+        border-bottom: 1px solid #ddd;
+        text-align: left;
+    }
+
+    .payment-breakdown th {
+        background-color: #f8f9fa;
+    }
+
+    .total {
+        font-weight: bold;
+        font-size: 1.1rem;
+        color: #28a745;
+        margin-top: 1rem;
+    }
+
+    .bank-details {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+    }
+
+    .bank-details h3 {
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .bank-details p {
+        margin: 0.5rem 0;
+    }
+
+    @media (max-width: 576px) {
+        .payment-section {
+            padding: 10px;
+        }
+
+        .payment-section h1 {
+            font-size: 1.5rem;
+        }
+
+        .payment-breakdown h3, .bank-details h3 {
+            font-size: 1.1rem;
+        }
+
+        .payment-breakdown th, .payment-breakdown td {
+            font-size: 0.9rem;
+            padding: 0.3rem;
+        }
+
+        .total {
+            font-size: 1rem;
+        }
+
+        .bank-details p {
+            font-size: 0.9rem;
+        }
+    }
+</style>
+
+<div class="payment-section">
+    <h1>Pay All Application Fees</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'warning' %}alert-warning{% elif message.tags == 'info' %}alert-info{% else %}alert-danger{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="payment-breakdown">
+        <h3>Payment Breakdown (Total Bill)</h3>
+        <p><strong>Subscription Package:</strong> R{{ package_cost }}</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>University</th>
+                    <th>Application Fee</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in payment_breakdown %}
+                    <tr>
+                        <td>{{ item.university }}</td>
+                        <td>R{{ item.university_fee }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p class="total">Total University Fees: R{{ total_university_fee }}</p>
+        <p class="total">Total Package Cost: R{{ package_cost }}</p>
+        <p class="total">Grand Total to Pay: R{{ total_payment }}</p>
+    </div>
+
+    <div class="bank-details">
+        <h3>Payment Instructions</h3>
+        <p>Please make a payment of <strong>R{{ total_payment }}</strong> to the following Varsity Plug account to process your applications:</p>
+        <p><strong>Bank Name:</strong> {{ bank_details.bank_name }}</p>
+        <p><strong>Account Holder:</strong> {{ bank_details.account_holder }}</p>
+        <p><strong>Account Number:</strong> {{ bank_details.account_number }}</p>
+        <p><strong>Branch Code:</strong> {{ bank_details.branch_code }}</p>
+        <p><strong>Reference:</strong> {{ bank_details.reference }}</p>
+        <p><strong>Note:</strong> Once payment is confirmed, we will handle the application process for all selected universities and keep you updated on the status.</p>
+    </div>
+
+    <a href="{% url 'universities_list' %}" class="btn btn-secondary mt-3">Back to Universities</a>
+</div>
+{% endblock %}

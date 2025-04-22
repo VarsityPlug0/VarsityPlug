@@ -1,0 +1,165 @@
+<!-- helper/templates/helper/universities_list.html -->
+{% extends 'helper/base.html' %}
+{% block title %}University List{% endblock %}
+
+{% block content %}
+<style>
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    h1, h2 {
+        font-size: 2rem;
+        margin-bottom: 1.5rem;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+    }
+
+    .university-list, .selected-universities {
+        margin-bottom: 2rem;
+    }
+
+    .university-card, .selected-card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background-color: #f8f9fa;
+    }
+
+    .university-card label {
+        font-weight: bold;
+    }
+
+    .selected-card p {
+        margin: 0.5rem 0;
+    }
+
+    .btn-apply {
+        margin-top: 0.5rem;
+    }
+
+    .payment-summary {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1rem;
+        background-color: #e9ecef;
+        margin-top: 1rem;
+    }
+
+    .payment-summary p {
+        margin: 0.5rem 0;
+    }
+
+    .payment-summary .total {
+        font-weight: bold;
+        font-size: 1.1rem;
+        color: #28a745;
+    }
+
+    @media (max-width: 576px) {
+        .container {
+            padding: 10px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+        }
+
+        h2 {
+            font-size: 1.25rem;
+        }
+
+        .university-card, .selected-card, .payment-summary {
+            padding: 0.75rem;
+        }
+
+        .university-card label, .selected-card p, .payment-summary p {
+            font-size: 0.9rem;
+        }
+
+        .btn-apply, .btn-primary, .btn-secondary {
+            font-size: 0.9rem;
+            padding: 0.5rem;
+        }
+
+        .payment-summary .total {
+            font-size: 1rem;
+        }
+    }
+</style>
+
+<div class="container">
+    <h1>Universities List</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'warning' %}alert-warning{% else %}alert-danger{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if not student_aps %}
+        <p class="alert alert-warning">Please update your marks in the dashboard to see universities you qualify for.</p>
+    {% endif %}
+
+    <div class="university-list">
+        <h2>Eligible Universities (APS: {{ student_aps|default:"Not calculated" }})</h2>
+        {% if eligible_universities %}
+            <form method="post">
+                {% csrf_token %}
+                {% for uni in universities %}
+                    <div class="university-card">
+                        <label>
+                            <input type="checkbox" name="universities" value="{{ uni.university.id }}"
+                                {% if uni.university in selected_university_objects %}checked{% endif %}>
+                            {{ uni.university.name }} (Minimum APS: {{ uni.university.minimum_aps }})
+                        </label>
+                        <p>Application Fee: {{ uni.fee }}</p>
+                        <a href="{% url 'university_faculties' uni.university.id %}" class="btn btn-primary btn-sm">View Faculties</a>
+                    </div>
+                {% endfor %}
+                <button type="submit" class="btn btn-primary">Update Selections</button>
+            </form>
+        {% else %}
+            <p>No universities match your APS score. Please update your marks or contact support.</p>
+        {% endif %}
+    </div>
+
+    <div class="selected-universities">
+        <h2>Your Selected Universities</h2>
+        {% if selected_universities %}
+            {% for uni in selected_universities %}
+                <div class="selected-card">
+                    <p><strong>{{ uni.university.name }}</strong></p>
+                    <p>Application Closing Date: {{ uni.due_date }}</p>
+                    <p>Faculties Open: {{ uni.faculties_open|join:", " }}</p>
+                    <a href="{% url 'pay_application_fee' uni.university.id %}" class="btn btn-success btn-apply">Apply to {{ uni.university.name }}</a>
+                </div>
+            {% endfor %}
+            <div class="payment-summary">
+                <h3>Payment Summary (Total Bill)</h3>
+                <p><strong>Subscription Package ({{ student_profile.get_subscription_package_display }}):</strong> R{{ package_cost }}</p>
+                {% for item in payment_breakdown %}
+                    <p>{{ item.university }}: R{{ item.university_fee }} (Application Fee)</p>
+                {% endfor %}
+                <p class="total">Total University Fees: R{{ total_university_fee }}</p>
+                <p class="total">Total Package Cost: R{{ package_cost }}</p>
+                <p class="total">Grand Total: R{{ total_payment }}</p>
+                {% if total_payment > 0 %}
+                    <a href="{% url 'pay_all_application_fees' %}" class="btn btn-success">Pay All Application Fees</a>
+                {% else %}
+                    <p>No payment required at this time.</p>
+                {% endif %}
+            </div>
+        {% else %}
+            <p>You have not selected any universities yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

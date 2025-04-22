@@ -1,0 +1,84 @@
+<!-- helper/templates/helper/services.html -->
+{% extends 'helper/base.html' %}
+{% block title %}Our Services{% endblock %}
+
+{% block content %}
+<style>
+    .services-section {
+        padding: 30px 0;
+    }
+
+    .services-section h1 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    .services-section h5 {
+        font-size: 1.2rem;
+        margin-top: 1rem;
+    }
+
+    .services-section p,
+    .services-section li {
+        font-size: 1rem;
+    }
+
+    @media (max-width: 576px) {
+        .services-section h1 {
+            font-size: 1.5rem;
+        }
+
+        .services-section h5 {
+            font-size: 1rem;
+        }
+
+        .services-section p,
+        .services-section li {
+            font-size: 0.9rem;
+        }
+
+        .btn {
+            font-size: 0.9rem;
+            padding: 0.4rem 0.8rem;
+        }
+    }
+</style>
+
+<div class="container services-section">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <h1 class="mb-4">Our Services</h1>
+
+            <p>We offer university selection, course recommendations, document uploads, and application fee payments — all tailored to your academic profile.</p>
+
+            <ul class="list-group mb-4">
+                <li class="list-group-item">
+                    <h5>Document Upload & OCR</h5>
+                    <p>Upload your academic documents, and our OCR technology automatically extracts important data like subjects, marks, and ID details.</p>
+                </li>
+                <li class="list-group-item">
+                    <h5>AI Q&A Assistant</h5>
+                    <p>Need help choosing a course or understanding APS scores? Ask our intelligent assistant for instant answers, day or night.</p>
+                </li>
+                <li class="list-group-item">
+                    <h5>Course Recommender</h5>
+                    <p>Receive AI-generated course suggestions based on your marks, preferences, and previous trends from other students like you.</p>
+                </li>
+                <li class="list-group-item">
+                    <h5>University Selection & Application Fee Payments</h5>
+                    <p>Compare universities, filter by APS, and pay application fees securely from one platform—no bank queues, no confusion.</p>
+                </li>
+            </ul>
+
+            <form method="post" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" name="take_action" class="btn btn-primary">Take Action</button>
+            </form>
+
+            {% if not request.user.is_authenticated %}
+                <p class="mt-3">Already a member? <a href="{% url 'login' %}">Login</a> | New here? <a href="{% url 'register' %}">Sign Up</a></p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

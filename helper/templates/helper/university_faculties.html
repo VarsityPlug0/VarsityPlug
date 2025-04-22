@@ -1,0 +1,42 @@
+<!-- helper/templates/helper/university_faculties.html -->
+{% extends 'helper/base.html' %}
+{% block title %}{{ university.name }} Faculties{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>{{ university.name }} Faculties</h1>
+    <p><strong>Minimum APS:</strong> {{ university.minimum_aps }}</p>
+    <p><strong>Province:</strong> {{ university.province }}</p>
+    {% if university.description %}
+        <p>{{ university.description }}</p>
+    {% endif %}
+
+    <h3>Available Faculties and Courses</h3>
+    {% for faculty, courses in faculty_courses.items %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h4>{{ faculty }}</h4>
+            </div>
+            <div class="card-body">
+                {% if courses %}
+                    <ul>
+                        {% for course in courses %}
+                            <li>{{ course }}</li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No courses listed for this faculty.</p>
+                {% endif %}
+                {% if show_course_advice %}
+                    <p><strong>Course Advice:</strong> Contact our support team for personalized advice on choosing courses in this faculty.</p>
+                {% endif %}
+            </div>
+        </div>
+    {% empty %}
+        <p>No faculties available at this time.</p>
+    {% endfor %}
+
+    <a href="{% url 'pay_application_fee' university.id %}" class="btn btn-primary">Apply to {{ university.name }}</a>
+    <a href="{% url 'universities_list' %}" class="btn btn-secondary">Back to Universities</a>
+</div>
+{% endblock %}

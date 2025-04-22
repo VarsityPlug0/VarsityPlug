@@ -1,0 +1,131 @@
+<!-- helper/templates/helper/home.html -->
+{% extends 'helper/base.html' %}
+{% block title %}{{ title|default:"Welcome to Varsity Plug" }}{% endblock %}
+
+{% block content %}
+<style>
+    .hero-section {
+        text-align: center;
+        padding: 50px 0;
+        background-color: #f8f9fa;
+    }
+
+    .hero-section h1 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .hero-section p {
+        font-size: 1.2rem;
+        margin-bottom: 2rem;
+    }
+
+    .btn-primary {
+        padding: 10px 20px;
+        font-size: 1.1rem;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 0 10px;
+    }
+
+    .btn-primary:hover {
+        background-color: #0056b3;
+    }
+
+    .btn-outline-secondary {
+        padding: 10px 20px;
+        font-size: 1.1rem;
+        border-radius: 5px;
+        border: 1px solid #6c757d;
+        color: #6c757d;
+        background-color: transparent;
+        margin-top: 10px;
+        text-decoration: none;
+    }
+
+    .btn-outline-secondary:hover {
+        background-color: #6c757d;
+        color: #fff;
+    }
+
+    @media (max-width: 576px) {
+        .hero-section {
+            padding: 30px 0;
+        }
+
+        .hero-section h1 {
+            font-size: 1.8rem;
+        }
+
+        .hero-section p {
+            font-size: 1rem;
+        }
+
+        .btn-primary,
+        .btn-outline-secondary {
+            font-size: 1rem;
+            padding: 8px 16px;
+            margin: 5px 0;
+        }
+    }
+</style>
+
+<!-- Hero Section -->
+<div class="hero-section">
+    <h1>{{ title|default:"Welcome to Varsity Plug" }}</h1>
+    <p>Your one-stop platform for university applications in South Africa.</p>
+    
+    <form method="post" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" name="take_action" value="get_started" class="btn-primary">Get Started</button>
+    </form>
+    
+    <a href="#about" class="btn-outline-secondary">Learn More</a>
+
+    {% if not request.user.is_authenticated %}
+        <p class="mt-3">Already a member? <a href="{% url 'login' %}">Login</a> | New here? <a href="{% url 'register' %}">Sign Up</a></p>
+    {% endif %}
+</div>
+
+<!-- About Section -->
+<section id="about" class="mt-5">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <h2 class="mb-3">What is Varsity Plug?</h2>
+            <p>
+                Varsity Plug is a platform that helps South African students simplify and succeed in their university applications.
+                Whether you’re applying for the first time or trying again, we provide tools and support to help you get accepted into your dream program.
+            </p>
+
+            <h4 class="mt-4">What You Can Do Here:</h4>
+            <ul>
+                <li><strong>Upload Documents:</strong> Easily upload your ID, results, and other required documents.</li>
+                <li><strong>Use Smart AI Support:</strong> Ask questions like “Which course suits me?” and get smart answers from our AI bot.</li>
+                <li><strong>Get Course Recommendations:</strong> Coming soon — get AI-powered course suggestions based on your marks.</li>
+                <li><strong>Explore Universities:</strong> Browse APS requirements, deadlines, and programs from top SA institutions.</li>
+                <li><strong>Guided Help:</strong> Work with our professional guides to submit your applications correctly and on time.</li>
+            </ul>
+
+            <div class="text-center mt-4">
+                <a href="{% url 'universities_list' %}" class="btn btn-info">View Universities</a>
+                <a href="{% url 'about' %}" class="btn btn-outline-dark">More About Us</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Announcement Section -->
+<section class="mt-5 bg-light p-4 rounded">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <h3 class="mb-3">🎓 New Feature Coming Soon!</h3>
+            <p>
+                Personalized course recommendations based on your matric results and interests. Stay tuned for smarter, tailored guidance!
+            </p>
+        </div>
+    </div>
+</section>
+{% endblock %}

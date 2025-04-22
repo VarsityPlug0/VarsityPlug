@@ -1,0 +1,102 @@
+<!-- helper/templates/helper/pay_application_fee_instructions.html -->
+{% extends 'helper/base.html' %}
+{% block title %}Pay Application Fee - {{ university.name }}{% endblock %}
+
+{% block content %}
+<style>
+    .payment-section {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .payment-section h1 {
+        font-size: 2rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .fee-breakdown {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .fee-breakdown p {
+        margin: 0.5rem 0;
+    }
+
+    .total {
+        font-weight: bold;
+        font-size: 1.1rem;
+        color: #28a745;
+    }
+
+    .bank-details {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+    }
+
+    .bank-details h3 {
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .bank-details p {
+        margin: 0.5rem 0;
+    }
+
+    @media (max-width: 576px) {
+        .payment-section {
+            padding: 10px;
+        }
+
+        .payment-section h1 {
+            font-size: 1.5rem;
+        }
+
+        .fee-breakdown p, .bank-details p {
+            font-size: 0.9rem;
+        }
+
+        .total {
+            font-size: 1rem;
+        }
+
+        .bank-details h3 {
+            font-size: 1.1rem;
+        }
+    }
+</style>
+
+<div class="payment-section">
+    <h1>Pay Application Fee for {{ university.name }}</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'warning' %}alert-warning{% else %}alert-danger{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="fee-breakdown">
+        <p><strong>University Application Fee:</strong> R{{ university_fee }}</p>
+        <p class="total">Total to Pay: R{{ total_fee }}</p>
+    </div>
+
+    <div class="bank-details">
+        <h3>Payment Instructions</h3>
+        <p>Please make a payment of <strong>R{{ total_fee }}</strong> to the following Varsity Plug account to process your application:</p>
+        <p><strong>Bank Name:</strong> {{ bank_details.bank_name }}</p>
+        <p><strong>Account Holder:</strong> {{ bank_details.account_holder }}</p>
+        <p><strong>Account Number:</strong> {{ bank_details.account_number }}</p>
+        <p><strong>Branch Code:</strong> {{ bank_details.branch_code }}</p>
+        <p><strong>Reference:</strong> {{ bank_details.reference }}</p>
+        <p><strong>Note:</strong> Once payment is confirmed, we will handle the application process for {{ university.name }} and keep you updated on the status.</p>
+    </div>
+
+    <a href="{% url 'universities_list' %}" class="btn btn-secondary mt-3">Back to Universities</a>
+</div>
+{% endblock %}

@@ -1,0 +1,29 @@
+<!-- helper/templates/helper/upload_confirmation.html -->
+{% extends 'helper/base.html' %}
+{% block title %}Upload Confirmation{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <h1 class="mb-4">Upload Successful</h1>
+        <p>Document Type: {{ doc.doc_type }}</p>
+        <p>File: <a href="{{ doc.file.url }}">{{ doc.file.name }}</a></p>
+        <h3>Extracted Data</h3>
+        {% if doc.doc_type == 'results' %}
+            <ul class="list-group">
+                {% for subject, mark in extracted_data.items %}
+                    <li class="list-group-item">{{ subject }}: {{ mark }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <ul class="list-group">
+                <li class="list-group-item">Full Name: {{ extracted_data.full_name }}</li>
+                <li class="list-group-item">ID Number: {{ extracted_data.id_number }}</li>
+                <li class="list-group-item">Gender: {{ extracted_data.gender }}</li>
+                <li class="list-group-item">Date of Birth: {{ extracted_data.date_of_birth }}</li>
+            </ul>
+        {% endif %}
+        <a href="{% url 'dashboard_student' %}" class="btn btn-primary mt-3">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}
