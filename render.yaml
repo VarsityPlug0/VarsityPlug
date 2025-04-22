@@ -11,7 +11,7 @@ services:
     startCommand: gunicorn varsity_plug.wsgi:application
     postBuild: >-
       apt-get update &&
-      apt-get install -y tesseract-ocr
+      apt-get install -y tesseract-ocr libtesseract-dev
     envVars:
       - key: DEBUG
         value: "False"
@@ -22,7 +22,7 @@ services:
       - key: OPENAI_API_KEY
         sync: false
       - key: SUPERUSER_PASSWORD
-        sync: false  # Set manually in Render dashboard
+        sync: false
 databases:
   - name: varsity-plug-db
     databaseName: varsity_plug_db
