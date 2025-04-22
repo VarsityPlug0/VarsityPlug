@@ -1,22 +1,21 @@
 services:
   - type: web
-    name: varsity-plug-app  # Your app's name on Render
+    name: varsity-plug-app
     runtime: python
-    buildCommand: |
-      pip install -r requirements.txt
+    buildCommand: >-
+      pip install -r requirements.txt &&
       python manage.py collectstatic --noinput
     startCommand: gunicorn varsity_plug.wsgi:application
     envVars:
       - key: DEBUG
         value: "False"
       - key: SECRET_KEY
-        generateValue: true  # Render auto-generates a secure key
+        generateValue: true
       - key: DATABASE_URL
-        fromDatabase:
-          name: varsity-plug-db  # Only if using PostgreSQL
-          property: connectionString
+        value: "postgresql://varsity_plug_db_user:1dOGthjtnXPsff38kIdMtw4vM2NF1OUa@dpg-d033gnadbo4c73c8f1i0-a.oregon-postgres.render.com/varsity_plug_db"
       - key: OPENAI_API_KEY
-        sync: false  # Manually set this in Render's dashboard
-    staticFiles:
-      - path: /static
-        destination: staticfiles
+        sync: false  # Set manually in Render dashboard
+databases:
+  - name: varsity-plug-db
+    databaseName: varsity_plug_db
+    user: varsity_plug_db_user
