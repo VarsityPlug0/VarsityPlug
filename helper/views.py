@@ -209,6 +209,7 @@ def subscription_selection(request):
     })
 
 @login_required
+@ratelimit(key='user', rate='10/m')
 def dashboard_student(request):
     print("Request method:", request.method)
     student_profile, _ = StudentProfile.objects.get_or_create(user=request.user)
@@ -321,32 +322,47 @@ def dashboard_student(request):
                 print("Form errors:", form.errors)
                 messages.error(request, "Document upload failed. Please try again.")
 
+    # Recommendations for slideshow
     recommendations = []
     student_aps = student_profile.aps_score
     print("Student APS for recommendations:", student_aps)
     if student_aps:
-        eligible_universities = University.objects.filter(minimum_aps__lte=student_aps).order_by('name')
+        eligible_universities = University.objects.filter(minimum_aps__lte=student_aps).order_by('name')[:5]  # Limit to 5 for slideshow
         for uni in eligible_universities:
-            recommendations.append({'university': uni.name})
+            recommendations.append({
+                'id': uni.id,
+                'name': uni.name,
+                'description': uni.description or f"Explore opportunities at {uni.name}, known for its excellent programs.",
+                'due_date': UNIVERSITY_DUE_DATES.get(uni.name, "TBD"),
+                'application_fee': APPLICATION_FEES_2025.get(uni.name, "Not available")
+            })
     print("Final recommendations before rendering:", recommendations)
 
-    # Define UNIVERSITY_DUE_DATES
-    UNIVERSITY_DUE_DATES = {
-        'University of Cape Town': '2025-09-30',
-        'University of Pretoria': '2025-08-31',
-        'University of Witwatersrand': '2025-09-15',
-        # Add more universities as needed
-    }
+    # Qualified universities for list
+    qualified_universities = []
+    if student_aps:
+        qualified_universities = University.objects.filter(minimum_aps__lte=student_aps).order_by('name')
+        qualified_universities = [
+            {
+                'id': uni.id,
+                'name': uni.name,
+                'location': uni.location or "South Africa",
+                'due_date': UNIVERSITY_DUE_DATES.get(uni.name, "TBD"),
+                'application_fee': APPLICATION_FEES_2025.get(uni.name, "Not available")
+            } for uni in qualified_universities
+        ]
+    print("Qualified universities:", qualified_universities)
 
     context = {
         'form': form,
         'documents': documents,
         'selected_universities': selected_universities,
-        'recommendations': recommendations,
+        'recommended_universities': recommendations,  # For slideshow
+        'universities': qualified_universities,  # For list
         'student_profile': student_profile,
         'marks_list': marks_list,
         'nsc_subjects': NSC_SUBJECTS,
-        'UNIVERSITY_DUE_DATES': UNIVERSITY_DUE_DATES,  # Add to context
+        'UNIVERSITY_DUE_DATES': UNIVERSITY_DUE_DATES,
     }
     print("Context being passed to template:", context)
     return render(request, 'helper/dashboard_student.html', context)
@@ -406,12 +422,23 @@ def universities_list(request):
     eligible_universities = universities.filter(minimum_aps__lte=student_aps) if student_aps else []
     selected_universities = student_profile.selected_universities.all()
     selected_with_details = [
-        {'university': uni, 'due_date': UNIVERSITY_DUE_DATES.get(uni.name, "TBD"), 'faculties_open': FACULTIES_OPEN.get(uni.name, ["To be updated"])}
-        for uni in selected_universities
+        {
+            'university': uni,
+            'due_date': UNIVERSITY_DUE_DATES.get(uni.name, "TBD"),
+            'faculties_open': FACULTIES_OPEN.get(uni.name, ["To be updated"]),
+            'application_fee': APPLICATION_FEES_2025.get(uni.name, "Not available")
+        } for uni in selected_universities
     ]
     universities_with_fees = [
-        {'university': thing, 'fee': APPLICATION_FEES_2025.get(thing.name, "Not available")} if student_profile.can_access_fee_guidance() else {'university': thing, 'fee': "Upgrade to Standard or higher to view fees"}
-        for thing in eligible_universities
+        {
+            'university': uni,
+            'fee': APPLICATION_FEES_2025.get(uni.name, "Not available"),
+            'due_date': UNIVERSITY_DUE_DATES.get(uni.name, "TBD")
+        } if student_profile.can_access_fee_guidance() else {
+            'university': uni,
+            'fee': "Upgrade to Standard or higher to view fees",
+            'due_date': UNIVERSITY_DUE_DATES.get(uni.name, "TBD")
+        } for uni in eligible_universities
     ]
 
     total_university_fee = 0
@@ -456,6 +483,7 @@ def universities_list(request):
         'selected_universities': selected_with_details,
         'selected_university_objects': selected_universities,
         'APPLICATION_FEES_2025': APPLICATION_FEES_2025,
+        'UNIVERSITY_DUE_DATES': UNIVERSITY_DUE_DATES,
         'student_profile': student_profile,
         'payment_breakdown': payment_breakdown,
         'total_university_fee': total_university_fee,

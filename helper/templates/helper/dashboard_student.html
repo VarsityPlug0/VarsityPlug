@@ -16,9 +16,9 @@
     {% endif %}
 
     <!-- Marks Section -->
-    <div class="section">
+    <div class="section marks-section">
         <h2>Your Marks</h2>
-        <form method="POST" id="marksForm" action="{% url 'dashboard_student' %}">
+        <form method="POST" id="marksForm" action="{% url 'helper:dashboard_student' %}">
             {% csrf_token %}
             <input type="hidden" name="submit_marks" value="1">
             <table class="table">
@@ -60,9 +60,9 @@
     </div>
 
     <!-- Document Upload Section -->
-    <div class="section">
+    <div class="section document-section">
         <h2>Upload Documents</h2>
-        <form method="POST" enctype="multipart/form-data" id="uploadForm" action="{% url 'dashboard_student' %}">
+        <form method="POST" enctype="multipart/form-data" id="uploadForm" action="{% url 'helper:dashboard_student' %}">
             {% csrf_token %}
             {{ form.as_p }}
             <button type="button" class="btn btn-primary" onclick="showPopup('upload')">Upload Document</button>
@@ -85,12 +85,10 @@
                             <td>{{ doc.file.name|cut:"documents/"|default:"No file" }}</td>
                             <td>{{ doc.uploaded_at|date:"Y-m-d H:i"|default:"N/A" }}</td>
                             <td>
-                                <!-- Edit Button -->
                                 <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editModal{{ doc.id }}">
                                     Edit
                                 </button>
-                                <!-- Delete Button -->
-                                <form action="{% url 'delete_document' doc.id %}" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this document?');">
+                                <form action="{% url 'helper:delete_document' doc.id %}" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this document?');">
                                     {% csrf_token %}
                                     <input type="hidden" name="document_id" value="{{ doc.id }}">
                                     <button type="submit" class="btn btn-sm btn-danger">Remove</button>
@@ -106,43 +104,45 @@
     </div>
 
     <!-- Recommendations Section -->
-    <div class="section">
+    <div class="section recommendations-section">
         <h2>University Recommendations</h2>
         {% if recommendations %}
             <div class="slideshow-container">
-                <div class="slides" id="slides">
+                <div class="slides">
                     {% for rec in recommendations %}
-                        <div class="slide">{{ rec.university }}</div>
+                        <div class="slide {% if forloop.first %}active{% endif %}">
+                            <h3>{{ rec.university.name }}</h3>
+                            <p>{{ rec.university.description|default:"Explore this university!" }}</p>
+                            <a href="{% url 'helper:university_detail' rec.university.id %}" class="btn btn-info">Learn More</a>
+                        </div>
                     {% endfor %}
                 </div>
-                <div class="slide-navigation">
-                    <button onclick="moveSlide(-1)">❮</button>
-                    <button onclick="moveSlide(1)">❯</button>
-                </div>
+                <button class="prev" onclick="moveSlide(-1)">❮</button>
+                <button class="next" onclick="moveSlide(1)">❯</button>
                 <div class="dots">
                     {% for rec in recommendations %}
-                        <span class="dot" onclick="currentSlide({{ forloop.counter0 }})"></span>
+                        <span class="dot {% if forloop.first %}active{% endif %}" onclick="currentSlide({{ forloop.counter0 }})"></span>
                     {% endfor %}
                 </div>
             </div>
         {% else %}
-            <p>No recommendations available. Please update your marks.</p>
+            <p>No recommendations available. Please update your marks to get personalized suggestions.</p>
         {% endif %}
     </div>
 
     <!-- Selected Universities -->
-    <div class="section">
+    <div class="section universities-section">
         <h2>Selected Universities</h2>
         {% if selected_universities %}
-            <ul>
+            <ul class="university-list">
                 {% for uni in selected_universities %}
                     <li>{{ uni.name }} - Due Date: {{ UNIVERSITY_DUE_DATES|get_item:uni.name|default:"TBD" }}</li>
                 {% endfor %}
             </ul>
         {% else %}
-            <p>No universities selected.</p>
+            <p>No universities selected. Browse available universities below.</p>
         {% endif %}
-        <a href="{% url 'universities_list' %}" class="btn btn-primary">Select Universities</a>
+        <a href="{% url 'helper:universities_list' %}" class="btn btn-primary">Browse Universities</a>
     </div>
 </div>
 
@@ -156,7 +156,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form method="post" enctype="multipart/form-data" action="{% url 'edit_document' doc.id %}">
+                <form method="post" enctype="multipart/form-data" action="{% url 'helper:edit_document' doc.id %}">
                     {% csrf_token %}
                     <div class="mb-3">
                         <label for="document_type{{ doc.id }}" class="form-label">Document Type</label>
@@ -206,6 +206,6 @@
     </div>
 </div>
 
-<link rel="stylesheet" href="{% static 'helper/dashboard_student.css' %}">
-<script src="{% static 'helper/dashboard_student.js' %}"></script>
+<link rel="stylesheet" href="{% static 'helper/css/dashboard_student.css' %}">
+<script src="{% static 'helper/js/dashboard_student.js' %}"></script>
 {% endblock %}
