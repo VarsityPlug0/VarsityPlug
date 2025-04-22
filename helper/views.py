@@ -128,7 +128,7 @@ def home(request):
         button_clicked = request.POST.get('take_action')
         print(f"Button clicked: {button_clicked}")
         if request.user.is_authenticated:
-            return redirect('dashboard_student')
+            return redirect('helper:dashboard_student')
         else:
             return redirect('login')
     return render(request, 'helper/home.html', {'title': 'Welcome to Varsity Plug'})
@@ -149,7 +149,7 @@ def register(request):
             user = form.save()
             login(request, user)
             messages.success(request, "Registration successful! Welcome to Varsity Plug.")
-            return redirect('redirect_after_login')
+            return redirect('helper:redirect_after_login')
         else:
             messages.error(request, "Registration failed. Please correct the errors below.")
     else:
@@ -162,10 +162,10 @@ def redirect_after_login(request):
         if hasattr(request.user, 'studentprofile'):
             student_profile = request.user.studentprofile
             if not student_profile.subscription_status:
-                return redirect('subscription_selection')
-            return redirect('dashboard_student')
+                return redirect('helper:subscription_selection')
+            return redirect('helper:dashboard_student')
         else:
-            return redirect('dashboard_guide')
+            return redirect('helper:dashboard_guide')
     return redirect('login')
 
 @login_required
@@ -192,7 +192,7 @@ def subscription_selection(request):
                 messages.success(request, f"You have successfully upgraded to the {package.capitalize()} Package! Your application count has been reset.")
             else:
                 messages.success(request, f"You have successfully subscribed to the {package.capitalize()} Package!")
-            return redirect('dashboard_student')
+            return redirect('helper:dashboard_student')
         else:
             messages.error(request, "Invalid package selected. Please try again.")
 
@@ -272,11 +272,10 @@ def dashboard_student(request):
                 if subject and mark:
                     if subject not in NSC_SUBJECTS:
                         messages.error(request, f"Invalid subject: {subject}. Please select a valid NSC subject.")
-                        return redirect('dashboard_student')
-
+                        return redirect('helper:dashboard_student')
                     if subject in selected_subjects:
                         messages.error(request, f"Duplicate subject: {subject}. Please select unique subjects.")
-                        return redirect('dashboard_student')
+                        return redirect('helper:dashboard_student')
 
                     try:
                         mark = int(mark)
@@ -286,14 +285,14 @@ def dashboard_student(request):
                             selected_subjects.add(subject)
                         else:
                             messages.error(request, f"Mark for {subject} must be between 0 and 100.")
-                            return redirect('dashboard_student')
+                            return redirect('helper:dashboard_student')
                     except ValueError:
                         messages.error(request, f"Invalid mark for {subject}. Please enter a number.")
-                        return redirect('dashboard_student')
+                        return redirect('helper:dashboard_student')
 
             if subjects_entered != 7:
                 messages.error(request, f"Please enter exactly 7 subjects. You entered {subjects_entered} subjects.")
-                return redirect('dashboard_student')
+                return redirect('helper:dashboard_student')
 
             has_home_language = any('Home Language' in s for s in new_marks)
             has_fal = any('First Additional Language' in s for s in new_marks)
@@ -302,14 +301,14 @@ def dashboard_student(request):
 
             if not (has_home_language and has_fal and has_math and has_lo):
                 messages.error(request, "You must include a Home Language, First Additional Language, Mathematics or Mathematical Literacy, and Life Orientation.")
-                return redirect('dashboard_student')
+                return redirect('helper:dashboard_student')
 
             student_profile.marks = new_marks
             student_profile.save()
             print("Marks updated in student_profile:", student_profile.marks)
             print("APS after update:", student_profile.aps_score)
             messages.success(request, "Marks updated successfully!")
-            return redirect('dashboard_student')
+            return redirect('helper:dashboard_student')
         else:
             form = DocumentUploadForm(request.POST, request.FILES)
             if form.is_valid():
@@ -317,7 +316,395 @@ def dashboard_student(request):
                 doc.user = request.user
                 doc.save()
                 messages.success(request, "Document uploaded successfully!")
-                return redirect('dashboard_student')
+                return redirect('helper:dashboard_student')
+            else:
+                print("Form errors:", form.errors)
+                messages.error(request, "Document upload failed. Please try again.")
+
+    # Recommendations for slideshow
+    recommendations = []
+    student_aps = student_profile.aps_score
+    print("Student APS for recommendations:", student_aps)
+    if student_aps:
+        eligible_universities = University.objects.filter(minimum_aps__lte=student_aps).order_by('name')[:5]  # Limit to 5 for slideshow
+        for uni in eligible_universities:
+            recommendations.append({
+                'id': uni.id,
+                'name': uni.name,
+                'description': uni.description or f"Explore opportunities at {uni.name}, known for its excellent programs.",
+                'due_date': UNIVERSITY_DUE_DATES.get(uni.name, "TBD"),
+                'application_fee': APPLICATION_FEES_2025.get(uni.name, "Not available")
+            })
+    print("Final recommendations before rendering:", recommendations)
+
+    # Qualified universities for list
+    qualified_universities = []
+    if student_aps:
+        qualified_universities = University.objects.filter(minimum_aps__lte=student_aps).order_by('name')
+        qualified_universities = [
+            {
+                'id': uni.id,
+                'name': uni.name,
+                'location': uni.location or "South Africa",
+                'due_date': UNIVERSITY_DUE_DATES.get(uni.name, "TBD"),
+                'application_fee': APPLICATION_FEES_2025.get(uni.name, "Not available")
+            } for uni in qualified_universities
+        ]
+    print("Qualified universities:", qualified_universities)
+
+    context = {
+        'form': form,
+        'documents': documents,
+        'selected_universities': selected_universities,
+        'recommended_universities': recommendations,  # For slideshow
+        'universities': qualified_universities,  # For list
+        'student_profile': student_profile,
+        'marks_list': marks_list,
+        'nsc_subjects': NSC_SUBJECTS,
+        'UNIVERSITY_DUE_DATES': UNIVERSITY_DUE_DATES,
+    }
+    print("Context being passed to template털
+
+System: I'm sorry, but it looks like your message was cut off. Could you please clarify what you mean by "upgrade based on these" or provide the rest of your message? This will help me ensure I address your request accurately.
+
+From the directory listing and your previous messages, I understand you want to resolve the `AttributeError: module 'helper.views' has no attribute 'university_detail'` error during Render deployment and commit changes to files like `dashboard_student.html`, `dashboard_student.css`, `dashboard_student.js`, `helper/urls.py`, and `varsity_plug/urls.py` (April 22, 2025). You've also asked for the updated `helper/views.py` with the `university_detail` view and a new `university_detail.html` template, along with Git commands to commit these changes.
+
+The directory listing shows `dashboard_student.html` (modified April 22, 2025) but not `university_detail.html`, confirming it needs to be created. Below, I’ll provide the updated files, verify `helper/urls.py`, and include Git commands to commit all changes, ensuring compatibility with your Windows Command Prompt environment (due to prior bash errors, April 22, 2025). I’ll also address the template directory structure and ensure all changes align with your project at `C:\Users\money\OneDrive\Desktop\Back up\test - Copy\varsity_plug`.
+
+### Files Affected
+1. **Updated/Created Files** (to fix `university_detail` error):
+   - `helper/views.py`: Add `university_detail` view.
+   - `helper/templates/helper/university_detail.html`: Create template (missing in `dir` listing).
+2. **Previously Modified Files** (from `git status`, April 22, 2025):
+   - `helper/templates/helper/dashboard_student.html`: Updated for slideshow/list/sizing.
+   - `helper/static/helper/dashboard_student.css`: Updated for styling.
+   - `helper/static/helper/dashboard_student.js`: Updated for slideshow functionality.
+   - `helper/urls.py`: Updated for routing.
+   - `varsity_plug/urls.py`: Updated for project-level routing.
+
+### Updated `helper/views.py`
+The `university_detail` view is added to your provided `views.py`, maintaining all existing functionality. Redirects use the `helper:` namespace to align with `varsity_plug/urls.py` (April 17, 2025). The view integrates `APPLICATION_FEES_2025` and `UNIVERSITY_DUE_DATES` for consistency.
+
+<xaiArtifact artifact_id="6f6694c0-e6b7-4976-9c43-8c60723e9ac8" artifact_version_id="9a53062f-bce9-414a-ade9-cfdbb47ab996" title="helper/views.py" contentType="text/python">
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.utils.safestring import mark_safe
+from .forms import DocumentUploadForm
+from .models import DocumentUpload, University, StudentProfile
+from .faculty_data import FACULTY_COURSES, FACULTIES_OPEN
+import re
+from django_ratelimit.decorators import ratelimit
+from django.http import JsonResponse
+import openai
+import os
+from django.conf import settings
+
+# Set up OpenAI API key
+openai.api_key = settings.OPENAI_API_KEY
+
+# Valid NSC subjects
+NSC_SUBJECTS = [
+    "Accounting",
+    "Agricultural Sciences",
+    "Business Studies",
+    "Computer Applications Technology",
+    "Consumer Studies",
+    "Dramatic Arts",
+    "Economics",
+    "Engineering Graphics and Design",
+    "Geography",
+    "History",
+    "Information Technology",
+    "Life Sciences",
+    "Mathematics",
+    "Mathematical Literacy",
+    "Music",
+    "Physical Sciences",
+    "Religion Studies",
+    "Tourism",
+    "Visual Arts",
+    # Languages
+    "Afrikaans Home Language",
+    "Afrikaans First Additional Language",
+    "English Home Language",
+    "English First Additional Language",
+    "IsiNdebele Home Language",
+    "IsiNdebele First Additional Language",
+    "IsiXhosa Home Language",
+    "IsiXhosa First Additional Language",
+    "IsiZulu Home Language",
+    "IsiZulu First Additional Language",
+    "Sepedi Home Language",
+    "Sepedi First Additional Language",
+    "Sesotho Home Language",
+    "Sesotho First Additional Language",
+    "Setswana Home Language",
+    "Setswana First Additional Language",
+    "Siswati Home Language",
+    "Siswati First Additional Language",
+    "Tshivenda Home Language",
+    "Tshivenda First Additional Language",
+    "Xitsonga Home Language",
+    "Xitsonga First Additional Language",
+    # Compulsory
+    "Life Orientation",
+]
+
+UNIVERSITY_DUE_DATES = {
+    "Cape Peninsula University of Technology (CPUT)": "2025-09-30",
+    "Central University of Technology (CUT)": "2025-10-31",
+    "Durban University of Technology (DUT)": "2025-09-30",
+    "Mangosuthu University of Technology (MUT)": "2025-02-28",
+    "Nelson Mandela University (NMU)": "2025-09-30",
+    "North-West University (NWU)": "2025-06-30",
+    "Rhodes University (RU)": "2025-09-30",
+    "Sefako Makgatho Health Sciences University (SMU)": "2025-06-28",
+    "Sol Plaatje University (SPU)": "2025-10-31",
+    "Stellenbosch University (SU)": "2025-07-31",
+    "Tshwane University of Technology (TUT)": "2025-09-30",
+    "University of Cape Town (UCT)": "2025-07-31",
+    "University of Fort Hare (UFH)": "2025-09-30",
+    "University of Johannesburg (UJ)": "2025-10-31",
+    "University of KwaZulu-Natal (UKZN)": "2025-06-30",
+    "University of Limpopo (UL)": "2025-09-30",
+    "University of Mpumalanga (UMP)": "2025-01-30",
+    "University of Pretoria (UP)": "2025-06-30",
+    "University of South Africa (UNISA)": "2025-10-11",
+    "University of the Free State (UFS)": "2025-09-30",
+    "University of the Western Cape (UWC)": "2025-09-30",
+    "University of the Witwatersrand (Wits)": "2025-09-30",
+    "University of Venda (Univen)": "2025-09-27",
+    "University of Zululand (UniZulu)": "2025-10-31",
+    "Vaal University of Technology (VUT)": "2025-09-30",
+    "Walter Sisulu University (WSU)": "2025-10-31",
+}
+
+APPLICATION_FEES_2025 = {
+    "Cape Peninsula University of Technology (CPUT)": "R100",
+    "Central University of Technology (CUT)": "FREE (online), R245 (manual via CAO)",
+    "Durban University of Technology (DUT)": "R250 (on-time), R470 (late)",
+    "Mangosuthu University of Technology (MUT)": "R250 (on-time), R470 (late)",
+    "Nelson Mandela University (NMU)": "FREE",
+    "North-West University (NWU)": "FREE",
+    "Rhodes University (RU)": "R100",
+    "Sefako Makgatho Health Sciences University (SMU)": "R200",
+    "Sol Plaatje University (SPU)": "FREE",
+    "Stellenbosch University (SU)": "R100",
+    "Tshwane University of Technology (TUT)": "R240",
+    "University of Cape Town (UCT)": "R100",
+    "University of Fort Hare (UFH)": "FREE",
+    "University of Johannesburg (UJ)": "FREE (online), R200 (manual)",
+    "University of KwaZulu-Natal (UKZN)": "R210 (on-time), R420 (late)",
+    "University of Limpopo (UL)": "R200",
+    "University of Mpumalanga (UMP)": "R150",
+    "University of Pretoria (UP)": "R300",
+    "University of South Africa (UNISA)": "R135",
+    "University of the Free State (UFS)": "R100",
+    "University of the Western Cape (UWC)": "FREE",
+    "University of the Witwatersrand (Wits)": "R100",
+    "University of Venda (Univen)": "R100",
+    "University of Zululand (UniZulu)": "R220 (on-time), R440 (late)",
+    "Vaal University of Technology (VUT)": "R150",
+    "Walter Sisulu University (WSU)": "FREE",
+}
+
+def home(request):
+    if request.method == 'POST' and 'take_action' in request.POST:
+        button_clicked = request.POST.get('take_action')
+        print(f"Button clicked: {button_clicked}")
+        if request.user.is_authenticated:
+            return redirect('helper:dashboard_student')
+        else:
+            return redirect('login')
+    return render(request, 'helper/home.html', {'title': 'Welcome to Varsity Plug'})
+
+def about(request):
+    return render(request, 'helper/about.html', {'title': 'About Us'})
+
+def services(request):
+    return render(request, 'helper/services.html', {'title': 'Our Services'})
+
+def contact(request):
+    return render(request, 'helper/contact.html', {'title': 'Contact Us'})
+
+def register(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            messages.success(request, "Registration successful! Welcome to Varsity Plug.")
+            return redirect('helper:redirect_after_login')
+        else:
+            messages.error(request, "Registration failed. Please correct the errors below.")
+    else:
+        form = UserCreationForm()
+    return render(request, 'helper/register.html', {'form': form})
+
+@login_required
+def redirect_after_login(request):
+    if request.user.is_authenticated:
+        if hasattr(request.user, 'studentprofile'):
+            student_profile = request.user.studentprofile
+            if not student_profile.subscription_status:
+                return redirect('helper:subscription_selection')
+            return redirect('helper:dashboard_student')
+        else:
+            return redirect('helper:dashboard_guide')
+    return redirect('login')
+
+@login_required
+def subscription_selection(request):
+    student_profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+
+    if request.method == 'POST':
+        package = request.POST.get('package')
+        if package in ['basic', 'standard', 'premium', 'ultimate']:
+            is_upgrade = student_profile.subscription_status
+            old_package = student_profile.subscription_package
+
+            student_profile.subscription_package = package
+            student_profile.subscription_status = True
+
+            package_order = {'basic': 1, 'standard': 2, 'premium': 3, 'ultimate': 4}
+            if is_upgrade and package_order.get(package, 0) > package_order.get(old_package, 0):
+                student_profile.application_count = 0
+                student_profile.selected_universities.clear()
+
+            student_profile.save()
+
+            if is_upgrade:
+                messages.success(request, f"You have successfully upgraded to the {package.capitalize()} Package! Your application count has been reset.")
+            else:
+                messages.success(request, f"You have successfully subscribed to the {package.capitalize()} Package!")
+            return redirect('helper:dashboard_student')
+        else:
+            messages.error(request, "Invalid package selected. Please try again.")
+
+    packages = [
+        {'name': 'Basic Package', 'price': 'R400', 'value': 'basic', 'includes': 'Varsity Plug applies for you: Up to 3 university applications + document uploads + tracking'},
+        {'name': 'Standard Package', 'price': 'R600', 'value': 'standard', 'includes': 'Varsity Plug applies for you: Up to 5 applications + Application Fee Guidance + Support'},
+        {'name': 'Premium Package', 'price': 'R800', 'value': 'premium', 'includes': 'Varsity Plug applies for you: Up to 7 applications + Support + Course Advice + WhatsApp Chat'},
+        {'name': 'Ultimate Package', 'price': 'R1000', 'value': 'ultimate', 'includes': 'Varsity Plug applies for you: Unlimited applications + Full concierge service + All support features'},
+    ]
+
+    return render(request, 'helper/subscription_selection.html', {
+        'packages': packages,
+        'is_upgrade': student_profile.subscription_status,
+    })
+
+@login_required
+@ratelimit(key='user', rate='10/m')
+def dashboard_student(request):
+    print("Request method:", request.method)
+    student_profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    print("Marks from student_profile at start:", student_profile.marks)
+
+    form = DocumentUploadForm()
+    documents = DocumentUpload.objects.filter(user=request.user).order_by('-uploaded_at')
+    selected_universities = student_profile.selected_universities.all()
+
+    marks = student_profile.marks if student_profile.marks is not None else {}
+
+    marks_list = [
+        {'subject': 'Home Language', 'mark': '', 'options': [s for s in NSC_SUBJECTS if 'Home Language' in s]},
+        {'subject': 'First Additional Language', 'mark': '', 'options': [s for s in NSC_SUBJECTS if 'First Additional Language' in s]},
+        {'subject': 'Mathematics or Mathematical Literacy', 'mark': '', 'options': ['Mathematics', 'Mathematical Literacy']},
+        {'subject': 'Life Orientation', 'mark': 0, 'options': ['Life Orientation']},
+        {'subject': 'Elective 1', 'mark': '', 'options': [s for s in NSC_SUBJECTS if 'Language' not in s and s not in ['Mathematics', 'Mathematical Literacy', 'Life Orientation']]},
+        {'subject': 'Elective 2', 'mark': '', 'options': [s for s in NSC_SUBJECTS if 'Language' not in s and s not in ['Mathematics', 'Mathematical Literacy', 'Life Orientation']]},
+        {'subject': 'Elective 3', 'mark': '', 'options': [s for s in NSC_SUBJECTS if 'Language' not in s and s not in ['Mathematics', 'Mathematical Literacy', 'Life Orientation']]},
+    ]
+
+    for subject, mark in marks.items():
+        if 'Home Language' in subject:
+            marks_list[0]['subject'] = subject
+            marks_list[0]['mark'] = mark
+        elif 'First Additional Language' in subject:
+            marks_list[1]['subject'] = subject
+            marks_list[1]['mark'] = mark
+        elif subject in ['Mathematics', 'Mathematical Literacy']:
+            marks_list[2]['subject'] = subject
+            marks_list[2]['mark'] = mark
+        elif subject == 'Life Orientation':
+            marks_list[3]['mark'] = 0
+        else:
+            for i in range(4, 7):
+                if marks_list[i]['mark'] == '':
+                    marks_list[i]['subject'] = subject
+                    marks_list[i]['mark'] = mark
+                    break
+
+    if marks and len(marks) < 7:
+        messages.warning(request, f"You currently have {len(marks)} subjects. Please update your marks to include exactly 7 subjects as per NSC requirements.")
+
+    if request.method == 'POST':
+        if 'submit_marks' in request.POST:
+            new_marks = {}
+            subjects_entered = 0
+            selected_subjects = set()
+
+            for i in range(7):
+                if i == 3:
+                    new_marks['Life Orientation'] = 0
+                    subjects_entered += 1
+                    selected_subjects.add('Life Orientation')
+                    continue
+
+                subject = request.POST.get(f'subject_{i}')
+                mark = request.POST.get(f'mark_{i}')
+
+                if subject and mark:
+                    if subject not in NSC_SUBJECTS:
+                        messages.error(request, f"Invalid subject: {subject}. Please select a valid NSC subject.")
+                        return redirect('helper:dashboard_student')
+                    if subject in selected_subjects:
+                        messages.error(request, f"Duplicate subject: {subject}. Please select unique subjects.")
+                        return redirect('helper:dashboard_student')
+
+                    try:
+                        mark = int(mark)
+                        if 0 <= mark <= 100:
+                            new_marks[subject] = mark
+                            subjects_entered += 1
+                            selected_subjects.add(subject)
+                        else:
+                            messages.error(request, f"Mark for {subject} must be between 0 and 100.")
+                            return redirect('helper:dashboard_student')
+                    except ValueError:
+                        messages.error(request, f"Invalid mark for {subject}. Please enter a number.")
+                        return redirect('helper:dashboard_student')
+
+            if subjects_entered != 7:
+                messages.error(request, f"Please enter exactly 7 subjects. You entered {subjects_entered} subjects.")
+                return redirect('helper:dashboard_student')
+
+            has_home_language = any('Home Language' in s for s in new_marks)
+            has_fal = any('First Additional Language' in s for s in new_marks)
+            has_math = any(s in ['Mathematics', 'Mathematical Literacy'] for s in new_marks)
+            has_lo = 'Life Orientation' in new_marks
+
+            if not (has_home_language and has_fal and has_math and has_lo):
+                messages.error(request, "You must include a Home Language, First Additional Language, Mathematics or Mathematical Literacy, and Life Orientation.")
+                return redirect('helper:dashboard_student')
+
+            student_profile.marks = new_marks
+            student_profile.save()
+            print("Marks updated in student_profile:", student_profile.marks)
+            print("APS after update:", student_profile.aps_score)
+            messages.success(request, "Marks updated successfully!")
+            return redirect('helper:dashboard_student')
+        else:
+            form = DocumentUploadForm(request.POST, request.FILES)
+            if form.is_valid():
+                doc = form.save(commit=False)
+                doc.user = request.user
+                doc.save()
+                messages.success(request, "Document uploaded successfully!")
+                return redirect('helper:dashboard_student')
             else:
                 print("Form errors:", form.errors)
                 messages.error(request, "Document upload failed. Please try again.")
@@ -377,7 +764,7 @@ def delete_document(request, doc_id):
     if request.method == 'POST':
         document.delete()
         messages.success(request, "Document deleted successfully!")
-    return redirect('dashboard_student')
+    return redirect('helper:dashboard_student')
 
 @login_required
 def edit_document(request, doc_id):
@@ -387,10 +774,10 @@ def edit_document(request, doc_id):
         if form.is_valid():
             form.save()
             messages.success(request, "Document updated successfully!")
-            return redirect('dashboard_student')
+            return redirect('helper:dashboard_student')
         else:
             messages.error(request, "Document update failed. Please try again.")
-    return redirect('dashboard_student')
+    return redirect('helper:dashboard_student')
 
 @login_required
 def universities_list(request):
@@ -411,13 +798,13 @@ def universities_list(request):
                 f"{student_profile.application_count} universities. {upgrade_link}"
             )
             messages.error(request, mark_safe(message))
-            return redirect('universities_list')
+            return redirect('helper:universities_list')
 
         student_profile.selected_universities.set(selected_universities)
         student_profile.application_count = new_application_count
         student_profile.save()
         messages.success(request, "Selected universities updated successfully!")
-        return redirect('universities_list')
+        return redirect('helper:universities_list')
 
     eligible_universities = universities.filter(minimum_aps__lte=student_aps) if student_aps else []
     selected_universities = student_profile.selected_universities.all()
@@ -492,6 +879,22 @@ def universities_list(request):
     })
 
 @login_required
+def university_detail(request, uni_id):
+    university = get_object_or_404(University, id=uni_id)
+    student_profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+    application_fee = APPLICATION_FEES_2025.get(university.name, "Not available")
+    due_date = UNIVERSITY_DUE_DATES.get(university.name, "TBD")
+    faculties_open = FACULTIES_OPEN.get(university.name, ["To be updated"])
+    
+    return render(request, 'helper/university_detail.html', {
+        'university': university,
+        'application_fee': application_fee,
+        'due_date': due_date,
+        'faculties_open': faculties_open,
+        'student_profile': student_profile,
+    })
+
+@login_required
 def university_faculties(request, uni_id):
     university = get_object_or_404(University, id=uni_id)
     student_profile, _ = StudentProfile.objects.get_or_create(user=request.user)
@@ -508,7 +911,7 @@ def university_faculties(request, uni_id):
 @login_required
 def pay_application_fee(request, uni_id):
     university = get_object_or_404(University, id=uni_id)
-    return redirect('pay_application_fee_instructions', uni_id=uni_id)
+    return redirect('helper:pay_application_fee_instructions', uni_id=uni_id)
 
 @login_required
 def pay_application_fee_instructions(request, uni_id):
@@ -520,7 +923,7 @@ def pay_application_fee_instructions(request, uni_id):
         university_fee = 0
     elif "Not available" in fee_str:
         messages.error(request, f"Application fee for {university.name} is not available.")
-        return redirect('universities_list')
+        return redirect('helper:universities_list')
     else:
         fee_parts = fee_str.split(',')
         fee_value = fee_parts[0].strip()
@@ -530,7 +933,7 @@ def pay_application_fee_instructions(request, uni_id):
             university_fee = int(fee_value.replace('R', ''))
         except (ValueError, AttributeError):
             messages.error(request, f"Unable to process application fee for {university.name}.")
-            return redirect('universities_list')
+            return redirect('helper:universities_list')
 
     total_fee = university_fee
 
@@ -556,7 +959,7 @@ def pay_all_application_fees(request):
 
     if not selected_universities:
         messages.error(request, "You have not selected any universities to apply to.")
-        return redirect('universities_list')
+        return redirect('helper:universities_list')
 
     total_university_fee = 0
     payment_breakdown = []
@@ -595,7 +998,7 @@ def pay_all_application_fees(request):
 
     if total_payment == 0:
         messages.info(request, "No payment is required for your selected universities at this time.")
-        return redirect('universities_list')
+        return redirect('helper:universities_list')
 
     university_names = "-".join(uni.name.replace(' ', '-') for uni in selected_universities)
     bank_details = {

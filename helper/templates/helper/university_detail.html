@@ -1,0 +1,25 @@
+{% extends 'helper/base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h1>{{ university.name }}</h1>
+    <p><strong>Description:</strong> {{ university.description|default:"Explore opportunities at this institution." }}</p>
+    <p><strong>Location:</strong> {{ university.location|default:"South Africa" }}</p>
+    <p><strong>Minimum APS:</strong> {{ university.minimum_aps|default:"Not specified" }}</p>
+    <p><strong>Application Fee:</strong> {{ application_fee }}</p>
+    <p><strong>Application Due Date:</strong> {{ due_date }}</p>
+    <h3>Open Faculties</h3>
+    <ul>
+        {% for faculty in faculties_open %}
+            <li>{{ faculty }}</li>
+        {% empty %}
+            <li>No faculties listed.</li>
+        {% endfor %}
+    </ul>
+    {% if student_profile.can_apply %}
+        <a href="{% url 'helper:pay_application_fee' university.id %}" class="btn btn-primary">Apply Now</a>
+    {% else %}
+        <p><a href="{% url 'helper:subscription_selection' %}">Upgrade your plan</a> to apply to this university.</p>
+    {% endif %}
+    <a href="{% url 'helper:universities_list' %}" class="btn btn-secondary">Back to Universities</a>
+</div>
+{% endblock %}
