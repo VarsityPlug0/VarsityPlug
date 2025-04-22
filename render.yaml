@@ -5,10 +5,10 @@ services:
     buildCommand: >-
       pip install -r requirements.txt &&
       python manage.py collectstatic --noinput
-    preDeploy: >-
+    startCommand: >-
       python manage.py migrate &&
-      python manage.py createsuperuser_auto
-    startCommand: gunicorn varsity_plug.wsgi:application
+      python manage.py createsuperuser_auto &&
+      gunicorn varsity_plug.wsgi:application
     postBuild: >-
       apt-get update &&
       apt-get install -y tesseract-ocr libtesseract-dev
