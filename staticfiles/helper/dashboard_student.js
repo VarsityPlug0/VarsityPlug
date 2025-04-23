@@ -1,10 +1,10 @@
 (function () {
     // Configuration constants
     const CONFIG = {
-        SLIDE_INTERVAL: 5000, // Slide change interval in milliseconds
-        NOTIFICATION_DURATION: 5000, // Notification display duration
-        SUBMISSION_CHECK_INTERVAL: 10000, // Interval to check for new submissions
-        NOTIFICATION_CHANCE: 0.3 // Probability of showing a notification
+        SLIDE_INTERVAL: 5000,
+        NOTIFICATION_DURATION: 5000,
+        SUBMISSION_CHECK_INTERVAL: 10000,
+        NOTIFICATION_CHANCE: 0.3
     };
 
     // Name arrays for notifications
@@ -36,10 +36,10 @@
             }
 
             notificationMessage.textContent = `${this.getRandomName()} has sent their applications`;
-            notificationPopup.classList.add('active');
+            notificationPopup.classList.add('visible');
             
             setTimeout(() => {
-                notificationPopup.classList.remove('active');
+                notificationPopup.classList.remove('visible');
             }, CONFIG.NOTIFICATION_DURATION);
         },
 
@@ -54,8 +54,8 @@
     const slideshowSystem = {
         slideIndex: 0,
         slideInterval: null,
-        slides: document.querySelectorAll('.recommendations-section .slide'),
-        dots: document.querySelectorAll('.recommendations-section .dot'),
+        slides: document.querySelectorAll('.slide'),
+        dots: document.querySelectorAll('.dot'),
 
         showSlides() {
             if (!this.slides.length || !this.dots.length) {
@@ -106,58 +106,20 @@
         }
     };
 
-    // Form Popup System
-    const formPopupSystem = {
-        currentForm: null,
-
-        showPopup(formType) {
-            const popupOverlay = document.getElementById('popupOverlay');
-            const popupMessage = document.getElementById('popupMessage');
-            
-            if (!popupOverlay || !popupMessage) {
-                console.warn('Popup elements not found');
-                return;
-            }
-
-            this.currentForm = formType === 'marks' ? document.getElementById('marksForm') : 
-                              formType === 'upload' ? document.getElementById('uploadForm') : null;
-            
-            if (!this.currentForm) {
-                console.warn('Form not found for type:', formType);
-                return;
-            }
-
-            popupMessage.textContent = `Are you sure you want to submit your ${formType === 'marks' ? 'marks' : 'document'}?`;
-            popupOverlay.classList.add('active');
-        },
-
-        hidePopup() {
-            const popupOverlay = document.getElementById('popupOverlay');
-            if (popupOverlay) {
-                popupOverlay.classList.remove('active');
-            }
-            this.currentForm = null;
-        },
-
-        confirmAction() {
-            if (this.currentForm) {
-                this.currentForm.submit();
-            }
-            this.hidePopup();
-        }
-    };
-
     // Chat System
     const chatSystem = {
         toggleChat() {
-            const chatContainer = document.getElementById('chatContainer');
+            const chatBody = document.getElementById('chatBody');
+            const chatInput = document.getElementById('chatInput');
             
-            if (!chatContainer) {
-                console.warn('Chat container not found');
+            if (!chatBody || !chatInput) {
+                console.warn('Chat elements not found');
                 return;
             }
 
-            chatContainer.classList.toggle('active');
+            const display = chatBody.style.display === 'block' ? 'none' : 'block';
+            chatBody.style.display = display;
+            chatInput.style.display = display;
         },
 
         sendMessage() {
@@ -167,10 +129,7 @@
             if (!message) return;
 
             const chatBody = document.getElementById('chatBody');
-            if (!chatBody) {
-                console.warn('Chat body not found');
-                return;
-            }
+            if (!chatBody) return;
 
             // Add user message
             const userMessage = document.createElement('div');
@@ -181,22 +140,19 @@
             chatBody.scrollTop = chatBody.scrollHeight;
 
             // Send message to server
-            fetch("/ai-chat/", {
+            fetch("{% url 'helper:ai_chat' %}", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
                 },
                 body: new URLSearchParams({ 'message': message })
             })
-            .then(response => {
-                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
                 const aiMessage = document.createElement('div');
                 aiMessage.className = 'chat-message ai';
-                aiMessage.textContent = data.response || data.error || 'Sorry, I couldn’t respond. Please try again.';
+                aiMessage.textContent = data.message || data.error || 'Sorry, I couldn’t respond. Please try again.';
                 chatBody.appendChild(aiMessage);
                 chatBody.scrollTop = chatBody.scrollHeight;
             })
@@ -211,23 +167,28 @@
         }
     };
 
-    // Expose functions to global scope for HTML event handlers
-    window.moveSlide = (n) => slideshowSystem.moveSlide(n);
-    window.currentSlide = (n) => slideshowSystem.setCurrentSlide(n);
-    window.showPopup = (formType) => formPopupSystem.showPopup(formType);
-    window.hidePopup = () => formPopupSystem.hidePopup();
-    window.confirmAction = () => formPopupSystem.confirmAction();
-    window.toggleChat = () => chatSystem.toggleChat();
-    window.sendMessage = () => chatSystem.sendMessage();
-
     // Event Listeners
     const initEventListeners = () => {
         document.addEventListener('DOMContentLoaded', () => {
-            // Initialize slideshow
+            setInterval(() => notificationSystem.simulateNewSubmission(), CONFIG.SUBMISSION_CHECK_INTERVAL);
             slideshowSystem.init();
 
-            // Start notification simulation
-            setInterval(() => notificationSystem.simulateNewSubmission(), CONFIG.SUBMISSION_CHECK_INTERVAL);
+            // Slideshow navigation
+            const prevButton = document.querySelector('.prev');
+            const nextButton = document.querySelector('.next');
+            if (prevButton) prevButton.addEventListener('click', () => slideshowSystem.moveSlide(-1));
+            if (nextButton) nextButton.addEventListener('click', () => slideshowSystem.moveSlide(1));
+
+            // Dot navigation
+            slideshowSystem.dots.forEach((dot, index) => {
+                dot.addEventListener('click', () => slideshowSystem.setCurrentSlide(index));
+            });
+
+            // Chat toggle and send
+            const chatToggle = document.getElementById('chatToggle');
+            const sendMessage = document.getElementById('sendMessage');
+            if (chatToggle) chatToggle.addEventListener('click', chatSystem.toggleChat);
+            if (sendMessage) sendMessage.addEventListener('click', chatSystem.sendMessage);
         });
     };
 

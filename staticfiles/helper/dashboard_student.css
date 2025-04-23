@@ -1,0 +1,231 @@
+/* Bootstrap overrides and custom styles for VarsityPlugApp dashboard */
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 100vh; /* Ensure full page height */
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.slideshow-section, .university-list-section, .dashboard-actions {
+    margin-bottom: 40px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+h1, h2 {
+    color: #333;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Slideshow styles */
+.slideshow-container {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+.slides {
+    display: flex;
+    transition: transform 0.5s ease-in-out;
+}
+
+.slide {
+    min-width: 100%;
+    box-sizing: border-box;
+    padding: 20px;
+    background-color: #fff;
+    text-align: center;
+    display: none; /* Hidden by default */
+}
+
+.slide.active {
+    display: block; /* Show active slide */
+}
+
+.slide h3 {
+    margin: 0 0 10px;
+    font-size: 1.5em;
+    color: #007bff;
+}
+
+.slide p {
+    margin: 0 0 15px;
+    color: #666;
+    line-height: 1.5;
+}
+
+.slide a {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.slide a:hover {
+    background-color: #0056b3;
+}
+
+.slide-navigation {
+    position: absolute;
+    top: 50%;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    transform: translateY(-50%);
+}
+
+.prev, .next {
+    background-color: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: background-color 0.3s;
+}
+
+.prev:hover, .next:hover {
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+.prev { left: 10px; }
+.next { right: 10px; }
+
+.dots {
+    text-align: center;
+    padding: 10px 0;
+}
+
+.dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin: 0 5px;
+    background-color: #bbb;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.dot.active {
+    background-color: #007bff;
+}
+
+/* University list styles */
+.university-list {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.university-list li {
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #fff;
+    transition: transform 0.2s;
+}
+
+.university-list li:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.university-list li a {
+    color: #007bff;
+    text-decoration: none;
+    font-size: 1.1em;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.university-list li a:hover {
+    text-decoration: underline;
+}
+
+/* Dashboard actions */
+.dashboard-actions {
+    text-align: center;
+}
+
+.dashboard-actions .btn {
+    display: inline-block;
+    margin: 10px;
+    padding: 12px 24px;
+    background-color: #28a745;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 5px;
+    font-size: 1.1em;
+    transition: background-color 0.3s;
+}
+
+.dashboard-actions .btn:hover {
+    background-color: #218838;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 10px;
+    }
+
+    .slideshow-section, .university-list-section, .dashboard-actions {
+        padding: 15px;
+    }
+
+    .slide h3 {
+        font-size: 1.2em;
+    }
+
+    .slide p {
+        font-size: 0.9em;
+    }
+
+    .university-list {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-actions .btn {
+        display: block;
+        margin: 10px auto;
+        max-width: 200px;
+    }
+}
+
+@media (max-width: 576px) {
+    .slideshow-container {
+        max-width: 100%;
+    }
+
+    .slide {
+        padding: 15px;
+    }
+
+    .prev, .next {
+        padding: 8px;
+        font-size: 16px;
+    }
+
+    .dot {
+        width: 8px;
+        height: 8px;
+    }
+}
