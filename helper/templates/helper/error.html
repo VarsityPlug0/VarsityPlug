@@ -1,0 +1,9 @@
+{% extends 'helper/base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1>Error</h1>
+    <p>{{ error|default:"An unexpected error occurred. Please try again later." }}</p>
+    <a href="{% url 'helper:dashboard_student' %}" class="btn btn-primary">Back to Dashboard</a>
+</div>
+{% endblock %}

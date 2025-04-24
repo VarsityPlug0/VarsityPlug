@@ -13,7 +13,7 @@
           crossorigin="anonymous">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+    <link rel="icon" type="image/x-icon" href="{% static 'helper/favicon.ico' %}">
 
     <!-- Custom CSS -->
     <style>
@@ -116,7 +116,7 @@
     <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'home' %}">Varsity Plug</a>
+            <a class="navbar-brand" href="{% url 'helper:home' %}">Varsity Plug</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                     data-bs-target="#navbarNav" aria-controls="navbarNav"
                     aria-expanded="false" aria-label="Toggle navigation">
@@ -126,23 +126,23 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'home' %}">Home</a>
+                        <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'helper:home' %}">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/about/' %}active{% endif %}" href="{% url 'about' %}">About</a>
+                        <a class="nav-link {% if request.path == '/about/' %}active{% endif %}" href="{% url 'helper:about' %}">About</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/services/' %}active{% endif %}" href="{% url 'services' %}">Services</a>
+                        <a class="nav-link {% if request.path == '/services/' %}active{% endif %}" href="{% url 'helper:services' %}">Services</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/contact/' %}active{% endif %}" href="{% url 'contact' %}">Contact</a>
+                        <a class="nav-link {% if request.path == '/contact/' %}active{% endif %}" href="{% url 'helper:contact' %}">Contact</a>
                     </li>
                     {% if user.is_authenticated %}
                         <li class="nav-item">
-                            <a class="nav-link {% if request.path == '/universities/' %}active{% endif %}" href="{% url 'universities_list' %}">Universities</a>
+                            <a class="nav-link {% if request.path == '/universities/' %}active{% endif %}" href="{% url 'helper:universities_list' %}">Universities</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if request.path == '/dashboard/student/' or request.path == '/dashboard/guide/' %}active{% endif %}" href="{% url 'redirect_after_login' %}">Dashboard</a>
+                            <a class="nav-link {% if request.path == '/dashboard/student/' or request.path == '/dashboard/guide/' %}active{% endif %}" href="{% url 'helper:redirect_after_login' %}">Dashboard</a>
                         </li>
                     {% endif %}
                 </ul>

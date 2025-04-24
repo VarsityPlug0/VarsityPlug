@@ -2,6 +2,9 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 import re
+import logging
+
+logger = logging.getLogger('helper')
 
 class University(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -52,31 +55,39 @@ class StudentProfile(models.Model):
 
     @property
     def aps_score(self):
-        if not self.marks or len(self.marks) != 7:
-            print(f"APS calculation for {self.user.username}: Not enough subjects - {self.marks}")
+        if not self.marks or not isinstance(self.marks, dict) or len(self.marks) != 7:
+            logger.warning(f"APS calculation for {self.user.username}: Invalid marks - {self.marks}")
             return None
 
-        print(f"APS calculation for {self.user.username}: Found 7 subjects - {self.marks}")
-        aps = 0
-        for subject, mark in self.marks.items():
-            if subject == 'Life Orientation':
-                continue  # Skip Life Orientation for APS
-            if mark >= 80:
-                aps += 7
-            elif mark >= 70:
-                aps += 6
-            elif mark >= 60:
-                aps += 5
-            elif mark >= 50:
-                aps += 4
-            elif mark >= 40:
-                aps += 3
-            elif mark >= 30:
-                aps += 2
-            else:
-                aps += 1
-        print(f"APS calculation for {self.user.username}: Calculated APS = {aps}")
-        return aps
+        try:
+            aps = 0
+            for subject, mark in self.marks.items():
+                if subject == 'Life Orientation':
+                    continue  # Skip Life Orientation for APS
+                try:
+                    mark = int(mark)
+                    if mark >= 80:
+                        aps += 7
+                    elif mark >= 70:
+                        aps += 6
+                    elif mark >= 60:
+                        aps += 5
+                    elif mark >= 50:
+                        aps += 4
+                    elif mark >= 40:
+                        aps += 3
+                    elif mark >= 30:
+                        aps += 2
+                    else:
+                        aps += 1
+                except (ValueError, TypeError):
+                    logger.error(f"Invalid mark for {subject}: {mark}")
+                    return None
+            logger.info(f"APS calculation for {self.user.username}: Calculated APS = {aps}")
+            return aps
+        except Exception as e:
+            logger.error(f"Error calculating APS for {self.user.username}: {str(e)}", exc_info=True)
+            return None
 
     def get_application_limit(self):
         package_limits = {

@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -7,12 +7,11 @@ from django.utils.safestring import mark_safe
 from .forms import DocumentUploadForm
 from .models import DocumentUpload, University, StudentProfile
 from .faculty_data import FACULTY_COURSES, FACULTIES_OPEN
-import re
 from django_ratelimit.decorators import ratelimit
 from django.http import JsonResponse
 import openai
-import os
 from django.conf import settings
+import logging
 
 # Set up OpenAI API key
 openai.api_key = settings.OPENAI_API_KEY
@@ -38,7 +37,6 @@ NSC_SUBJECTS = [
     "Religion Studies",
     "Tourism",
     "Visual Arts",
-    # Languages
     "Afrikaans Home Language",
     "Afrikaans First Additional Language",
     "English Home Language",
@@ -61,7 +59,6 @@ NSC_SUBJECTS = [
     "Tshivenda First Additional Language",
     "Xitsonga Home Language",
     "Xitsonga First Additional Language",
-    # Compulsory
     "Life Orientation",
 ]
 
@@ -126,7 +123,6 @@ APPLICATION_FEES_2025 = {
 def home(request):
     if request.method == 'POST' and 'take_action' in request.POST:
         button_clicked = request.POST.get('take_action')
-        print(f"Button clicked: {button_clicked}")
         if request.user.is_authenticated:
             return redirect('helper:dashboard_student')
         else:
@@ -211,166 +207,169 @@ def subscription_selection(request):
 @login_required
 @ratelimit(key='user', rate='10/m')
 def dashboard_student(request):
-    print("Request method:", request.method)
-    student_profile, _ = StudentProfile.objects.get_or_create(user=request.user)
-    print("Marks from student_profile at start:", student_profile.marks)
+    logger = logging.getLogger('helper')
+    
+    try:
+        student_profile, _ = StudentProfile.objects.get_or_create(user=request.user)
+        form = DocumentUploadForm()
+        documents = DocumentUpload.objects.filter(user=request.user).order_by('-uploaded_at')
+        selected_universities = student_profile.selected_universities.all()
 
-    form = DocumentUploadForm()
-    documents = DocumentUpload.objects.filter(user=request.user).order_by('-uploaded_at')
-    selected_universities = student_profile.selected_universities.all()
+        marks = student_profile.marks if student_profile.marks is not None else {}
 
-    marks = student_profile.marks if student_profile.marks is not None else {}
+        marks_list = [
+            {'subject': 'Home Language', 'mark': '', 'options': [s for s in NSC_SUBJECTS if 'Home Language' in s]},
+            {'subject': 'First Additional Language', 'mark': '', 'options': [s for s in NSC_SUBJECTS if 'First Additional Language' in s]},
+            {'subject': 'Mathematics or Mathematical Literacy', 'mark': '', 'options': ['Mathematics', 'Mathematical Literacy']},
+            {'subject': 'Life Orientation', 'mark': 0, 'options': ['Life Orientation']},
+            {'subject': 'Elective 1', 'mark': '', 'options': [s for s in NSC_SUBJECTS if 'Language' not in s and s not in ['Mathematics', 'Mathematical Literacy', 'Life Orientation']]},
+            {'subject': 'Elective 2', 'mark': '', 'options': [s for s in NSC_SUBJECTS if 'Language' not in s and s not in ['Mathematics', 'Mathematical Literacy', 'Life Orientation']]},
+            {'subject': 'Elective 3', 'mark': '', 'options': [s for s in NSC_SUBJECTS if 'Language' not in s and s not in ['Mathematics', 'Mathematical Literacy', 'Life Orientation']]},
+        ]
 
-    marks_list = [
-        {'subject': 'Home Language', 'mark': '', 'options': [s for s in NSC_SUBJECTS if 'Home Language' in s]},
-        {'subject': 'First Additional Language', 'mark': '', 'options': [s for s in NSC_SUBJECTS if 'First Additional Language' in s]},
-        {'subject': 'Mathematics or Mathematical Literacy', 'mark': '', 'options': ['Mathematics', 'Mathematical Literacy']},
-        {'subject': 'Life Orientation', 'mark': 0, 'options': ['Life Orientation']},
-        {'subject': 'Elective 1', 'mark': '', 'options': [s for s in NSC_SUBJECTS if 'Language' not in s and s not in ['Mathematics', 'Mathematical Literacy', 'Life Orientation']]},
-        {'subject': 'Elective 2', 'mark': '', 'options': [s for s in NSC_SUBJECTS if 'Language' not in s and s not in ['Mathematics', 'Mathematical Literacy', 'Life Orientation']]},
-        {'subject': 'Elective 3', 'mark': '', 'options': [s for s in NSC_SUBJECTS if 'Language' not in s and s not in ['Mathematics', 'Mathematical Literacy', 'Life Orientation']]},
-    ]
+        for subject, mark in marks.items():
+            if 'Home Language' in subject:
+                marks_list[0]['subject'] = subject
+                marks_list[0]['mark'] = mark
+            elif 'First Additional Language' in subject:
+                marks_list[1]['subject'] = subject
+                marks_list[1]['mark'] = mark
+            elif subject in ['Mathematics', 'Mathematical Literacy']:
+                marks_list[2]['subject'] = subject
+                marks_list[2]['mark'] = mark
+            elif subject == 'Life Orientation':
+                marks_list[3]['mark'] = 0
+            else:
+                for i in range(4, 7):
+                    if marks_list[i]['mark'] == '':
+                        marks_list[i]['subject'] = subject
+                        marks_list[i]['mark'] = mark
+                        break
 
-    for subject, mark in marks.items():
-        if 'Home Language' in subject:
-            marks_list[0]['subject'] = subject
-            marks_list[0]['mark'] = mark
-        elif 'First Additional Language' in subject:
-            marks_list[1]['subject'] = subject
-            marks_list[1]['mark'] = mark
-        elif subject in ['Mathematics', 'Mathematical Literacy']:
-            marks_list[2]['subject'] = subject
-            marks_list[2]['mark'] = mark
-        elif subject == 'Life Orientation':
-            marks_list[3]['mark'] = 0
-        else:
-            for i in range(4, 7):
-                if marks_list[i]['mark'] == '':
-                    marks_list[i]['subject'] = subject
-                    marks_list[i]['mark'] = mark
-                    break
+        if marks and len(marks) < 7:
+            messages.warning(request, f"You currently have {len(marks)} subjects. Please update your marks to include exactly 7 subjects as per NSC requirements.")
 
-    if marks and len(marks) < 7:
-        messages.warning(request, f"You currently have {len(marks)} subjects. Please update your marks to include exactly 7 subjects as per NSC requirements.")
+        if request.method == 'POST':
+            if 'submit_marks' in request.POST:
+                new_marks = {}
+                subjects_entered = 0
+                selected_subjects = set()
 
-    if request.method == 'POST':
-        if 'submit_marks' in request.POST:
-            new_marks = {}
-            subjects_entered = 0
-            selected_subjects = set()
+                for i in range(7):
+                    if i == 3:
+                        new_marks['Life Orientation'] = 0
+                        subjects_entered += 1
+                        selected_subjects.add('Life Orientation')
+                        continue
 
-            for i in range(7):
-                if i == 3:
-                    new_marks['Life Orientation'] = 0
-                    subjects_entered += 1
-                    selected_subjects.add('Life Orientation')
-                    continue
+                    subject = request.POST.get(f'subject_{i}')
+                    mark = request.POST.get(f'mark_{i}')
 
-                subject = request.POST.get(f'subject_{i}')
-                mark = request.POST.get(f'mark_{i}')
-
-                if subject and mark:
-                    if subject not in NSC_SUBJECTS:
-                        messages.error(request, f"Invalid subject: {subject}. Please select a valid NSC subject.")
-                        return redirect('helper:dashboard_student')
-                    if subject in selected_subjects:
-                        messages.error(request, f"Duplicate subject: {subject}. Please select unique subjects.")
-                        return redirect('helper:dashboard_student')
-
-                    try:
-                        mark = int(mark)
-                        if 0 <= mark <= 100:
-                            new_marks[subject] = mark
-                            subjects_entered += 1
-                            selected_subjects.add(subject)
-                        else:
-                            messages.error(request, f"Mark for {subject} must be between 0 and 100.")
+                    if subject and mark:
+                        if subject not in NSC_SUBJECTS:
+                            messages.error(request, f"Invalid subject: {subject}. Please select a valid NSC subject.")
                             return redirect('helper:dashboard_student')
-                    except ValueError:
-                        messages.error(request, f"Invalid mark for {subject}. Please enter a number.")
-                        return redirect('helper:dashboard_student')
+                        if subject in selected_subjects:
+                            messages.error(request, f"Duplicate subject: {subject}. Please select unique subjects.")
+                            return redirect('helper:dashboard_student')
 
-            if subjects_entered != 7:
-                messages.error(request, f"Please enter exactly 7 subjects. You entered {subjects_entered} subjects.")
-                return redirect('helper:dashboard_student')
+                        try:
+                            mark = int(mark)
+                            if 0 <= mark <= 100:
+                                new_marks[subject] = mark
+                                subjects_entered += 1
+                                selected_subjects.add(subject)
+                            else:
+                                messages.error(request, f"Mark for {subject} must be between 0 and 100.")
+                                return redirect('helper:dashboard_student')
+                        except ValueError:
+                            messages.error(request, f"Invalid mark for {subject}. Please enter a number.")
+                            return redirect('helper:dashboard_student')
 
-            has_home_language = any('Home Language' in s for s in new_marks)
-            has_fal = any('First Additional Language' in s for s in new_marks)
-            has_math = any(s in ['Mathematics', 'Mathematical Literacy'] for s in new_marks)
-            has_lo = 'Life Orientation' in new_marks
+                if subjects_entered != 7:
+                    messages.error(request, f"Please enter exactly 7 subjects. You entered {subjects_entered} subjects.")
+                    return redirect('helper:dashboard_student')
 
-            if not (has_home_language and has_fal and has_math and has_lo):
-                messages.error(request, "You must include a Home Language, First Additional Language, Mathematics or Mathematical Literacy, and Life Orientation.")
-                return redirect('helper:dashboard_student')
+                has_home_language = any('Home Language' in s for s in new_marks)
+                has_fal = any('First Additional Language' in s for s in new_marks)
+                has_math = any(s in ['Mathematics', 'Mathematical Literacy'] for s in new_marks)
+                has_lo = 'Life Orientation' in new_marks
 
-            student_profile.marks = new_marks
-            student_profile.save()
-            print("Marks updated in student_profile:", student_profile.marks)
-            print("APS after update:", student_profile.aps_score)
-            messages.success(request, "Marks updated successfully!")
-            return redirect('helper:dashboard_student')
-        else:
-            form = DocumentUploadForm(request.POST, request.FILES)
-            if form.is_valid():
-                doc = form.save(commit=False)
-                doc.user = request.user
-                doc.save()
-                messages.success(request, "Document uploaded successfully!")
+                if not (has_home_language and has_fal and has_math and has_lo):
+                    messages.error(request, "You must include a Home Language, First Additional Language, Mathematics or Mathematical Literacy, and Life Orientation.")
+                    return redirect('helper:dashboard_student')
+
+                student_profile.marks = new_marks
+                student_profile.save()
+                messages.success(request, "Marks updated successfully!")
                 return redirect('helper:dashboard_student')
             else:
-                print("Form errors:", form.errors)
-                messages.error(request, "Document upload failed. Please try again.")
+                form = DocumentUploadForm(request.POST, request.FILES)
+                if form.is_valid():
+                    doc = form.save(commit=False)
+                    doc.user = request.user
+                    doc.save()
+                    messages.success(request, "Document uploaded successfully!")
+                    return redirect('helper:dashboard_student')
+                else:
+                    messages.error(request, "Document upload failed. Please try again.")
 
-    # Recommendations for slideshow
-    recommendations = []
-    student_aps = student_profile.aps_score
-    print("Student APS for recommendations:", student_aps)
-    if student_aps:
-        eligible_universities = University.objects.filter(minimum_aps__lte=student_aps).order_by('name')[:5]  # Limit to 5 for slideshow
-        for uni in eligible_universities:
-            recommendations.append({
-                'id': uni.id,
-                'name': uni.name,
-                'description': uni.description or f"Explore opportunities at {uni.name}, known for its excellent programs.",
-                'due_date': UNIVERSITY_DUE_DATES.get(uni.name, "TBD"),
-                'application_fee': APPLICATION_FEES_2025.get(uni.name, "Not available")
-            })
-    print("Final recommendations before rendering:", recommendations)
-    # Fallback message if no recommendations
-    if not recommendations and student_aps:
-        messages.info(request, "No recommended universities available based on your APS score. Please check your marks or contact support.")
+        # Recommendations for slideshow
+        recommendations = []
+        student_aps = student_profile.aps_score
+        if student_aps:
+            try:
+                eligible_universities = University.objects.filter(minimum_aps__lte=student_aps).order_by('name')[:5]
+                for uni in eligible_universities:
+                    recommendations.append({
+                        'id': uni.id,
+                        'name': uni.name,
+                        'description': uni.description or f"Explore opportunities at {uni.name}, known for its excellent programs.",
+                        'due_date': UNIVERSITY_DUE_DATES.get(uni.name, "TBD"),
+                        'application_fee': APPLICATION_FEES_2025.get(uni.name, "Not available")
+                    })
+            except Exception as e:
+                logger.error(f"Error fetching recommendations: {str(e)}", exc_info=True)
+                messages.error(request, "Unable to fetch university recommendations. Please try again later.")
+        if not recommendations and student_aps:
+            messages.info(request, "No recommended universities available based on your APS score. Please check your marks or contact support.")
 
-    # Qualified universities for list
-    qualified_universities = []
-    if student_aps:
-        qualified_universities = University.objects.filter(minimum_aps__lte=student_aps).order_by('name')
-        qualified_universities = [
-            {
-                'id': uni.id,
-                'name': uni.name,
-                'location': uni.location or "South Africa",
-                'due_date': UNIVERSITY_DUE_DATES.get(uni.name, "TBD"),
-                'application_fee': APPLICATION_FEES_2025.get(uni.name, "Not available")
-            } for uni in qualified_universities
-        ]
-    print("Qualified universities:", qualified_universities)
-    # Fallback message if no qualified universities
-    if not qualified_universities and student_aps:
-        messages.info(request, "No universities match your APS score yet. Try updating your marks.")
+        # Qualified universities for list
+        qualified_universities = []
+        if student_aps:
+            try:
+                qualified_universities = University.objects.filter(minimum_aps__lte=student_aps).order_by('name')
+                qualified_universities = [
+                    {
+                        'id': uni.id,
+                        'name': uni.name,
+                        'location': uni.province or "South Africa",
+                        'due_date': UNIVERSITY_DUE_DATES.get(uni.name, "TBD"),
+                        'application_fee': APPLICATION_FEES_2025.get(uni.name, "Not available")
+                    } for uni in qualified_universities
+                ]
+            except Exception as e:
+                logger.error(f"Error fetching qualified universities: {str(e)}", exc_info=True)
+                messages.error(request, "Unable to fetch qualified universities. Please try again later.")
+        if not qualified_universities and student_aps:
+            messages.info(request, "No universities match your APS score yet. Try updating your marks.")
 
-    context = {
-        'form': form,
-        'documents': documents,
-        'selected_universities': selected_universities,
-        'recommended_universities': recommendations,  # For slideshow
-        'universities': qualified_universities,  # For list
-        'student_profile': student_profile,
-        'marks_list': marks_list,
-        'nsc_subjects': NSC_SUBJECTS,
-        'UNIVERSITY_DUE_DATES': UNIVERSITY_DUE_DATES,
-    }
-    print("Context being passed to template:", context)
-    return render(request, 'helper/dashboard_student.html', context)
+        context = {
+            'form': form,
+            'documents': documents,
+            'selected_universities': selected_universities,
+            'recommended_universities': recommendations,
+            'universities': qualified_universities,
+            'student_profile': student_profile,
+            'marks_list': marks_list,
+            'nsc_subjects': NSC_SUBJECTS,
+            'UNIVERSITY_DUE_DATES': UNIVERSITY_DUE_DATES,
+        }
+        return render(request, 'helper/dashboard_student.html', context)
+    except Exception as e:
+        logger.error(f"Error in dashboard_student view: {str(e)}", exc_info=True)
+        messages.error(request, "An unexpected error occurred. Please try again later.")
+        return render(request, 'helper/error.html', {'error': 'An unexpected error occurred'})
 
 @login_required
 def dashboard_guide(request):
@@ -637,7 +636,7 @@ def pay_all_application_fees(request):
     })
 
 @login_required
-@ratelimit(key='user', rate='10/m', method='POST', block=True)
+@ratelimit(key='user', rate='10/m', method='POST')
 def ai_chat(request):
     if request.method == 'POST':
         try:
@@ -663,7 +662,6 @@ def ai_chat(request):
             )
 
             ai_response = response.choices[0].message['content'].strip()
-
             return JsonResponse({'response': ai_response}, status=200)
 
         except openai.error.AuthenticationError:
@@ -671,7 +669,6 @@ def ai_chat(request):
         except openai.error.RateLimitError:
             return JsonResponse({'error': 'Rate limit exceeded. Please try again later.'}, status=429)
         except Exception as e:
-            print(f"Error in AI chat: {str(e)}")
             return JsonResponse({'error': 'An error occurred. Please try again.'}, status=500)
 
     return JsonResponse({'error': 'Invalid request method'}, status=405)

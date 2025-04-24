@@ -47,7 +47,7 @@
                             {% if mark.subject == 'Life Orientation' %}
                                 <input type="number" name="mark_{{ forloop.counter0 }}" value="0" readonly class="form-control">
                             {% else %}
-                                <input type="number" name="mark_{{ forloop.counter0 }}" value="{{ mark.mark }}" min="0" max="100" class="form-control" required>
+                                <input type="number" name="mark_{{ forloop.counter0 }}" value="{{ mark.mark|default_if_none:'' }}" min="0" max="100" class="form-control" required>
                             {% endif %}
                         </td>
                     </tr>
@@ -111,10 +111,10 @@
                 <div class="slides">
                     {% for rec in recommended_universities %}
                         <div class="slide {% if forloop.first %}active{% endif %}">
-                            <h3>{{ rec.name }}</h3>
+                            <h3>{{ rec.name|default:"Unknown" }}</h3>
                             <p>{{ rec.description|default:"Explore this university!" }}</p>
-                            <p><strong>Due Date:</strong> {{ rec.due_date }}</p>
-                            <p><strong>Application Fee:</strong> {{ rec.application_fee }}</p>
+                            <p><strong>Due Date:</strong> {{ rec.due_date|default:"TBD" }}</p>
+                            <p><strong>Application Fee:</strong> {{ rec.application_fee|default:"Not available" }}</p>
                             <a href="{% url 'helper:university_detail' rec.id %}" class="btn btn-info">Learn More</a>
                         </div>
                     {% endfor %}
@@ -139,10 +139,10 @@
             <div class="university-list">
                 {% for uni in universities %}
                     <div class="university-card">
-                        <h3>{{ uni.name }}</h3>
-                        <p><strong>Location:</strong> {{ uni.location }}</p>
-                        <p><strong>Due Date:</strong> {{ uni.due_date }}</p>
-                        <p><strong>Application Fee:</strong> {{ uni.application_fee }}</p>
+                        <h3>{{ uni.name|default:"Unknown" }}</h3>
+                        <p><strong>Location:</strong> {{ uni.location|default:"South Africa" }}</p>
+                        <p><strong>Due Date:</strong> {{ uni.due_date|default:"TBD" }}</p>
+                        <p><strong>Application Fee:</strong> {{ uni.application_fee|default:"Not available" }}</p>
                         <a href="{% url 'helper:university_detail' uni.id %}" class="btn btn-info">View Details</a>
                     </div>
                 {% endfor %}
@@ -160,8 +160,8 @@
             <div class="university-list">
                 {% for uni in selected_universities %}
                     <div class="university-card">
-                        <h3>{{ uni.name }}</h3>
-                        <p><strong>Due Date:</strong> {{ UNIVERSITY_DUE_DATES|get_item:uni.name|default:"TBD" }}</p>
+                        <h3>{{ uni.name|default:"Unknown" }}</h3>
+                        <p><strong>Due Date:</strong> {{ UNIVERSITY_DUE_DATES|default:{}|get_item:uni.name|default:"TBD" }}</p>
                         <a href="{% url 'helper:university_detail' uni.id %}" class="btn btn-info">View Details</a>
                     </div>
                 {% endfor %}
