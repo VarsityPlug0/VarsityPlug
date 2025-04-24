@@ -55,7 +55,7 @@ MarkupSafe==3.0.2
 MouseInfo==0.1.3
 multidict==6.1.0
 netifaces==0.11.0
-numpy==2.2.1
+numpy==1.26.4  # Changed from 2.2.1 to be compatible with langchain
 openai==0.28.0
 opencv-python==4.11.0.86
 orjson==3.10.14
