@@ -51,7 +51,7 @@
                                 {% if mark.subject == 'Life Orientation' %}
                                     <input type="number" name="mark_{{ forloop.counter0 }}" value="0" readonly class="form-control">
                                 {% else %}
-                                    <input type="number" name="mark_{{ forloop.counter0 }}" value="{% if mark.mark is not None %}{{ mark.mark }}{% else %}{% endif %}" min="0" max="100" class="form-control" required>
+                                    <input type="number" name="mark_{{ forloop.counter0 }}" value="{% if mark.mark is not None %}{{ mark.mark }}{% else %}0{% endif %}" min="0" max="100" class="form-control" required>
                                 {% endif %}
                             </td>
                         </tr>

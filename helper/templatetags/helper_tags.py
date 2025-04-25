@@ -1,23 +1,29 @@
 from django import template
 import logging
-import traceback
 
 register = template.Library()
 
 # Set up logging
 logger = logging.getLogger('helper')
 
+# Flag to ensure deprecation warning is logged only once
+DEPRECATION_WARNING = True
+
 @register.filter
-def get_item(dictionary, key):
+def get_item(dictionary, key, template=None):
     """
     Safely retrieve a value from a dictionary by key, returning None if invalid.
     Note: This filter is redundant with 'lookup' and may be deprecated in future versions.
     """
+    global DEPRECATION_WARNING
     try:
+        # Log deprecation warning once in DEBUG mode
+        if DEPRECATION_WARNING and logger.isEnabledFor(logging.DEBUG):
+            logger.debug("get_item filter is deprecated; use 'lookup' instead")
+            DEPRECATION_WARNING = False
+
         # Log context for debugging (limited in production)
-        stack = traceback.extract_stack(limit=3)
-        caller = stack[-2] if len(stack) >= 2 else None
-        context = f"Caller: {caller.filename}:{caller.lineno}" if caller else "Unknown caller"
+        context = f"Caller: {template.__file__}" if template and hasattr(template, '__file__') else "Unknown caller"
 
         # Input validation
         if dictionary is None:
@@ -52,15 +58,13 @@ def get_item(dictionary, key):
         return None
 
 @register.filter
-def lookup(dictionary, key):
+def lookup(dictionary, key, template=None):
     """
     Safely lookup a key in a dictionary, returning None if the key is missing or invalid.
     """
     try:
         # Log context for debugging (limited in production)
-        stack = traceback.extract_stack(limit=3)
-        caller = stack[-2] if len(stack) >= 2 else None
-        context = f"Caller: {caller.filename}:{caller.lineno}" if caller else "Unknown caller"
+        context = f"Caller: {template.__file__}" if template and hasattr(template, '__file__') else "Unknown caller"
 
         # Input validation
         if dictionary is None:

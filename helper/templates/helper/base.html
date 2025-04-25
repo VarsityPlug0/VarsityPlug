@@ -53,6 +53,8 @@
             max-width: 500px;
             width: 90%;
             text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
         .message-popup.success {
             background-color: #d4edda;
@@ -207,14 +209,20 @@
             crossorigin="anonymous"></script>
 
     <script>
-        // Message Pop-up display logic
+        // Message Pop-up display logic with fade effect
         document.addEventListener('DOMContentLoaded', () => {
             const messagePopups = document.querySelectorAll('.message-popup');
             messagePopups.forEach((popup, index) => {
                 setTimeout(() => {
                     popup.style.display = 'block';
                     setTimeout(() => {
-                        popup.style.display = 'none';
+                        popup.style.opacity = '1';
+                    }, 10); // Small delay to trigger transition
+                    setTimeout(() => {
+                        popup.style.opacity = '0';
+                        setTimeout(() => {
+                            popup.style.display = 'none';
+                        }, 300); // Match transition duration
                     }, 5000); // Hide after 5 seconds
                 }, index * 1000); // Stagger multiple messages
             });
