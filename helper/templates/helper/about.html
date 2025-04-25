@@ -50,7 +50,7 @@
             </form>
 
             {% if not request.user.is_authenticated %}
-                <p class="mt-3">Already a member? <a href="{% url 'login' %}">Login</a> | New here? <a href="{% url 'register' %}">Sign Up</a></p>
+                <p class="mt-3">Already a member? <a href="{% url 'login' %}">Login</a> | New here? <a href="{% url 'helper:register' %}">Sign Up</a></p>
             {% endif %}
 
             <hr>
@@ -83,8 +83,8 @@
             </ul>
 
             <div class="mt-4">
-                <a href="{% url 'contact' %}" class="btn btn-primary">Contact Us</a>
-                <a href="{% url 'universities_list' %}" class="btn btn-outline-info">View Universities</a>
+                <a href="{% url 'helper:contact' %}" class="btn btn-primary">Contact Us</a>
+                <a href="{% url 'helper:universities_list' %}" class="btn btn-outline-info">View Universities</a>
             </div>
         </div>
     </div>
