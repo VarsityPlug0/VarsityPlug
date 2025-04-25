@@ -11,9 +11,10 @@ logger = logging.getLogger('helper')
 def get_item(dictionary, key):
     """
     Safely retrieve a value from a dictionary by key, returning None if invalid.
+    Note: This filter is redundant with 'lookup' and may be deprecated in future versions.
     """
     try:
-        # Log context for debugging
+        # Log context for debugging (limited in production)
         stack = traceback.extract_stack(limit=3)
         caller = stack[-2] if len(stack) >= 2 else None
         context = f"Caller: {caller.filename}:{caller.lineno}" if caller else "Unknown caller"
@@ -41,7 +42,9 @@ def get_item(dictionary, key):
         value = dictionary.get(key)
         if value is not None:
             value = str(value)  # Ensure safe rendering
-        logger.debug(f"get_item: key={key}, value={value}, type={type(value)} [{context}]")
+        # Log only in DEBUG mode to reduce production overhead
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"get_item: key={key}, value={value}, type={type(value)} [{context}]")
         return value
 
     except Exception as e:
@@ -54,7 +57,7 @@ def lookup(dictionary, key):
     Safely lookup a key in a dictionary, returning None if the key is missing or invalid.
     """
     try:
-        # Log context for debugging
+        # Log context for debugging (limited in production)
         stack = traceback.extract_stack(limit=3)
         caller = stack[-2] if len(stack) >= 2 else None
         context = f"Caller: {caller.filename}:{caller.lineno}" if caller else "Unknown caller"
@@ -82,7 +85,9 @@ def lookup(dictionary, key):
         value = dictionary.get(key, None)
         if value is not None:
             value = str(value)  # Ensure safe rendering
-        logger.debug(f"lookup: key={key}, value={value}, type={type(value)} [{context}]")
+        # Log only in DEBUG mode to reduce production overhead
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"lookup: key={key}, value={value}, type={type(value)} [{context}]")
         return value
 
     except Exception as e:

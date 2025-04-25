@@ -39,9 +39,11 @@
                                 {% else %}
                                     <select name="subject_{{ forloop.counter0 }}" class="form-control" required>
                                         <option value="">Select Subject</option>
-                                        {% for option in mark.options|default_if_none:[] %}
-                                            <option value="{{ option }}" {% if option == mark.subject %}selected{% endif %}>{{ option }}</option>
-                                        {% endfor %}
+                                        {% if mark.options %}
+                                            {% for option in mark.options %}
+                                                <option value="{{ option }}" {% if option == mark.subject %}selected{% endif %}>{{ option }}</option>
+                                            {% endfor %}
+                                        {% endif %}
                                     </select>
                                 {% endif %}
                             </td>
@@ -210,9 +212,11 @@
                             <div class="mb-3">
                                 <label for="document_type{{ doc.id }}" class="form-label">Document Type</label>
                                 <select name="document_type" id="document_type{{ doc.id }}" class="form-control" required>
-                                    {% for value, label in doc.DOCUMENT_TYPE_CHOICES|default_if_none:[] %}
-                                        <option value="{{ value }}" {% if value == doc.document_type %}selected{% endif %}>{{ label }}</option>
-                                    {% endfor %}
+                                    {% if doc.DOCUMENT_TYPE_CHOICES %}
+                                        {% for value, label in doc.DOCUMENT_TYPE_CHOICES %}
+                                            <option value="{{ value }}" {% if value == doc.document_type %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    {% endif %}
                                 </select>
                             </div>
                             <div class="mb-3">
