@@ -1,4 +1,3 @@
-{% raw %}
 (function () {
     // Configuration constants
     const CONFIG = {
@@ -162,7 +161,7 @@
         }
     };
 
-    // Chat System
+    // Original Chat System
     const chatSystem = {
         toggleChat() {
             const chatContainer = document.getElementById('chatContainer');
@@ -226,6 +225,97 @@
         }
     };
 
+    // Updated Chat System for New Chat Widget
+    const updatedChatSystem = {
+        init() {
+            const chatForm = document.getElementById('aiChatForm');
+            const chatInput = document.getElementById('aiChatInput');
+            const chatMessages = document.getElementById('aiChatMessages');
+            const chatToggle = document.getElementById('aiChatToggle');
+            const chatBody = document.getElementById('aiChatBody');
+
+            if (chatForm && chatInput && chatMessages) {
+                chatForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const message = chatInput.value.trim();
+                    if (!message) return;
+
+                    // Add user message
+                    const userMsg = document.createElement('div');
+                    userMsg.className = 'chat-message user';
+                    userMsg.textContent = message;
+                    chatMessages.appendChild(userMsg);
+
+                    // Clear input
+                    chatInput.value = '';
+
+                    // Send to AI endpoint
+                    try {
+                        const response = await fetch('/ai_chat/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': getCookie('csrftoken'),
+                            },
+                            body: JSON.stringify({ message }),
+                        });
+                        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                        const data = await response.json();
+                        if (data.error) throw new Error(data.error);
+
+                        // Add AI response
+                        const aiMsg = document.createElement('div');
+                        aiMsg.className = 'chat-message ai';
+                        aiMsg.textContent = data.response || 'Sorry, I couldn’t respond. Please try again.';
+                        chatMessages.appendChild(aiMsg);
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    } catch (error) {
+                        console.error('Updated chat error:', error);
+                        const errorMsg = document.createElement('div');
+                        errorMsg.className = 'chat-message error';
+                        errorMsg.textContent = 'Error: ' + error.message;
+                        chatMessages.appendChild(errorMsg);
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    }
+                });
+            } else {
+                console.warn('Updated chat elements not found:', {
+                    chatForm: !!chatForm,
+                    chatInput: !!chatInput,
+                    chatMessages: !!chatMessages
+                });
+            }
+
+            if (chatToggle && chatBody) {
+                chatToggle.addEventListener('click', function() {
+                    chatBody.style.display = chatBody.style.display === 'none' ? 'block' : 'none';
+                    chatToggle.textContent = chatBody.style.display === 'none' ? '+' : '−';
+                });
+            } else {
+                console.warn('Updated chat toggle or body not found:', {
+                    chatToggle: !!chatToggle,
+                    chatBody: !!chatBody
+                });
+            }
+        },
+
+        // Utility to get CSRF token
+        getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    };
+
     // Expose functions to global scope for HTML event handlers
     window.moveSlide = (n) => slideshowSystem.moveSlide(n);
     window.currentSlide = (n) => slideshowSystem.setCurrentSlide(n);
@@ -241,6 +331,9 @@
             // Initialize slideshow
             slideshowSystem.init();
 
+            // Initialize updated chat system
+            updatedChatSystem.init();
+
             // Start notification simulation
             setInterval(() => notificationSystem.simulateNewSubmission(), CONFIG.SUBMISSION_CHECK_INTERVAL);
         });
@@ -249,4 +342,3 @@
     // Initialize
     initEventListeners();
 })();
-{% endraw %}
