@@ -5,7 +5,7 @@
     padding: 20px;
     width: 100%;
     box-sizing: border-box;
-    min-height: 100vh; /* Ensure full page height */
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -47,11 +47,11 @@ h1, h2 {
     padding: 20px;
     background-color: #fff;
     text-align: center;
-    display: none; /* Hidden by default */
+    display: none !important; /* Force hide by default */
 }
 
 .slideshow-container .slide.active {
-    display: block; /* Show active slide */
+    display: block !important; /* Force show active slide */
 }
 
 .slideshow-container .slide h3 {
@@ -91,6 +91,7 @@ h1, h2 {
     top: 50%;
     transform: translateY(-50%);
     transition: background-color 0.3s;
+    z-index: 10; /* Ensure buttons are clickable */
 }
 
 .slideshow-container .prev:hover, .slideshow-container .next:hover {
@@ -265,7 +266,7 @@ h1, h2 {
 
 /* Popup styles */
 .popup-overlay {
-    display: none;
+    display: none !important;
     position: fixed;
     top: 0;
     left: 0;
@@ -278,7 +279,7 @@ h1, h2 {
 }
 
 .popup-overlay.active {
-    display: flex;
+    display: flex !important;
 }
 
 .popup-content {

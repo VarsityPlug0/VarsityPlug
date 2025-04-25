@@ -1,3 +1,4 @@
+{% raw %}
 (function () {
     // Configuration constants
     const CONFIG = {
@@ -59,7 +60,10 @@
 
         showSlides() {
             if (!this.slides.length || !this.dots.length) {
-                console.warn('Slideshow elements not found');
+                console.warn('Slideshow elements not found or empty:', {
+                    slides: this.slides.length,
+                    dots: this.dots.length
+                });
                 return;
             }
 
@@ -100,8 +104,11 @@
 
         init() {
             if (this.slides.length && this.dots.length) {
+                console.log('Initializing slideshow with', this.slides.length, 'slides');
                 this.showSlides();
                 this.resetSlideInterval();
+            } else {
+                console.warn('Slideshow initialization failed: no slides or dots found');
             }
         }
     };
@@ -115,7 +122,10 @@
             const popupMessage = document.getElementById('popupMessage');
             
             if (!popupOverlay || !popupMessage) {
-                console.warn('Popup elements not found');
+                console.error('Popup elements not found:', {
+                    popupOverlay: !!popupOverlay,
+                    popupMessage: !!popupMessage
+                });
                 return;
             }
 
@@ -123,25 +133,30 @@
                               formType === 'upload' ? document.getElementById('uploadForm') : null;
             
             if (!this.currentForm) {
-                console.warn('Form not found for type:', formType);
+                console.error('Form not found for type:', formType);
                 return;
             }
 
             popupMessage.textContent = `Are you sure you want to submit your ${formType === 'marks' ? 'marks' : 'document'}?`;
             popupOverlay.classList.add('active');
+            popupOverlay.style.display = 'flex'; // Ensure visibility
         },
 
         hidePopup() {
             const popupOverlay = document.getElementById('popupOverlay');
             if (popupOverlay) {
                 popupOverlay.classList.remove('active');
+                popupOverlay.style.display = 'none';
             }
             this.currentForm = null;
         },
 
         confirmAction() {
             if (this.currentForm) {
+                console.log('Submitting form:', this.currentForm.id);
                 this.currentForm.submit();
+            } else {
+                console.warn('No form selected for submission');
             }
             this.hidePopup();
         }
@@ -153,7 +168,7 @@
             const chatContainer = document.getElementById('chatContainer');
             
             if (!chatContainer) {
-                console.warn('Chat container not found');
+                console.error('Chat container not found');
                 return;
             }
 
@@ -168,7 +183,7 @@
 
             const chatBody = document.getElementById('chatBody');
             if (!chatBody) {
-                console.warn('Chat body not found');
+                console.error('Chat body not found');
                 return;
             }
 
@@ -184,10 +199,10 @@
             fetch("/ai-chat/", {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Content-Type': 'application/json',
                     'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value
                 },
-                body: new URLSearchParams({ 'message': message })
+                body: JSON.stringify({ message: message })
             })
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
@@ -234,3 +249,4 @@
     // Initialize
     initEventListeners();
 })();
+{% endraw %}

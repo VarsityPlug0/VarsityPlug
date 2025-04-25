@@ -1,3 +1,4 @@
+{% raw %}
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
@@ -12,6 +13,10 @@ from django.http import JsonResponse
 import openai
 from django.conf import settings
 import logging
+import json
+
+# Set up logging
+logger = logging.getLogger('helper')
 
 # Set up OpenAI API key
 openai.api_key = settings.OPENAI_API_KEY
@@ -65,7 +70,7 @@ NSC_SUBJECTS = [
 UNIVERSITY_DUE_DATES = {
     "Cape Peninsula University of Technology (CPUT)": "2025-09-30",
     "Central University of Technology (CUT)": "2025-10-31",
-    "Durban University of Technology (DUT)": "2025-09-30",
+    "Durban University of Technology (PYTH
     "Mangosuthu University of Technology (MUT)": "2025-02-28",
     "Nelson Mandela University (NMU)": "2025-09-30",
     "North-West University (NWU)": "2025-06-30",
@@ -119,6 +124,35 @@ APPLICATION_FEES_2025 = {
     "Vaal University of Technology (VUT)": "R150",
     "Walter Sisulu University (WSU)": "FREE",
 }
+
+def calculate_aps(marks):
+    """Calculate APS score based on NSC marks."""
+    if not marks or len(marks) != 7:
+        logger.debug(f"APS calculation failed: Invalid number of marks ({len(marks)})")
+        return None
+    
+    aps = 0
+    for subject, mark in marks.items():
+        if mark is None or not isinstance(mark, (int, float)) or mark < 0 or mark > 100:
+            logger.debug(f"Invalid mark for {subject}: {mark}")
+            return None
+        if subject != 'Life Orientation':
+            if mark >= 80:
+                aps += 7
+            elif mark >= 70:
+                aps += 6
+            elif mark >= 60:
+                aps += 5
+            elif mark >= 50:
+                aps += 4
+            elif mark >= 40:
+                aps += 3
+            elif mark >= 30:
+                aps += 2
+            else:
+                aps += 1
+    logger.debug(f"Calculated APS: {aps} for marks: {marks}")
+    return aps
 
 def home(request):
     if request.method == 'POST' and 'take_action' in request.POST:
@@ -207,8 +241,6 @@ def subscription_selection(request):
 @login_required
 @ratelimit(key='user', rate='10/m')
 def dashboard_student(request):
-    logger = logging.getLogger('helper')
-    
     try:
         student_profile, _ = StudentProfile.objects.get_or_create(user=request.user)
         form = DocumentUploadForm()
@@ -268,9 +300,11 @@ def dashboard_student(request):
                     if subject and mark:
                         if subject not in NSC_SUBJECTS:
                             messages.error(request, f"Invalid subject: {subject}. Please select a valid NSC subject.")
+                            logger.error(f"Invalid subject entered: {subject}")
                             return redirect('helper:dashboard_student')
                         if subject in selected_subjects:
                             messages.error(request, f"Duplicate subject: {subject}. Please select unique subjects.")
+                            logger.error(f"Duplicate subject: {subject}")
                             return redirect('helper:dashboard_student')
 
                         try:
@@ -281,13 +315,16 @@ def dashboard_student(request):
                                 selected_subjects.add(subject)
                             else:
                                 messages.error(request, f"Mark for {subject} must be between 0 and 100.")
+                                logger.error(f"Mark out of range for {subject}: {mark}")
                                 return redirect('helper:dashboard_student')
                         except ValueError:
                             messages.error(request, f"Invalid mark for {subject}. Please enter a number.")
+                            logger.error(f"Invalid mark for {subject}: {mark}")
                             return redirect('helper:dashboard_student')
 
                 if subjects_entered != 7:
                     messages.error(request, f"Please enter exactly 7 subjects. You entered {subjects_entered} subjects.")
+                    logger.error(f"Incorrect number of subjects: {subjects_entered}")
                     return redirect('helper:dashboard_student')
 
                 has_home_language = any('Home Language' in s for s in new_marks)
@@ -297,11 +334,15 @@ def dashboard_student(request):
 
                 if not (has_home_language and has_fal and has_math and has_lo):
                     messages.error(request, "You must include a Home Language, First Additional Language, Mathematics or Mathematical Literacy, and Life Orientation.")
+                    logger.error("Missing required subjects: Home Language, FAL, Math, LO")
                     return redirect('helper:dashboard_student')
 
                 student_profile.marks = new_marks
+                aps_score = calculate_aps(new_marks)
+                student_profile.aps_score = aps_score
                 student_profile.save()
-                messages.success(request, "Marks updated successfully!")
+                logger.debug(f"Marks updated for user {request.user.username}. APS: {aps_score}")
+                messages.success(request, f"Marks updated successfully! Your APS score is {aps_score or 'not calculated'}.")
                 return redirect('helper:dashboard_student')
             else:
                 form = DocumentUploadForm(request.POST, request.FILES)
@@ -310,9 +351,12 @@ def dashboard_student(request):
                     doc.user = request.user
                     doc.save()
                     messages.success(request, "Document uploaded successfully!")
+                    logger.debug(f"Document uploaded by {request.user.username}: {doc.file.name}")
                     return redirect('helper:dashboard_student')
                 else:
                     messages.error(request, "Document upload failed. Please try again.")
+                    logger.error(f"Document upload failed for {request.user.username}: {form.errors}")
+                    return redirect('helper:dashboard_student')
 
         # Recommendations for slideshow
         recommendations = []
@@ -328,11 +372,12 @@ def dashboard_student(request):
                         'due_date': UNIVERSITY_DUE_DATES.get(uni.name, "TBD"),
                         'application_fee': APPLICATION_FEES_2025.get(uni.name, "Not available")
                     })
+                logger.debug(f"Recommendations fetched for APS {student_aps}: {len(recommendations)} universities")
             except Exception as e:
                 logger.error(f"Error fetching recommendations: {str(e)}", exc_info=True)
                 messages.error(request, "Unable to fetch university recommendations. Please try again later.")
-        if not recommendations and student_aps:
-            messages.info(request, "No recommended universities available based on your APS score. Please check your marks or contact support.")
+        else:
+            logger.debug(f"No recommendations: APS score not set for {request.user.username}")
 
         # Qualified universities for list
         qualified_universities = []
@@ -348,11 +393,12 @@ def dashboard_student(request):
                         'application_fee': APPLICATION_FEES_2025.get(uni.name, "Not available")
                     } for uni in qualified_universities
                 ]
+                logger.debug(f"Qualified universities fetched for APS {student_aps}: {len(qualified_universities)} universities")
             except Exception as e:
                 logger.error(f"Error fetching qualified universities: {str(e)}", exc_info=True)
                 messages.error(request, "Unable to fetch qualified universities. Please try again later.")
-        if not qualified_universities and student_aps:
-            messages.info(request, "No universities match your APS score yet. Try updating your marks.")
+        else:
+            logger.debug(f"No qualified universities: APS score not set for {request.user.username}")
 
         context = {
             'form': form,
@@ -367,7 +413,7 @@ def dashboard_student(request):
         }
         return render(request, 'helper/dashboard_student.html', context)
     except Exception as e:
-        logger.error(f"Error in dashboard_student view: {str(e)}", exc_info=True)
+        logger.error(f"Error in dashboard_student view for {request.user.username}: {str(e)}", exc_info=True)
         messages.error(request, "An unexpected error occurred. Please try again later.")
         return render(request, 'helper/error.html', {'error': 'An unexpected error occurred'})
 
@@ -381,6 +427,7 @@ def delete_document(request, doc_id):
     if request.method == 'POST':
         document.delete()
         messages.success(request, "Document deleted successfully!")
+        logger.debug(f"Document {doc_id} deleted by {request.user.username}")
     return redirect('helper:dashboard_student')
 
 @login_required
@@ -391,9 +438,11 @@ def edit_document(request, doc_id):
         if form.is_valid():
             form.save()
             messages.success(request, "Document updated successfully!")
+            logger.debug(f"Document {doc_id} updated by {request.user.username}")
             return redirect('helper:dashboard_student')
         else:
             messages.error(request, "Document update failed. Please try again.")
+            logger.error(f"Document update failed for {request.user.username}: {form.errors}")
     return redirect('helper:dashboard_student')
 
 @login_required
@@ -421,6 +470,7 @@ def universities_list(request):
         student_profile.application_count = new_application_count
         student_profile.save()
         messages.success(request, "Selected universities updated successfully!")
+        logger.debug(f"Selected universities updated for {request.user.username}: {new_application_count} universities")
         return redirect('helper:universities_list')
 
     eligible_universities = universities.filter(minimum_aps__lte=student_aps) if student_aps else []
@@ -614,7 +664,7 @@ def pay_all_application_fees(request):
     total_payment = total_university_fee + package_cost
 
     if total_payment == 0:
-        messages.info(request, "No payment is required for your selected universities at this time.")
+        messages.info(request, "No payment is required intercellular space for your selected universities at this time.")
         return redirect('helper:universities_list')
 
     university_names = "-".join(uni.name.replace(' ', '-') for uni in selected_universities)
@@ -640,8 +690,16 @@ def pay_all_application_fees(request):
 def ai_chat(request):
     if request.method == 'POST':
         try:
-            user_message = request.POST.get('message', '').strip()
+            # Parse JSON body
+            try:
+                data = json.loads(request.body)
+                user_message = data.get('message', '').strip()
+            except json.JSONDecodeError:
+                logger.error("Invalid JSON in ai_chat request")
+                return JsonResponse({'error': 'Invalid request format'}, status=400)
+
             if not user_message:
+                logger.debug("Empty message received in ai_chat")
                 return JsonResponse({'error': 'Message cannot be empty'}, status=400)
 
             system_prompt = (
@@ -662,13 +720,19 @@ def ai_chat(request):
             )
 
             ai_response = response.choices[0].message['content'].strip()
+            logger.debug(f"AI chat response for {request.user.username}: {ai_response}")
             return JsonResponse({'response': ai_response}, status=200)
 
         except openai.error.AuthenticationError:
+            logger.error("OpenAI API authentication error")
             return JsonResponse({'error': 'Invalid API key. Please contact the administrator.'}, status=500)
         except openai.error.RateLimitError:
+            logger.error("OpenAI API rate limit exceeded")
             return JsonResponse({'error': 'Rate limit exceeded. Please try again later.'}, status=429)
         except Exception as e:
+            logger.error(f"Error in ai_chat: {str(e)}", exc_info=True)
             return JsonResponse({'error': 'An error occurred. Please try again.'}, status=500)
 
+    logger.error("Invalid request method for ai_chat")
     return JsonResponse({'error': 'Invalid request method'}, status=405)
+{% endraw %}
