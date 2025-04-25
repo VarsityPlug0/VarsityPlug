@@ -126,3 +126,4 @@ whitenoise==6.9.0
 wsproto==1.2.0
 WTForms==3.2.1
 yarl==1.18.3
+# Force redeploy to clear template cache

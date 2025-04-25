@@ -7,12 +7,14 @@
 
     <!-- Messages -->
     {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        {% endfor %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
     {% endif %}
 
     <!-- Marks Section -->
@@ -30,33 +32,39 @@
                 </thead>
                 <tbody>
                     {% for mark in marks_list %}
-                    <tr>
-                        <td>
-                            {% if mark.subject == 'Life Orientation' %}
-                                <input type="text" value="{{ mark.subject }}" readonly class="form-control">
-                            {% else %}
-                                <select name="subject_{{ forloop.counter0 }}" class="form-control" required>
-                                    <option value="">Select Subject</option>
-                                    {% for option in mark.options %}
-                                        <option value="{{ option }}" {% if option == mark.subject %}selected{% endif %}>{{ option }}</option>
-                                    {% endfor %}
-                                </select>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if mark.subject == 'Life Orientation' %}
-                                <input type="number" name="mark_{{ forloop.counter0 }}" value="0" readonly class="form-control">
-                            {% else %}
-                                <input type="number" name="mark_{{ forloop.counter0 }}" value="{{ mark.mark|default_if_none:'' }}" min="0" max="100" class="form-control" required>
-                            {% endif %}
-                        </td>
-                    </tr>
+                        <tr>
+                            <td>
+                                {% if mark.subject == 'Life Orientation' %}
+                                    <input type="text" value="{{ mark.subject }}" readonly class="form-control">
+                                {% else %}
+                                    <select name="subject_{{ forloop.counter0 }}" class="form-control" required>
+                                        <option value="">Select Subject</option>
+                                        {% for option in mark.options|default_if_none:[] %}
+                                            <option value="{{ option }}" {% if option == mark.subject %}selected{% endif %}>{{ option }}</option>
+                                        {% endfor %}
+                                    </select>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if mark.subject == 'Life Orientation' %}
+                                    <input type="number" name="mark_{{ forloop.counter0 }}" value="0" readonly class="form-control">
+                                {% else %}
+                                    <input type="number" name="mark_{{ forloop.counter0 }}" value="{% if mark.mark is not None %}{{ mark.mark }}{% else %}{% endif %}" min="0" max="100" class="form-control" required>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="2">No marks available. Please add subjects.</td>
+                        </tr>
                     {% endfor %}
                 </tbody>
             </table>
             <button type="button" class="btn btn-primary" onclick="showPopup('marks')">Update Marks</button>
         </form>
-        <p><strong>APS Score:</strong> {{ student_profile.aps_score|default:"Not calculated" }}</p>
+        <!-- Debug: Rendering APS Score -->
+        <p><strong>APS Score:</strong> {% if student_profile.aps_score %}{{ student_profile.aps_score }}{% else %}Not calculated{% endif %}</p>
+        <!-- Debug: Finished APS Score -->
     </div>
 
     <!-- Document Upload Section -->
@@ -80,10 +88,11 @@
                 </thead>
                 <tbody>
                     {% for doc in documents %}
+                        <!-- Debug: Rendering document {{ doc.id }} -->
                         <tr>
-                            <td>{{ doc.get_document_type_display|default:"Unknown" }}</td>
-                            <td>{{ doc.file.name|cut:"documents/"|default:"No file" }}</td>
-                            <td>{{ doc.uploaded_at|date:"Y-m-d H:i"|default:"N/A" }}</td>
+                            <td>{% if doc.get_document_type_display %}{{ doc.get_document_type_display }}{% else %}Unknown{% endif %}</td>
+                            <td>{% if doc.file.name %}{{ doc.file.name|cut:"documents/" }}{% else %}No file{% endif %}</td>
+                            <td>{% if doc.uploaded_at %}{{ doc.uploaded_at|date:"Y-m-d H:i" }}{% else %}N/A{% endif %}</td>
                             <td>
                                 <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editModal{{ doc.id }}">
                                     Edit
@@ -95,6 +104,7 @@
                                 </form>
                             </td>
                         </tr>
+                        <!-- Debug: Finished document {{ doc.id }} -->
                     {% endfor %}
                 </tbody>
             </table>
@@ -110,13 +120,15 @@
             <div class="slideshow-container">
                 <div class="slides">
                     {% for rec in recommended_universities %}
+                        <!-- Debug: Rendering recommendation {{ rec.id }} -->
                         <div class="slide {% if forloop.first %}active{% endif %}">
-                            <h3>{{ rec.name|default:"Unknown" }}</h3>
-                            <p>{{ rec.description|default:"Explore this university!" }}</p>
-                            <p><strong>Due Date:</strong> {{ rec.due_date|default:"TBD" }}</p>
-                            <p><strong>Application Fee:</strong> {{ rec.application_fee|default:"Not available" }}</p>
+                            <h3>{% if rec.name %}{{ rec.name }}{% else %}Unknown{% endif %}</h3>
+                            <p>{% if rec.description %}{{ rec.description }}{% else %}Explore this university!{% endif %}</p>
+                            <p><strong>Due Date:</strong> {% if rec.due_date %}{{ rec.due_date }}{% else %}TBD{% endif %}</p>
+                            <p><strong>Application Fee:</strong> {% if rec.application_fee %}{{ rec.application_fee }}{% else %}Not available{% endif %}</p>
                             <a href="{% url 'helper:university_detail' rec.id %}" class="btn btn-info">Learn More</a>
                         </div>
+                        <!-- Debug: Finished recommendation {{ rec.id }} -->
                     {% endfor %}
                 </div>
                 <button class="prev" onclick="moveSlide(-1)">❮</button>
@@ -138,13 +150,15 @@
         {% if universities %}
             <div class="university-list">
                 {% for uni in universities %}
+                    <!-- Debug: Rendering qualified uni {{ uni.id }} -->
                     <div class="university-card">
-                        <h3>{{ uni.name|default:"Unknown" }}</h3>
-                        <p><strong>Location:</strong> {{ uni.location|default:"South Africa" }}</p>
-                        <p><strong>Due Date:</strong> {{ uni.due_date|default:"TBD" }}</p>
-                        <p><strong>Application Fee:</strong> {{ uni.application_fee|default:"Not available" }}</p>
+                        <h3>{% if uni.name %}{{ uni.name }}{% else %}Unknown{% endif %}</h3>
+                        <p><strong>Location:</strong> {% if uni.location %}{{ uni.location }}{% else %}South Africa{% endif %}</p>
+                        <p><strong>Due Date:</strong> {% if uni.due_date %}{{ uni.due_date }}{% else %}TBD{% endif %}</p>
+                        <p><strong>Application Fee:</strong> {% if uni.application_fee %}{{ uni.application_fee }}{% else %}Not available{% endif %}</p>
                         <a href="{% url 'helper:university_detail' uni.id %}" class="btn btn-info">View Details</a>
                     </div>
+                    <!-- Debug: Finished qualified uni {{ uni.id }} -->
                 {% endfor %}
             </div>
         {% else %}
@@ -159,76 +173,87 @@
         {% if selected_universities %}
             <div class="university-list">
                 {% for uni in selected_universities %}
+                    <!-- Debug: Rendering selected uni {{ uni.name }} -->
                     <div class="university-card">
-                        <h3>{{ uni.name|default:"Unknown" }}</h3>
-                        <p><strong>Due Date:</strong> {{ UNIVERSITY_DUE_DATES|default:{}|get_item:uni.name|default:"TBD" }}</p>
+                        <h3>{% if uni.name %}{{ uni.name }}{% else %}Unknown{% endif %}</h3>
+                        <p><strong>Due Date:</strong>
+                            {% if UNIVERSITY_DUE_DATES and uni.name in UNIVERSITY_DUE_DATES %}
+                                <!-- Debug: Lookup for {{ uni.name }} -->
+                                {{ UNIVERSITY_DUE_DATES|lookup:uni.name }}
+                            {% else %}
+                                TBD
+                            {% endif %}
+                        </p>
                         <a href="{% url 'helper:university_detail' uni.id %}" class="btn btn-info">View Details</a>
                     </div>
+                    <!-- Debug: Finished selected uni {{ uni.name }} -->
                 {% endfor %}
             </div>
         {% else %}
             <p>No universities selected. Browse available universities to select.</p>
         {% endif %}
     </div>
-</div>
 
-<!-- Edit Document Modals -->
-{% for doc in documents %}
-<div class="modal fade" id="editModal{{ doc.id }}" tabindex="-1" aria-labelledby="editModalLabel{{ doc.id }}" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editModalLabel{{ doc.id }}">Edit Document: {{ doc.get_document_type_display|default:"Document" }}</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <!-- Edit Document Modals -->
+    {% for doc in documents %}
+        <!-- Debug: Rendering modal for doc {{ doc.id }} -->
+        <div class="modal fade" id="editModal{{ doc.id }}" tabindex="-1" aria-labelledby="editModalLabel{{ doc.id }}" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editModalLabel{{ doc.id }}">Edit Document: {% if doc.get_document_type_display %}{{ doc.get_document_type_display }}{% else %}Document{% endif %}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="post" enctype="multipart/form-data" action="{% url 'helper:edit_document' doc.id %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="document_type{{ doc.id }}" class="form-label">Document Type</label>
+                                <select name="document_type" id="document_type{{ doc.id }}" class="form-control" required>
+                                    {% for value, label in doc.DOCUMENT_TYPE_CHOICES|default_if_none:[] %}
+                                        <option value="{{ value }}" {% if value == doc.document_type %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="file{{ doc.id }}" class="form-label">Upload New Document (optional)</label>
+                                <input type="file" class="form-control" id="file{{ doc.id }}" name="file" accept=".pdf,.jpg,.png">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </form>
+                    </div>
+                </div>
             </div>
-            <div class="modal-body">
-                <form method="post" enctype="multipart/form-data" action="{% url 'helper:edit_document' doc.id %}">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="document_type{{ doc.id }}" class="form-label">Document Type</label>
-                        <select name="document_type" id="document_type{{ doc.id }}" class="form-control" required>
-                            {% for value, label in doc.DOCUMENT_TYPE_CHOICES %}
-                                <option value="{{ value }}" {% if value == doc.document_type %}selected{% endif %}>{{ label }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="file{{ doc.id }}" class="form-label">Upload New Document (optional)</label>
-                        <input type="file" class="form-control" id="file{{ doc.id }}" name="file" accept=".pdf,.jpg,.png">
-                    </div>
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
-                </form>
+        </div>
+        <!-- Debug: Finished modal for doc {{ doc.id }} -->
+    {% endfor %}
+
+    <!-- Form Confirmation Pop-up -->
+    <div class="popup-overlay" id="popupOverlay">
+        <div class="popup-content">
+            <p id="popupMessage"></p>
+            <div class="popup-buttons">
+                <button class="confirm" onclick="confirmAction()">Confirm</button>
+                <button class="cancel" onclick="hidePopup()">Cancel</button>
             </div>
         </div>
     </div>
-</div>
-{% endfor %}
 
-<!-- Form Confirmation Pop-up -->
-<div class="popup-overlay" id="popupOverlay">
-    <div class="popup-content">
-        <p id="popupMessage"></p>
-        <div class="popup-buttons">
-            <button class="confirm" onclick="confirmAction()">Confirm</button>
-            <button class="cancel" onclick="hidePopup()">Cancel</button>
+    <!-- Notification Pop-up -->
+    <div class="notification-popup" id="notificationPopup">
+        <span id="notificationMessage"></span>
+    </div>
+
+    <!-- Chat Widget -->
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-header" onclick="toggleChat()">Chat with Varsity Assistant</div>
+        <div class="chat-body" id="chatBody">
+            <div class="chat-message ai">Hello! I'm here to help you navigate Varsity Plug. Ask me anything!</div>
         </div>
-    </div>
-</div>
-
-<!-- Notification Pop-up -->
-<div class="notification-popup" id="notificationPopup">
-    <span id="notificationMessage"></span>
-</div>
-
-<!-- Chat Widget -->
-<div class="chat-container" id="chatContainer">
-    <div class="chat-header" onclick="toggleChat()">Chat with Varsity Assistant</div>
-    <div class="chat-body" id="chatBody">
-        <div class="chat-message ai">Hello! I'm here to help you navigate Varsity Plug. Ask me anything!</div>
-    </div>
-    <div class="chat-input" id="chatInput">
-        <input type="text" id="chatMessage" placeholder="Type your question..." onkeypress="if(event.key === 'Enter') sendMessage()">
-        <button onclick="sendMessage()">Send</button>
+        <div class="chat-input" id="chatInput">
+            <input type="text" id="chatMessage" placeholder="Type your question..." onkeypress="if(event.key === 'Enter') sendMessage()">
+            <button onclick="sendMessage()">Send</button>
+        </div>
     </div>
 </div>
 
