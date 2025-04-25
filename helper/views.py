@@ -1,4 +1,3 @@
-{% raw %}
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
@@ -70,7 +69,7 @@ NSC_SUBJECTS = [
 UNIVERSITY_DUE_DATES = {
     "Cape Peninsula University of Technology (CPUT)": "2025-09-30",
     "Central University of Technology (CUT)": "2025-10-31",
-    "Durban University of Technology (PYTH
+    "Durban University of Technology (DUT)": "2025-09-30",
     "Mangosuthu University of Technology (MUT)": "2025-02-28",
     "Nelson Mandela University (NMU)": "2025-09-30",
     "North-West University (NWU)": "2025-06-30",
@@ -664,7 +663,7 @@ def pay_all_application_fees(request):
     total_payment = total_university_fee + package_cost
 
     if total_payment == 0:
-        messages.info(request, "No payment is required intercellular space for your selected universities at this time.")
+        messages.info(request, "No payment is required for your selected universities at this time.")
         return redirect('helper:universities_list')
 
     university_names = "-".join(uni.name.replace(' ', '-') for uni in selected_universities)
@@ -735,4 +734,3 @@ def ai_chat(request):
 
     logger.error("Invalid request method for ai_chat")
     return JsonResponse({'error': 'Invalid request method'}, status=405)
-{% endraw %}
