@@ -1,4 +1,3 @@
-{% raw %}
 {% extends 'helper/base.html' %}
 {% load static helper_tags %}
 
@@ -40,11 +39,9 @@
                                 {% else %}
                                     <select name="subject_{{ forloop.counter0 }}" class="form-control" required>
                                         <option value="">Select Subject</option>
-                                        {% if mark.options %}
-                                            {% for option in mark.options %}
-                                                <option value="{{ option }}" {% if option == mark.subject %}selected{% endif %}>{{ option }}</option>
-                                            {% endfor %}
-                                        {% endif %}
+                                        {% for option in mark.options %}
+                                            <option value="{{ option }}" {% if option == mark.subject %}selected{% endif %}>{{ option }}</option>
+                                        {% endfor %}
                                     </select>
                                 {% endif %}
                             </td>
@@ -179,18 +176,16 @@
             <div class="university-list">
                 {% for uni in selected_universities %}
                     <div class="university-card">
-                        <h3>{{ uni.name|default:"Unknown" }}</h3>
-                        <p><strong>Due Date:</strong>
-                            {% if UNIVERSITY_DUE_DATES and uni.name in UNIVERSITY_DUE_DATES %}
-                                {{ UNIVERSITY_DUE_DATES|lookup:uni.name }}
-                            {% else %}
-                                TBD
-                            {% endif %}
-                        </p>
-                        <a href="{% url 'helper:university_detail' uni.id %}" class="btn btn-info">View Details</a>
+                        <h3>{{ uni.university.name|default:"Unknown" }}</h3>
+                        <p><strong>Due Date:</strong> {{ uni.due_date|default:"TBD" }}</p>
+                        <p><strong>Application Fee:</strong> {{ uni.application_fee|default:"Not available" }}</p>
+                        <p><strong>Faculties Open:</strong> {{ uni.faculties_open|join:", " }}</p>
+                        <a href="{% url 'helper:university_detail' uni.university.id %}" class="btn btn-info">View Details</a>
+                        <a href="{% url 'helper:pay_application_fee' uni.university.id %}" class="btn btn-success">Pay Fee</a>
                     </div>
                 {% endfor %}
             </div>
+            <a href="{% url 'helper:pay_all_application_fees' %}" class="btn btn-success mt-3">Pay All Fees</a>
         {% else %}
             <p>No universities selected. Browse available universities to select.</p>
             <p><strong>Debug:</strong> Visit <a href="{% url 'helper:universities_list' %}">Universities List</a> to select universities.</p>
@@ -261,4 +256,3 @@
 <link rel="stylesheet" href="{% static 'helper/css/dashboard_student.css' %}">
 <script src="{% static 'helper/js/dashboard_student.js' %}"></script>
 {% endblock %}
-{% endraw %}
