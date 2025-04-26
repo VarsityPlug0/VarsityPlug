@@ -1,194 +1,346 @@
-{% extends 'helper/base.html' %}
-{% load static helper_tags %}
+```html
+{% extends "helper/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'helper/css/dashboard_student.css' %}">
+<style>
+    .chat-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 320px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 1000;
+    }
+    .chat-header {
+        background: #4a90e2;
+        color: white;
+        padding: 12px;
+        border-radius: 8px 8px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: 500;
+    }
+    .chat-body {
+        max-height: 320px;
+        overflow-y: auto;
+        padding: 10px;
+        display: block;
+    }
+    .chat-message {
+        margin: 6px 0;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 14px;
+        line-height: 1.4;
+    }
+    .chat-message.user {
+        background: #e6f3ff;
+        margin-left: 15%;
+        text-align: right;
+    }
+    .chat-message.ai {
+        background: #f0f0f0;
+        margin-right: 15%;
+    }
+    .chat-message.error {
+        background: #ffe6e6;
+        margin-right: 15%;
+        color: #d32f2f;
+    }
+    #aiChatToggle {
+        cursor: pointer;
+        font-size: 16px;
+        background: none;
+        border: none;
+        color: white;
+    }
+    #aiChatInput {
+        border-radius: 0 0 8px 8px;
+        border: none;
+        border-top: 1px solid #e0e0e0;
+    }
+    .notification-popup {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #4a90e2;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 6px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        display: none;
+        z-index: 1000;
+        font-size: 14px;
+    }
+    .notification-popup.active {
+        display: block;
+    }
+    .carousel-item .card {
+        margin: 10px;
+        border: none;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .table-responsive {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="dashboard-container">
-    <h1>Student Dashboard</h1>
+<div class="container mx-auto p-4">
+    <!-- Welcome Section -->
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold">Welcome, {{ user.username }}!</h1>
+        <p class="text-lg"><strong>APS Score:</strong> {% if student_profile.aps_score %}{{ student_profile.aps_score }}{% else %}Not calculated{% endif %}</p>
+        <p class="text-lg"><strong>Subscription:</strong> {{ student_profile.get_subscription_package_display }} (Applications: {{ student_profile.application_count }} / {{ student_profile.get_application_limit }})</p>
+        <a href="{% url 'helper:subscription_selection' %}" class="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mt-2">
+            {% if student_profile.subscription_status %}Upgrade Plan{% else %}Choose Plan{% endif %}
+        </a>
+    </div>
 
     <!-- Messages -->
     {% if messages %}
-        <div class="messages">
+        <div class="mb-6">
             {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                <div class="bg-{{ message.tags }}-100 border-l-4 border-{{ message.tags }}-500 text-{{ message.tags }}-700 p-4 mb-2 rounded" role="alert">
+                    {{ message|safe }}
+                    <button type="button" class="float-right text-{{ message.tags }}-700 hover:text-{{ message.tags }}-900" onclick="this.parentElement.style.display='none'">&times;</button>
                 </div>
             {% endfor %}
         </div>
     {% endif %}
 
-    <!-- Marks Section -->
-    <div class="section marks-section">
-        <h2>Your Marks</h2>
-        <form method="POST" id="marksForm" action="{% url 'helper:dashboard_student' %}">
-            {% csrf_token %}
-            <input type="hidden" name="submit_marks" value="1">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Subject</th>
-                        <th>Mark (%)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for mark in marks_list %}
-                        <tr>
-                            <td>
-                                {% if mark.subject == 'Life Orientation' %}
-                                    <input type="text" value="{{ mark.subject }}" readonly class="form-control">
-                                {% else %}
-                                    <select name="subject_{{ forloop.counter0 }}" class="form-control" required>
-                                        <option value="">Select Subject</option>
-                                        {% for option in mark.options %}
-                                            <option value="{{ option }}" {% if option == mark.subject %}selected{% endif %}>{{ option }}</option>
-                                        {% endfor %}
-                                    </select>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if mark.subject == 'Life Orientation' %}
-                                    <input type="number" name="mark_{{ forloop.counter0 }}" value="0" readonly class="form-control">
-                                {% else %}
-                                    <input type="number" name="mark_{{ forloop.counter0 }}" value="{% if mark.mark is not None %}{{ mark.mark }}{% else %}0{% endif %}" min="0" max="100" class="form-control" required>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% empty %}
-                        <tr>
-                            <td colspan="2">No marks available. Please add subjects.</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            <button type="button" class="btn btn-primary" onclick="showPopup('marks')">Update Marks</button>
-        </form>
-        <p><strong>APS Score:</strong> {% if student_profile.aps_score %}{{ student_profile.aps_score }}{% else %}Not calculated (update marks to calculate){% endif %}</p>
-    </div>
-
-    <!-- Document Upload Section -->
-    <div class="section document-section">
-        <h2>Upload Documents</h2>
-        <form method="POST" enctype="multipart/form-data" id="uploadForm" action="{% url 'helper:dashboard_student' %}">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <button type="button" class="btn btn-primary" onclick="showPopup('upload')">Upload Document</button>
-        </form>
-        {% if documents %}
-            <h3 class="mt-4">Uploaded Documents</h3>
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Document Type</th>
-                        <th>Document Name</th>
-                        <th>Uploaded On</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for doc in documents %}
-                        <tr>
-                            <td>{% if doc.get_document_type_display %}{{ doc.get_document_type_display }}{% else %}Unknown{% endif %}</td>
-                            <td>{% if doc.file.name %}{{ doc.file.name|cut:"documents/" }}{% else %}No file{% endif %}</td>
-                            <td>{% if doc.uploaded_at %}{{ doc.uploaded_at|date:"Y-m-d H:i" }}{% else %}N/A{% endif %}</td>
-                            <td>
-                                <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editModal{{ doc.id }}">
-                                    Edit
-                                </button>
-                                <form action="{% url 'helper:delete_document' doc.id %}" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this document?');">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="document_id" value="{{ doc.id }}">
-                                    <button type="submit" class="btn btn-sm btn-danger">Remove</button>
-                                </form>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p class="mt-4">No documents uploaded yet.</p>
-        {% endif %}
-    </div>
-
-    <!-- Recommendations Section -->
-    <div class="section recommendations-section">
-        <h2>University Recommendations</h2>
+    <!-- University Recommendations -->
+    <div class="bg-white p-6 rounded-lg shadow mb-6">
+        <h2 class="text-2xl font-semibold mb-4">University Recommendations</h2>
         {% if recommended_universities %}
-            <div class="slideshow-container">
-                <div class="slides">
-                    {% for rec in recommended_universities %}
-                        <div class="slide {% if forloop.first %}active{% endif %}" data-slide-index="{{ forloop.counter0 }}">
-                            <h3>{{ rec.name|default:"Unknown" }}</h3>
-                            <p>{{ rec.description|default:"Explore this university!" }}</p>
-                            <p><strong>Due Date:</strong> {{ rec.due_date|default:"TBD" }}</p>
-                            <p><strong>Application Fee:</strong> {{ rec.application_fee|default:"Not available" }}</p>
-                            <a href="{% url 'helper:university_detail' rec.id %}" class="btn btn-info">Learn More</a>
+            <div id="universitySlideshow" class="carousel slide" data-bs-ride="carousel">
+                <div class="carousel-inner">
+                    {% for uni in recommended_universities %}
+                        <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                            <div class="card mx-auto" style="max-width: 500px;">
+                                <div class="card-body">
+                                    <h5 class="card-title text-xl font-medium">{{ uni.name|default:"Unknown" }}</h5>
+                                    <p class="card-text">{{ uni.description|default:"Explore opportunities at this university." }}</p>
+                                    <p><strong>Due Date:</strong> {{ uni.due_date|default:"TBD" }}</p>
+                                    <p><strong>Application Fee:</strong> {{ uni.application_fee|default:"Not available" }}</p>
+                                    <div class="flex space-x-2">
+                                        <a href="{% url 'helper:university_detail' uni.id %}" class="bg-gray-200 text-gray-800 px-3 py-1 rounded hover:bg-gray-300">View Details</a>
+                                        <button onclick="selectUniversity({{ uni.id }})" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">Select</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     {% endfor %}
                 </div>
-                <button class="prev" onclick="moveSlide(-1)">❮</button>
-                <button class="next" onclick="moveSlide(1)">❯</button>
-                <div class="dots">
-                    {% for rec in recommended_universities %}
-                        <span class="dot {% if forloop.first %}active{% endif %}" onclick="currentSlide({{ forloop.counter0 }})"></span>
+                <button class="carousel-control-prev" type="button" data-bs-target="#universitySlideshow" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#universitySlideshow" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+            </div>
+        {% else %}
+            <div class="bg-blue-100 text-blue-700 p-4 rounded">
+                No recommendations available. Please update your marks to calculate your APS score.
+                {% if user.is_staff and not student_profile.aps_score %}
+                    <p class="text-sm mt-2"><strong>Admin Debug:</strong> APS score not calculated. Ensure 7 valid subjects are entered.</p>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Your Marks -->
+    <div class="bg-white p-6 rounded-lg shadow mb-6">
+        <h2 class="text-2xl font-semibold mb-4">Your Marks</h2>
+        <form id="marksForm" method="post" action="{% url 'helper:dashboard_student' %}">
+            {% csrf_token %}
+            <input type="hidden" name="submit_marks" value="true">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="p-3">Subject</th>
+                            <th class="p-3">Mark (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mark in marks_list %}
+                            <tr>
+                                <td class="p-3">
+                                    {% if mark.subject == 'Life Orientation' %}
+                                        <input type="text" value="{{ mark.subject }}" readonly class="w-full p-2 border rounded bg-gray-100">
+                                    {% else %}
+                                        <select name="subject_{{ forloop.counter0 }}" class="w-full p-2 border rounded" required>
+                                            <option value="">Select Subject</option>
+                                            {% for option in mark.options %}
+                                                <option value="{{ option }}" {% if option == mark.subject %}selected{% endif %}>{{ option }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    {% endif %}
+                                </td>
+                                <td class="p-3">
+                                    {% if mark.subject == 'Life Orientation' %}
+                                        <input type="number" name="mark_{{ forloop.counter0 }}" value="0" readonly class="w-full p-2 border rounded bg-gray-100">
+                                    {% else %}
+                                        <input type="number" name="mark_{{ forloop.counter0 }}" value="{% if mark.mark is not None %}{{ mark.mark }}{% else %}0{% endif %}" min="0" max="100" class="w-full p-2 border rounded" required>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="2" class="p-3 text-center">No marks available. Please contact support.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <button type="submit" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Update Marks</button>
+        </form>
+    </div>
+
+    <!-- Upload Documents -->
+    <div class="bg-white p-6 rounded-lg shadow mb-6">
+        <h2 class="text-2xl font-semibold mb-4">Upload Documents</h2>
+        <form id="uploadForm" method="post" enctype="multipart/form-data" action="{% url 'helper:dashboard_student' %}">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label for="document_type" class="block text-sm font-medium text-gray-700">Document Type</label>
+                <select name="document_type" id="document_type" class="w-full p-2 border rounded" required>
+                    {% for value, label in form.document_type.field.choices %}
+                        <option value="{{ value }}">{{ label }}</option>
                     {% endfor %}
-                </div>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label for="file" class="block text-sm font-medium text-gray-700">Upload File</label>
+                <input type="file" name="file" id="file" accept=".pdf,.jpg,.png" class="w-full p-2 border rounded" required>
+            </div>
+            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Upload Document</button>
+        </form>
+        {% if documents %}
+            <h3 class="text-lg font-medium mt-6">Uploaded Documents</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="p-3">Document Type</th>
+                            <th class="p-3">Document Name</th>
+                            <th class="p-3">Uploaded On</th>
+                            <th class="p-3">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in documents %}
+                            <tr>
+                                <td class="p-3">{{ doc.get_document_type_display|default:"Unknown" }}</td>
+                                <td class="p-3">
+                                    <a href="{{ doc.file.url }}" class="text-blue-600 hover:underline" target="_blank">{{ doc.file.name|cut:"documents/"|default:"No file" }}</a>
+                                </td>
+                                <td class="p-3">{{ doc.uploaded_at|date:"Y-m-d H:i"|default:"N/A" }}</td>
+                                <td class="p-3 flex space-x-2">
+                                    <button type="button" class="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600" data-bs-toggle="modal" data-bs-target="#editModal{{ doc.id }}">Edit</button>
+                                    <form action="{% url 'helper:delete_document' doc.id %}" method="post" class="inline" onsubmit="return confirm('Are you sure you want to delete this document?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         {% else %}
-            <p>No recommendations available. Please update your marks to get personalized suggestions.</p>
-            {% if not student_profile.aps_score %}
-                <p><strong>Debug:</strong> APS score is not calculated. Ensure you have entered exactly 7 subjects with valid marks.</p>
-            {% else %}
-                <p><strong>Debug:</strong> No universities match your APS score ({{ student_profile.aps_score }}). Check if universities are added to the database.</p>
-            {% endif %}
+            <p class="mt-4 text-gray-600">No documents uploaded yet.</p>
         {% endif %}
     </div>
 
-    <!-- Qualified Universities Section -->
-    <div class="section universities-section">
-        <h2>Qualified Universities</h2>
+    <!-- Qualified Universities -->
+    <div class="bg-white p-6 rounded-lg shadow mb-6">
+        <h2 class="text-2xl font-semibold mb-4">Qualified Universities</h2>
         {% if universities %}
-            <div class="university-list">
-                {% for uni in universities %}
-                    <div class="university-card">
-                        <h3>{{ uni.name|default:"Unknown" }}</h3>
-                        <p><strong>Location:</strong> {{ uni.location|default:"South Africa" }}</p>
-                        <p><strong>Due Date:</strong> {{ uni.due_date|default:"TBD" }}</p>
-                        <p><strong>Application Fee:</strong> {{ uni.application_fee|default:"Not available" }}</p>
-                        <a href="{% url 'helper:university_detail' uni.id %}" class="btn btn-info">View Details</a>
-                    </div>
-                {% endfor %}
+            <div class="table-responsive">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="p-3">Name</th>
+                            <th class="p-3">Location</th>
+                            <th class="p-3">Due Date</th>
+                            <th class="p-3">Application Fee</th>
+                            <th class="p-3">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for uni in universities %}
+                            <tr>
+                                <td class="p-3">{{ uni.name|default:"Unknown" }}</td>
+                                <td class="p-3">{{ uni.location|default:"South Africa" }}</td>
+                                <td class="p-3">{{ uni.due_date|default:"TBD" }}</td>
+                                <td class="p-3">{{ uni.application_fee|default:"Not available" }}</td>
+                                <td class="p-3 flex space-x-2">
+                                    <a href="{% url 'helper:university_detail' uni.id %}" class="bg-gray-200 text-gray-800 px-3 py-1 rounded hover:bg-gray-300">View</a>
+                                    <button onclick="selectUniversity({{ uni.id }})" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">Select</button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
+            <a href="{% url 'helper:universities_list' %}" class="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mt-4">Browse All Universities</a>
         {% else %}
-            <p>No universities available. Please update your marks to see eligible universities.</p>
-            {% if not student_profile.aps_score %}
-                <p><strong>Debug:</strong> APS score is not calculated. Ensure you have entered exactly 7 subjects with valid marks.</p>
-            {% else %}
-                <p><strong>Debug:</strong> No universities match your APS score ({{ student_profile.aps_score }}). Check if universities are added to the database.</p>
-            {% endif %}
+            <div class="bg-blue-100 text-blue-700 p-4 rounded">
+                No universities available. Please update your marks to calculate your APS score.
+                {% if user.is_staff %}
+                    <p class="text-sm mt-2"><strong>Admin Debug:</strong> {% if not student_profile.aps_score %}APS score not calculated{% else %}No universities match APS ({{ student_profile.aps_score }}){% endif %}. Check database.</p>
+                {% endif %}
+            </div>
         {% endif %}
-        <a href="{% url 'helper:universities_list' %}" class="btn btn-primary mt-3">Browse All Universities</a>
     </div>
 
-    <!-- Selected Universities Section -->
-    <div class="section selected-universities-section">
-        <h2>Selected Universities</h2>
+    <!-- Selected Universities -->
+    <div class="bg-white p-6 rounded-lg shadow mb-6">
+        <h2 class="text-2xl font-semibold mb-4">Selected Universities</h2>
         {% if selected_universities %}
-            <div class="university-list">
-                {% for uni in selected_universities %}
-                    <div class="university-card">
-                        <h3>{{ uni.university.name|default:"Unknown" }}</h3>
-                        <p><strong>Due Date:</strong> {{ uni.due_date|default:"TBD" }}</p>
-                        <p><strong>Application Fee:</strong> {{ uni.application_fee|default:"Not available" }}</p>
-                        <p><strong>Faculties Open:</strong> {{ uni.faculties_open|join:", " }}</p>
-                        <a href="{% url 'helper:university_detail' uni.university.id %}" class="btn btn-info">View Details</a>
-                        <a href="{% url 'helper:pay_application_fee' uni.university.id %}" class="btn btn-success">Pay Fee</a>
-                    </div>
-                {% endfor %}
+            <div class="table-responsive">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="p-3">Name</th>
+                            <th class="p-3">Due Date</th>
+                            <th class="p-3">Application Fee</th>
+                            <th class="p-3">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for uni in selected_universities %}
+                            <tr>
+                                <td class="p-3">{{ uni.name|default:"Unknown" }}</td>
+                                <td class="p-3">{{ UNIVERSITY_DUE_DATES|lookup:uni.name|default:"TBD" }}</td>
+                                <td class="p-3">{{ APPLICATION_FEES_2025|lookup:uni.name|default:"Not available" }}</td>
+                                <td class="p-3 flex space-x-2">
+                                    <a href="{% url 'helper:university_detail' uni.id %}" class="bg-gray-200 text-gray-800 px-3 py-1 rounded hover:bg-gray-300">View</a>
+                                    <a href="{% url 'helper:pay_application_fee' uni.id %}" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Pay Fee</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            <a href="{% url 'helper:pay_all_application_fees' %}" class="btn btn-success mt-3">Pay All Fees</a>
+            <a href="{% url 'helper:pay_all_application_fees' %}" class="inline-block bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mt-4">Pay All Fees</a>
         {% else %}
-            <p>No universities selected. Browse available universities to select.</p>
-            <p><strong>Debug:</strong> Visit <a href="{% url 'helper:universities_list' %}">Universities List</a> to select universities.</p>
+            <div class="bg-blue-100 text-blue-700 p-4 rounded">
+                No universities selected. <a href="{% url 'helper:universities_list' %}" class="text-blue-600 hover:underline">Browse universities</a> to select.
+            </div>
         {% endif %}
     </div>
 
@@ -204,19 +356,19 @@
                     <div class="modal-body">
                         <form method="post" enctype="multipart/form-data" action="{% url 'helper:edit_document' doc.id %}">
                             {% csrf_token %}
-                            <div class="mb-3">
-                                <label for="document_type{{ doc.id }}" class="form-label">Document Type</label>
-                                <select name="document_type" id="document_type{{ doc.id }}" class="form-control" required>
+                            <div class="mb-4">
+                                <label for="document_type{{ doc.id }}" class="block text-sm font-medium text-gray-700">Document Type</label>
+                                <select name="document_type" id="document_type{{ doc.id }}" class="w-full p-2 border rounded" required>
                                     {% for value, label in doc.DOCUMENT_TYPE_CHOICES %}
                                         <option value="{{ value }}" {% if value == doc.document_type %}selected{% endif %}>{{ label }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
-                            <div class="mb-3">
-                                <label for="file{{ doc.id }}" class="form-label">Upload New Document (optional)</label>
-                                <input type="file" class="form-control" id="file{{ doc.id }}" name="file" accept=".pdf,.jpg,.png">
+                            <div class="mb-4">
+                                <label for="file{{ doc.id }}" class="block text-sm font-medium text-gray-700">Upload New Document (optional)</label>
+                                <input type="file" class="w-full p-2 border rounded" id="file{{ doc.id }}" name="file" accept=".pdf,.jpg,.png">
                             </div>
-                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Save Changes</button>
                         </form>
                     </div>
                 </div>
@@ -224,35 +376,31 @@
         </div>
     {% endfor %}
 
-    <!-- Form Confirmation Pop-up -->
-    <div class="popup-overlay" id="popupOverlay">
-        <div class="popup-content">
-            <p id="popupMessage"></p>
-            <div class="popup-buttons">
-                <button class="confirm" onclick="confirmAction()">Confirm</button>
-                <button class="cancel" onclick="hidePopup()">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Notification Pop-up -->
-    <div class="notification-popup" id="notificationPopup">
+    <!-- Notification Popup -->
+    <div id="notificationPopup" class="notification-popup">
         <span id="notificationMessage"></span>
     </div>
 
     <!-- Chat Widget -->
-    <div class="chat-container" id="chatContainer">
-        <div class="chat-header" onclick="toggleChat()">Chat with Varsity Assistant</div>
-        <div class="chat-body" id="chatBody">
-            <div class="chat-message ai">Hello! I'm here to help you navigate Varsity Plug. Ask me anything!</div>
+    <div class="chat-container">
+        <div class="chat-header">
+            <span>Varsity Assistant</span>
+            <button id="aiChatToggle">−</button>
         </div>
-        <div class="chat-input" id="chatInput">
-            <input type="text" id="chatMessage" placeholder="Type your question..." onkeypress="if(event.key === 'Enter') sendMessage()">
-            <button onclick="sendMessage()">Send</button>
+        <div id="aiChatBody" class="chat-body">
+            <div id="aiChatMessages">
+                <div class="chat-message ai">Hello! I'm here to help you navigate Varsity Plug. Ask me anything!</div>
+            </div>
+            <form id="aiChatForm">
+                <input id="aiChatInput" type="text" placeholder="Type your question..." class="w-full p-2" required>
+            </form>
         </div>
     </div>
 </div>
 
-<link rel="stylesheet" href="{% static 'helper/css/dashboard_student.css' %}">
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{% static 'helper/js/dashboard_student.js' %}"></script>
 {% endblock %}
+{% endblock %}
+```
