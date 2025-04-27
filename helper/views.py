@@ -150,7 +150,7 @@ def calculate_aps(marks):
                 aps += 2
             else:
                 aps += 1
-    logger.debug(f"Calculated APS: {aps} for marks: {marks}")
+    logger.info(f"Calculated APS: {aps} for marks: {marks}")
     return aps
 
 def home(request):
@@ -244,7 +244,16 @@ def dashboard_student(request):
         student_profile, _ = StudentProfile.objects.get_or_create(user=request.user)
         form = DocumentUploadForm()
         documents = DocumentUpload.objects.filter(user=request.user).order_by('-uploaded_at')
-        selected_universities = student_profile.selected_universities.all()
+
+        # Prepare selected universities with due_date and application_fee
+        selected_universities = [
+            {
+                'id': uni.id,
+                'name': uni.name,
+                'due_date': UNIVERSITY_DUE_DATES.get(uni.name, "TBD"),
+                'application_fee': APPLICATION_FEES_2025.get(uni.name, "Not available")
+            } for uni in student_profile.selected_universities.all()
+        ]
 
         marks = student_profile.marks if student_profile.marks is not None else {}
 
@@ -338,10 +347,13 @@ def dashboard_student(request):
 
                 student_profile.marks = new_marks
                 aps_score = calculate_aps(new_marks)
-                student_profile.aps_score = aps_score
+                student_profile.stored_aps_score = aps_score if aps_score is not None else None
                 student_profile.save()
-                logger.debug(f"Marks updated for user {request.user.username}. APS: {aps_score}")
-                messages.success(request, f"Marks updated successfully! Your APS score is {aps_score or 'not calculated'}.")
+                logger.debug(f"Marks updated and APS stored for user {request.user.username}: {student_profile.stored_aps_score}")
+                if aps_score is None:
+                    messages.warning(request, "APS score could not be calculated due to invalid marks.")
+                else:
+                    messages.success(request, f"Marks updated successfully! Your APS score is {aps_score}.")
                 return redirect('helper:dashboard_student')
             else:
                 form = DocumentUploadForm(request.POST, request.FILES)
@@ -357,32 +369,39 @@ def dashboard_student(request):
                     logger.error(f"Document upload failed for {request.user.username}: {form.errors}")
                     return redirect('helper:dashboard_student')
 
-        # Recommendations for slideshow
+        # Use stored APS score if available, otherwise calculate from marks
+        student_aps = student_profile.stored_aps_score
+        if student_aps is None and student_profile.marks:
+            student_aps = calculate_aps(student_profile.marks)
+            if student_aps is not None:
+                student_profile.stored_aps_score = student_aps
+                student_profile.save()
+                logger.debug(f"Calculated and stored APS for {request.user.username}: {student_aps}")
+
+        # Fetch university recommendations
         recommendations = []
-        student_aps = student_profile.aps_score
-        if student_aps:
+        if student_aps is not None:
             try:
                 eligible_universities = University.objects.filter(minimum_aps__lte=student_aps).order_by('name')[:5]
-                for uni in eligible_universities:
-                    recommendations.append({
+                recommendations = [
+                    {
                         'id': uni.id,
                         'name': uni.name,
                         'description': uni.description or f"Explore opportunities at {uni.name}, known for its excellent programs.",
                         'due_date': UNIVERSITY_DUE_DATES.get(uni.name, "TBD"),
                         'application_fee': APPLICATION_FEES_2025.get(uni.name, "Not available")
-                    })
-                logger.debug(f"Recommendations fetched for APS {student_aps}: {len(recommendations)} universities")
+                    } for uni in eligible_universities
+                ]
+                logger.debug(f"Fetched {len(recommendations)} recommendations for APS {student_aps}")
             except Exception as e:
                 logger.error(f"Error fetching recommendations: {str(e)}", exc_info=True)
-                messages.error(request, "Unable to fetch university recommendations. Please try again later.")
-        else:
-            logger.debug(f"No recommendations: APS score not set for {request.user.username}")
+                messages.error(request, "Unable to fetch university recommendations at this time.")
 
-        # Qualified universities for list
+        # Fetch qualified universities
         qualified_universities = []
-        if student_aps:
+        if student_aps is not None:
             try:
-                qualified_universities = University.objects.filter(minimum_aps__lte=student_aps).order_by('name')
+                qualified = University.objects.filter(minimum_aps__lte=student_aps).order_by('name')
                 qualified_universities = [
                     {
                         'id': uni.id,
@@ -390,14 +409,12 @@ def dashboard_student(request):
                         'location': uni.province or "South Africa",
                         'due_date': UNIVERSITY_DUE_DATES.get(uni.name, "TBD"),
                         'application_fee': APPLICATION_FEES_2025.get(uni.name, "Not available")
-                    } for uni in qualified_universities
+                    } for uni in qualified
                 ]
-                logger.debug(f"Qualified universities fetched for APS {student_aps}: {len(qualified_universities)} universities")
+                logger.debug(f"Fetched {len(qualified_universities)} qualified universities for APS {student_aps}")
             except Exception as e:
                 logger.error(f"Error fetching qualified universities: {str(e)}", exc_info=True)
-                messages.error(request, "Unable to fetch qualified universities. Please try again later.")
-        else:
-            logger.debug(f"No qualified universities: APS score not set for {request.user.username}")
+                messages.error(request, "Unable to fetch qualified universities at this time.")
 
         context = {
             'form': form,
@@ -448,7 +465,7 @@ def edit_document(request, doc_id):
 def universities_list(request):
     universities = University.objects.all().order_by('name')
     student_profile, _ = StudentProfile.objects.get_or_create(user=request.user)
-    student_aps = student_profile.aps_score
+    student_aps = student_profile.stored_aps_score
 
     if request.method == 'POST':
         selected_ids = request.POST.getlist('universities')
@@ -734,3 +751,45 @@ def ai_chat(request):
 
     logger.error("Invalid request method for ai_chat")
     return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+@login_required
+def select_university(request, uni_id):
+    """Handle university selection via AJAX."""
+    university = get_object_or_404(University, id=uni_id)
+    student_profile = get_object_or_404(StudentProfile, user=request.user)
+
+    if not student_profile.can_apply():
+        return JsonResponse({
+            'success': False,
+            'message': f"Your subscription package ({student_profile.get_subscription_package_display()}) has reached its application limit."
+        }, status=403)
+
+    if student_profile.application_count >= student_profile.get_application_limit():
+        upgrade_link = '<a href="/subscription/" class="text-primary">Upgrade your plan</a> to apply to more universities.'
+        return JsonResponse({
+            'success': False,
+            'message': f"Your subscription allows only {student_profile.get_application_limit()} applications. {upgrade_link}"
+        }, status=403)
+
+    if university in student_profile.selected_universities.all():
+        return JsonResponse({
+            'success': False,
+            'message': f"{university.name} is already selected."
+        }, status=400)
+
+    try:
+        student_profile.selected_universities.add(university)
+        student_profile.application_count += 1
+        student_profile.save()
+        logger.info(f"University {university.name} selected by {request.user.username}. Application count: {student_profile.application_count}")
+        return JsonResponse({
+            'success': True,
+            'message': f"{university.name} has been successfully selected!",
+            'application_count': student_profile.application_count
+        }, status=200)
+    except Exception as e:
+        logger.error(f"Error selecting university {university.name} for {request.user.username}: {str(e)}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'message': "An error occurred while selecting the university. Please try again."
+        }, status=500)
