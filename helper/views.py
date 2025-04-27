@@ -377,6 +377,8 @@ def dashboard_student(request):
                 student_profile.stored_aps_score = student_aps
                 student_profile.save()
                 logger.debug(f"Calculated and stored APS for {request.user.username}: {student_aps}")
+            else:
+                logger.warning(f"Failed to calculate APS for {request.user.username}: Invalid marks {student_profile.marks}")
 
         # Fetch university recommendations
         recommendations = []
@@ -394,7 +396,7 @@ def dashboard_student(request):
                 ]
                 logger.debug(f"Fetched {len(recommendations)} recommendations for APS {student_aps}")
             except Exception as e:
-                logger.error(f"Error fetching recommendations: {str(e)}", exc_info=True)
+                logger.error(f"Error fetching recommendations for {request.user.username}: {str(e)}", exc_info=True)
                 messages.error(request, "Unable to fetch university recommendations at this time.")
 
         # Fetch qualified universities
@@ -413,7 +415,7 @@ def dashboard_student(request):
                 ]
                 logger.debug(f"Fetched {len(qualified_universities)} qualified universities for APS {student_aps}")
             except Exception as e:
-                logger.error(f"Error fetching qualified universities: {str(e)}", exc_info=True)
+                logger.error(f"Error fetching qualified universities for {request.user.username}: {str(e)}", exc_info=True)
                 messages.error(request, "Unable to fetch qualified universities at this time.")
 
         context = {
@@ -426,6 +428,7 @@ def dashboard_student(request):
             'marks_list': marks_list,
             'nsc_subjects': NSC_SUBJECTS,
             'UNIVERSITY_DUE_DATES': UNIVERSITY_DUE_DATES,
+            'student_aps': student_aps,  # Pass APS to template for display
         }
         return render(request, 'helper/dashboard_student.html', context)
     except Exception as e:
