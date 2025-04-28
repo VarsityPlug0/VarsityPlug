@@ -19,9 +19,10 @@ urlpatterns = [
     path('accounts/logout/', LogoutView.as_view(next_page='helper:home'), name='logout'),
 ]
 
-# Serve static files during development (only when DEBUG is True)
+# Serve static and media files during development (only when DEBUG is True)
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # Custom 404 handler
 handler404 = 'django.views.defaults.page_not_found'
