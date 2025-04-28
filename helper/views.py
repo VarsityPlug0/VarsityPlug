@@ -243,6 +243,7 @@ def subscription_selection(request):
 @ratelimit(key='user', rate='10/m')
 def dashboard_student(request):
     """Render the student dashboard, handling marks submission, document uploads, and university recommendations."""
+    logger.debug(f"Accessing dashboard_student for user {request.user.username}")
     try:
         student_profile, _ = StudentProfile.objects.get_or_create(user=request.user)
         form = DocumentUploadForm()
