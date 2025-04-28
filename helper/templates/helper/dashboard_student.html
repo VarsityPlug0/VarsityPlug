@@ -144,7 +144,7 @@
                                         <p><strong>Application Fee:</strong> {{ uni.application_fee|default:"Not available" }}</p>
                                         <div class="d-flex gap-2">
                                             <a href="{% url 'helper:university_detail' uni.id %}" class="btn btn-outline-secondary btn-sm">View Details</a>
-                                            <button onclick="selectUniversity({{ uni.id }})" class="btn btn-primary btn-sm">Select</button>
+                                            <button onclick="selectUniversity({{ uni.id }})" class="btn btn-primary btn-sm" data-url="{% url 'helper:select_university' uni.id %}">Select</button>
                                         </div>
                                     </div>
                                 </div>
@@ -175,7 +175,7 @@
     <div class="card mb-4">
         <div class="card-header bg-primary text-white">Your Marks</div>
         <div class="card-body">
-            <form id="marksForm" method="post">
+            <form id="marksForm" method="post" action="{% url 'helper:dashboard_student' %}">
                 {% csrf_token %}
                 <input type="hidden" name="submit_marks" value="true">
                 <div class="table-responsive">
@@ -226,7 +226,7 @@
     <div class="card mb-4">
         <div class="card-header bg-primary text-white">Upload Documents</div>
         <div class="card-body">
-            <form id="uploadForm" method="post" enctype="multipart/form-data">
+            <form id="uploadForm" method="post" enctype="multipart/form-data" action="{% url 'helper:dashboard_student' %}">
                 {% csrf_token %}
                 <div class="mb-3">
                     <label for="document_type" class="form-label">Document Type</label>
@@ -303,7 +303,7 @@
                                     <td>{{ uni.application_fee|default:"Not available" }}</td>
                                     <td class="d-flex gap-2">
                                         <a href="{% url 'helper:university_detail' uni.id %}" class="btn btn-outline-secondary btn-sm">View</a>
-                                        <button onclick="selectUniversity({{ uni.id }})" class="btn btn-primary btn-sm">Select</button>
+                                        <button onclick="selectUniversity({{ uni.id }})" class="btn btn-primary btn-sm" data-url="{% url 'helper:select_university' uni.id %}">Select</button>
                                     </td>
                                 </tr>
                             {% endfor %}
@@ -408,7 +408,7 @@
             <div id="aiChatMessages">
                 <div class="chat-message ai">Hello! I'm here to help with your university applications. Ask me anything!</div>
             </div>
-            <form id="aiChatForm" class="d-flex">
+            <form id="aiChatForm" class="d-flex" data-url="{% url 'helper:ai_chat' %}">
                 <input id="aiChatInput" type="text" placeholder="Type your question..." class="form-control flex-grow-1" required>
                 <button type="submit" class="btn btn-primary btn-sm ms-2">Send</button>
             </form>
