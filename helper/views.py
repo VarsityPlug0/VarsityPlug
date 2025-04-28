@@ -125,7 +125,7 @@ APPLICATION_FEES_2025 = {
 }
 
 def calculate_aps(marks):
-    """Calculate APS score based on NSC marks."""
+    """Calculate APS score based on NSC marks, excluding Life Orientation."""
     if not marks or len(marks) != 7:
         logger.debug(f"APS calculation failed: Invalid number of marks ({len(marks)})")
         return None
@@ -154,24 +154,27 @@ def calculate_aps(marks):
     return aps
 
 def home(request):
+    """Render the homepage and handle action button redirects."""
     if request.method == 'POST' and 'take_action' in request.POST:
-        button_clicked = request.POST.get('take_action')
         if request.user.is_authenticated:
             return redirect('helper:dashboard_student')
-        else:
-            return redirect('login')
+        return redirect('login')
     return render(request, 'helper/home.html', {'title': 'Welcome to Varsity Plug'})
 
 def about(request):
+    """Render the about page."""
     return render(request, 'helper/about.html', {'title': 'About Us'})
 
 def services(request):
+    """Render the services page."""
     return render(request, 'helper/services.html', {'title': 'Our Services'})
 
 def contact(request):
+    """Render the contact page."""
     return render(request, 'helper/contact.html', {'title': 'Contact Us'})
 
 def register(request):
+    """Handle user registration and automatic login."""
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
@@ -179,51 +182,50 @@ def register(request):
             login(request, user)
             messages.success(request, "Registration successful! Welcome to Varsity Plug.")
             return redirect('helper:redirect_after_login')
-        else:
-            messages.error(request, "Registration failed. Please correct the errors below.")
+        messages.error(request, "Registration failed. Please correct the errors below.")
     else:
         form = UserCreationForm()
     return render(request, 'helper/register.html', {'form': form})
 
 @login_required
 def redirect_after_login(request):
-    if request.user.is_authenticated:
-        if hasattr(request.user, 'studentprofile'):
-            student_profile = request.user.studentprofile
-            if not student_profile.subscription_status:
-                return redirect('helper:subscription_selection')
-            return redirect('helper:dashboard_student')
-        else:
-            return redirect('helper:dashboard_guide')
-    return redirect('login')
+    """Redirect authenticated users to appropriate dashboard or subscription page."""
+    if hasattr(request.user, 'studentprofile'):
+        student_profile = request.user.studentprofile
+        if not student_profile.subscription_status:
+            return redirect('helper:subscription_selection')
+        return redirect('helper:dashboard_student')
+    return redirect('helper:dashboard_guide')
 
 @login_required
 def subscription_selection(request):
+    """Handle subscription package selection or upgrade."""
     student_profile, _ = StudentProfile.objects.get_or_create(user=request.user)
 
     if request.method == 'POST':
         package = request.POST.get('package')
-        if package in ['basic', 'standard', 'premium', 'ultimate']:
-            is_upgrade = student_profile.subscription_status
-            old_package = student_profile.subscription_package
-
-            student_profile.subscription_package = package
-            student_profile.subscription_status = True
-
-            package_order = {'basic': 1, 'standard': 2, 'premium': 3, 'ultimate': 4}
-            if is_upgrade and package_order.get(package, 0) > package_order.get(old_package, 0):
-                student_profile.application_count = 0
-                student_profile.selected_universities.clear()
-
-            student_profile.save()
-
-            if is_upgrade:
-                messages.success(request, f"You have successfully upgraded to the {package.capitalize()} Package! Your application count has been reset.")
-            else:
-                messages.success(request, f"You have successfully subscribed to the {package.capitalize()} Package!")
-            return redirect('helper:dashboard_student')
-        else:
+        if package not in ['basic', 'standard', 'premium', 'ultimate']:
             messages.error(request, "Invalid package selected. Please try again.")
+            return redirect('helper:subscription_selection')
+
+        is_upgrade = student_profile.subscription_status
+        old_package = student_profile.subscription_package
+
+        student_profile.subscription_package = package
+        student_profile.subscription_status = True
+
+        package_order = {'basic': 1, 'standard': 2, 'premium': 3, 'ultimate': 4}
+        if is_upgrade and package_order.get(package, 0) > package_order.get(old_package, 0):
+            student_profile.application_count = 0
+            student_profile.selected_universities.clear()
+
+        student_profile.save()
+
+        if is_upgrade:
+            messages.success(request, f"You have successfully upgraded to the {package.capitalize()} Package! Your application count has been reset.")
+        else:
+            messages.success(request, f"You have successfully subscribed to the {package.capitalize()} Package!")
+        return redirect('helper:dashboard_student')
 
     packages = [
         {'name': 'Basic Package', 'price': 'R400', 'value': 'basic', 'includes': 'Varsity Plug applies for you: Up to 3 university applications + document uploads + tracking'},
@@ -240,6 +242,7 @@ def subscription_selection(request):
 @login_required
 @ratelimit(key='user', rate='10/m')
 def dashboard_student(request):
+    """Render the student dashboard, handling marks submission, document uploads, and university recommendations."""
     try:
         student_profile, _ = StudentProfile.objects.get_or_create(user=request.user)
         form = DocumentUploadForm()
@@ -255,7 +258,7 @@ def dashboard_student(request):
             } for uni in student_profile.selected_universities.all()
         ]
 
-        marks = student_profile.marks if student_profile.marks is not None else {}
+        marks = student_profile.marks if student_profile.marks else {}
 
         marks_list = [
             {'subject': 'Home Language', 'mark': '', 'options': [s for s in NSC_SUBJECTS if 'Home Language' in s]},
@@ -296,7 +299,7 @@ def dashboard_student(request):
                 selected_subjects = set()
 
                 for i in range(7):
-                    if i == 3:
+                    if i == 3:  # Life Orientation
                         new_marks['Life Orientation'] = 0
                         subjects_entered += 1
                         selected_subjects.add('Life Orientation')
@@ -305,30 +308,33 @@ def dashboard_student(request):
                     subject = request.POST.get(f'subject_{i}')
                     mark = request.POST.get(f'mark_{i}')
 
-                    if subject and mark:
-                        if subject not in NSC_SUBJECTS:
-                            messages.error(request, f"Invalid subject: {subject}. Please select a valid NSC subject.")
-                            logger.error(f"Invalid subject entered: {subject}")
-                            return redirect('helper:dashboard_student')
-                        if subject in selected_subjects:
-                            messages.error(request, f"Duplicate subject: {subject}. Please select unique subjects.")
-                            logger.error(f"Duplicate subject: {subject}")
-                            return redirect('helper:dashboard_student')
+                    if not subject or not mark:
+                        messages.error(request, f"Missing subject or mark for entry {i+1}.")
+                        logger.error(f"Missing subject/mark for entry {i+1}: subject={subject}, mark={mark}")
+                        return redirect('helper:dashboard_student')
 
-                        try:
-                            mark = int(mark)
-                            if 0 <= mark <= 100:
-                                new_marks[subject] = mark
-                                subjects_entered += 1
-                                selected_subjects.add(subject)
-                            else:
-                                messages.error(request, f"Mark for {subject} must be between 0 and 100.")
-                                logger.error(f"Mark out of range for {subject}: {mark}")
-                                return redirect('helper:dashboard_student')
-                        except ValueError:
-                            messages.error(request, f"Invalid mark for {subject}. Please enter a number.")
-                            logger.error(f"Invalid mark for {subject}: {mark}")
+                    if subject not in NSC_SUBJECTS:
+                        messages.error(request, f"Invalid subject: {subject}. Please select a valid NSC subject.")
+                        logger.error(f"Invalid subject entered: {subject}")
+                        return redirect('helper:dashboard_student')
+                    if subject in selected_subjects:
+                        messages.error(request, f"Duplicate subject: {subject}. Please select unique subjects.")
+                        logger.error(f"Duplicate subject: {subject}")
+                        return redirect('helper:dashboard_student')
+
+                    try:
+                        mark = int(mark.strip())
+                        if not 0 <= mark <= 100:
+                            messages.error(request, f"Mark for {subject} must be between 0 and 100.")
+                            logger.error(f"Mark out of range for {subject}: {mark}")
                             return redirect('helper:dashboard_student')
+                        new_marks[subject] = mark
+                        subjects_entered += 1
+                        selected_subjects.add(subject)
+                    except (ValueError, TypeError):
+                        messages.error(request, f"Invalid mark for {subject}. Please enter a number.")
+                        logger.error(f"Invalid mark for {subject}: {mark}")
+                        return redirect('helper:dashboard_student')
 
                 if subjects_entered != 7:
                     messages.error(request, f"Please enter exactly 7 subjects. You entered {subjects_entered} subjects.")
@@ -347,7 +353,7 @@ def dashboard_student(request):
 
                 student_profile.marks = new_marks
                 aps_score = calculate_aps(new_marks)
-                student_profile.stored_aps_score = aps_score if aps_score is not None else None
+                student_profile.stored_aps_score = aps_score
                 student_profile.save()
                 logger.debug(f"Marks updated and APS stored for user {request.user.username}: {student_profile.stored_aps_score}")
                 if aps_score is None:
@@ -364,10 +370,9 @@ def dashboard_student(request):
                     messages.success(request, "Document uploaded successfully!")
                     logger.debug(f"Document uploaded by {request.user.username}: {doc.file.name}")
                     return redirect('helper:dashboard_student')
-                else:
-                    messages.error(request, "Document upload failed. Please try again.")
-                    logger.error(f"Document upload failed for {request.user.username}: {form.errors}")
-                    return redirect('helper:dashboard_student')
+                messages.error(request, "Document upload failed. Please try again.")
+                logger.error(f"Document upload failed for {request.user.username}: {form.errors}")
+                return redirect('helper:dashboard_student')
 
         # Use stored APS score if available, otherwise calculate from marks
         student_aps = student_profile.stored_aps_score
@@ -428,7 +433,7 @@ def dashboard_student(request):
             'marks_list': marks_list,
             'nsc_subjects': NSC_SUBJECTS,
             'UNIVERSITY_DUE_DATES': UNIVERSITY_DUE_DATES,
-            'student_aps': student_aps,  # Pass APS to template for display
+            'student_aps': student_aps,
         }
         return render(request, 'helper/dashboard_student.html', context)
     except Exception as e:
@@ -438,10 +443,12 @@ def dashboard_student(request):
 
 @login_required
 def dashboard_guide(request):
+    """Render the guide dashboard for non-student users."""
     return render(request, 'helper/dashboard_guide.html')
 
 @login_required
 def delete_document(request, doc_id):
+    """Delete a user's uploaded document."""
     document = get_object_or_404(DocumentUpload, id=doc_id, user=request.user)
     if request.method == 'POST':
         document.delete()
@@ -451,6 +458,7 @@ def delete_document(request, doc_id):
 
 @login_required
 def edit_document(request, doc_id):
+    """Edit an existing document upload."""
     document = get_object_or_404(DocumentUpload, id=doc_id, user=request.user)
     if request.method == 'POST':
         form = DocumentUploadForm(request.POST, request.FILES, instance=document)
@@ -459,37 +467,40 @@ def edit_document(request, doc_id):
             messages.success(request, "Document updated successfully!")
             logger.debug(f"Document {doc_id} updated by {request.user.username}")
             return redirect('helper:dashboard_student')
-        else:
-            messages.error(request, "Document update failed. Please try again.")
-            logger.error(f"Document update failed for {request.user.username}: {form.errors}")
+        messages.error(request, "Document update failed. Please try again.")
+        logger.error(f"Document update failed for {request.user.username}: {form.errors}")
     return redirect('helper:dashboard_student')
 
 @login_required
 def universities_list(request):
+    """Display and manage the list of universities for selection."""
     universities = University.objects.all().order_by('name')
     student_profile, _ = StudentProfile.objects.get_or_create(user=request.user)
     student_aps = student_profile.stored_aps_score
 
     if request.method == 'POST':
         selected_ids = request.POST.getlist('universities')
-        selected_universities = University.objects.filter(id__in=selected_ids)
+        try:
+            selected_universities = University.objects.filter(id__in=selected_ids)
+            new_application_count = len(selected_universities)
+            if not student_profile.can_apply() or new_application_count > student_profile.get_application_limit():
+                upgrade_link = '<a href="/subscription/" class="text-primary">Upgrade your plan</a> to apply to more universities.'
+                message = (
+                    f"Your subscription package ({student_profile.get_subscription_package_display()}) allows only "
+                    f"{student_profile.get_application_limit()} applications. You have already applied to "
+                    f"{student_profile.application_count} universities. {upgrade_link}"
+                )
+                messages.error(request, mark_safe(message))
+                return redirect('helper:universities_list')
 
-        new_application_count = len(selected_universities)
-        if not student_profile.can_apply() or new_application_count > student_profile.get_application_limit():
-            upgrade_link = '<a href="/subscription/" class="text-primary">Upgrade your plan</a> to apply to more universities.'
-            message = (
-                f"Your subscription package ({student_profile.get_subscription_package_display()}) allows only "
-                f"{student_profile.get_application_limit()} applications. You have already applied to "
-                f"{student_profile.application_count} universities. {upgrade_link}"
-            )
-            messages.error(request, mark_safe(message))
-            return redirect('helper:universities_list')
-
-        student_profile.selected_universities.set(selected_universities)
-        student_profile.application_count = new_application_count
-        student_profile.save()
-        messages.success(request, "Selected universities updated successfully!")
-        logger.debug(f"Selected universities updated for {request.user.username}: {new_application_count} universities")
+            student_profile.selected_universities.set(selected_universities)
+            student_profile.application_count = new_application_count
+            student_profile.save()
+            messages.success(request, "Selected universities updated successfully!")
+            logger.debug(f"Selected universities updated for {request.user.username}: {new_application_count} universities")
+        except Exception as e:
+            logger.error(f"Error updating selected universities for {request.user.username}: {str(e)}", exc_info=True)
+            messages.error(request, "An error occurred while updating selected universities.")
         return redirect('helper:universities_list')
 
     eligible_universities = universities.filter(minimum_aps__lte=student_aps) if student_aps else []
@@ -566,6 +577,7 @@ def universities_list(request):
 
 @login_required
 def university_detail(request, uni_id):
+    """Display details for a specific university."""
     university = get_object_or_404(University, id=uni_id)
     student_profile, _ = StudentProfile.objects.get_or_create(user=request.user)
     application_fee = APPLICATION_FEES_2025.get(university.name, "Not available")
@@ -582,6 +594,7 @@ def university_detail(request, uni_id):
 
 @login_required
 def university_faculties(request, uni_id):
+    """Display available faculties and courses for a university."""
     university = get_object_or_404(University, id=uni_id)
     student_profile, _ = StudentProfile.objects.get_or_create(user=request.user)
     faculties_open = FACULTIES_OPEN.get(university.name, ["To be updated"])
@@ -596,11 +609,13 @@ def university_faculties(request, uni_id):
 
 @login_required
 def pay_application_fee(request, uni_id):
+    """Redirect to payment instructions for a single university application fee."""
     university = get_object_or_404(University, id=uni_id)
     return redirect('helper:pay_application_fee_instructions', uni_id=uni_id)
 
 @login_required
 def pay_application_fee_instructions(request, uni_id):
+    """Display payment instructions for a single university application fee."""
     student_profile, _ = StudentProfile.objects.get_or_create(user=request.user)
     university = get_object_or_404(University, id=uni_id)
     fee_str = APPLICATION_FEES_2025.get(university.name, "Not available")
@@ -640,6 +655,7 @@ def pay_application_fee_instructions(request, uni_id):
 
 @login_required
 def pay_all_application_fees(request):
+    """Display payment instructions for all selected universities' application fees."""
     student_profile, _ = StudentProfile.objects.get_or_create(user=request.user)
     selected_universities = student_profile.selected_universities.all()
 
@@ -707,57 +723,55 @@ def pay_all_application_fees(request):
 @login_required
 @ratelimit(key='user', rate='10/m', method='POST')
 def ai_chat(request):
-    if request.method == 'POST':
-        try:
-            # Parse JSON body
-            try:
-                data = json.loads(request.body)
-                user_message = data.get('message', '').strip()
-            except json.JSONDecodeError:
-                logger.error("Invalid JSON in ai_chat request")
-                return JsonResponse({'error': 'Invalid request format'}, status=400)
+    """Handle AI chat requests for user queries."""
+    if request.method != 'POST':
+        logger.error("Invalid request method for ai_chat")
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
 
-            if not user_message:
-                logger.debug("Empty message received in ai_chat")
-                return JsonResponse({'error': 'Message cannot be empty'}, status=400)
+    try:
+        data = json.loads(request.body)
+        user_message = data.get('message', '').strip()
+        if not user_message:
+            logger.debug("Empty message received in ai_chat")
+            return JsonResponse({'error': 'Message cannot be empty'}, status=400)
 
-            system_prompt = (
-                "You are a helpful assistant for the Varsity Plug app, designed to assist students in navigating the app and clarifying questions about university applications in South Africa. "
-                "Provide clear, concise, and accurate answers. Do not provide harmful, illegal, or inappropriate content. "
-                "Focus on topics related to the app's features, such as uploading documents, selecting universities, calculating fees, and understanding admission requirements. "
-                "If a question is outside the app's scope, politely redirect the user to contact support or their university."
-            )
+        system_prompt = (
+            "You are a helpful assistant for the Varsity Plug app, designed to assist students in navigating the app and clarifying questions about university applications in South Africa. "
+            "Provide clear, concise, and accurate answers. Do not provide harmful, illegal, or inappropriate content. "
+            "Focus on topics related to the app's features, such as uploading documents, selecting universities, calculating fees, and understanding admission requirements. "
+            "If a question is outside the app's scope, politely redirect the user to contact support or their university."
+        )
 
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_message},
-                ],
-                max_tokens=150,
-                temperature=0.7,
-            )
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message},
+            ],
+            max_tokens=150,
+            temperature=0.7,
+        )
 
-            ai_response = response.choices[0].message['content'].strip()
-            logger.debug(f"AI chat response for {request.user.username}: {ai_response}")
-            return JsonResponse({'response': ai_response}, status=200)
+        ai_response = response.choices[0].message['content'].strip()
+        logger.debug(f"AI chat response for {request.user.username}: {ai_response}")
+        return JsonResponse({'response': ai_response}, status=200)
 
-        except openai.error.AuthenticationError:
-            logger.error("OpenAI API authentication error")
-            return JsonResponse({'error': 'Invalid API key. Please contact the administrator.'}, status=500)
-        except openai.error.RateLimitError:
-            logger.error("OpenAI API rate limit exceeded")
-            return JsonResponse({'error': 'Rate limit exceeded. Please try again later.'}, status=429)
-        except Exception as e:
-            logger.error(f"Error in ai_chat: {str(e)}", exc_info=True)
-            return JsonResponse({'error': 'An error occurred. Please try again.'}, status=500)
-
-    logger.error("Invalid request method for ai_chat")
-    return JsonResponse({'error': 'Invalid request method'}, status=405)
+    except json.JSONDecodeError:
+        logger.error("Invalid JSON in ai_chat request")
+        return JsonResponse({'error': 'Invalid request format'}, status=400)
+    except openai.error.AuthenticationError:
+        logger.error("OpenAI API authentication error")
+        return JsonResponse({'error': 'Invalid API key. Please contact the administrator.'}, status=500)
+    except openai.error.RateLimitError:
+        logger.error("OpenAI API rate limit exceeded")
+        return JsonResponse({'error': 'Rate limit exceeded. Please try again later.'}, status=429)
+    except Exception as e:
+        logger.error(f"Error in ai_chat: {str(e)}", exc_info=True)
+        return JsonResponse({'error': 'An error occurred. Please try again.'}, status=500)
 
 @login_required
 def select_university(request, uni_id):
-    """Handle university selection via AJAX."""
+    """Handle AJAX-based university selection."""
     university = get_object_or_404(University, id=uni_id)
     student_profile = get_object_or_404(StudentProfile, user=request.user)
 
