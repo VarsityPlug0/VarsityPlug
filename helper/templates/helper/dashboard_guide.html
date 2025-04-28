@@ -7,8 +7,8 @@
     <div class="col-lg-8 mx-auto">
         <h1 class="mb-4">{{ title }}</h1>
         <p>Welcome to the Guide Dashboard! This section is for users who assist students. Currently, it’s a placeholder—let us know what features you’d like here!</p>
-        <a href="{% url 'dashboard_student' %}" class="btn btn-primary">Go to Student Dashboard</a>
-        <a href="{% url 'universities_list' %}" class="btn btn-secondary">View Universities</a>
+        <a href="{% url 'helper:dashboard_student' %}" class="btn btn-primary">Go to Student Dashboard</a>
+        <a href="{% url 'helper:universities_list' %}" class="btn btn-secondary">View Universities</a>
     </div>
 </div>
 {% endblock %}
