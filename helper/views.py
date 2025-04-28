@@ -362,13 +362,30 @@ def dashboard_student(request):
                     messages.success(request, f"Marks updated successfully! Your APS score is {aps_score}.")
                 return redirect('helper:dashboard_student')
             else:
+                # Handle document uploads, including proof of payment
                 form = DocumentUploadForm(request.POST, request.FILES)
                 if form.is_valid():
                     doc = form.save(commit=False)
                     doc.user = request.user
-                    doc.save()
-                    messages.success(request, "Document uploaded successfully!")
-                    logger.debug(f"Document uploaded by {request.user.username}: {doc.file.name}")
+                    document_type = request.POST.get('document_type')
+                    university_id = request.POST.get('university_id')
+                    
+                    if document_type == 'payment_proof' and university_id:
+                        try:
+                            university = University.objects.get(id=university_id)
+                            doc.document_type = 'payment_proof'
+                            doc.university = university
+                            doc.save()
+                            messages.success(request, f"Proof of payment for {university.name} uploaded successfully!")
+                            logger.debug(f"Payment proof uploaded by {request.user.username} for {university.name}: {doc.file.name}")
+                        except University.DoesNotExist:
+                            messages.error(request, "Invalid university selected for payment proof.")
+                            logger.error(f"Invalid university ID {university_id} for payment proof by {request.user.username}")
+                            return redirect('helper:dashboard_student')
+                    else:
+                        doc.save()
+                        messages.success(request, "Document uploaded successfully!")
+                        logger.debug(f"Document uploaded by {request.user.username}: {doc.file.name}")
                     return redirect('helper:dashboard_student')
                 messages.error(request, "Document upload failed. Please try again.")
                 logger.error(f"Document upload failed for {request.user.username}: {form.errors}")
