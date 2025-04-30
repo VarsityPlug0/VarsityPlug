@@ -1,3 +1,4 @@
+```javascript
 (function () {
     // Configuration constants for dashboard behavior
     const CONFIG = {
@@ -50,7 +51,7 @@
         getRandomName() {
             return allNames[Math.floor(Math.random() * allNames.length)];
         },
-        showNotification(message = null) {
+        showNotification(message = null, isError = false) {
             if (this.isShowing) return; // Prevent overlapping notifications
             this.isShowing = true;
             const notificationPopup = document.getElementById('notificationPopup');
@@ -62,6 +63,8 @@
             }
             notificationMessage.textContent = message || `${this.getRandomName()} has sent their applications`;
             notificationPopup.classList.add('active');
+            notificationPopup.classList.toggle('bg-danger', isError);
+            notificationPopup.classList.toggle('bg-primary', !isError);
             setTimeout(() => {
                 notificationPopup.classList.remove('active');
                 this.isShowing = false;
@@ -79,9 +82,15 @@
         async selectUniversity(universityId) {
             const button = document.querySelector(`button[onclick='selectUniversity(${universityId})']`);
             const url = button?.dataset.url;
+            const csrfToken = getCookie('csrftoken');
             if (!url) {
                 debugLog('Select university URL missing', { universityId });
-                notificationSystem.showNotification('Error: Could not select university.');
+                notificationSystem.showNotification('Error: Could not select university.', true);
+                return;
+            }
+            if (!csrfToken) {
+                debugLog('CSRF token missing', { universityId });
+                notificationSystem.showNotification('Error: Authentication issue. Please refresh.', true);
                 return;
             }
             try {
@@ -90,7 +99,7 @@
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: {
-                        'X-CSRFToken': getCookie('csrftoken') || '',
+                        'X-CSRFToken': csrfToken,
                         'Content-Type': 'application/json'
                     },
                     signal: controller.signal
@@ -110,11 +119,11 @@
             } catch (error) {
                 debugLog('Error selecting university', { error: error.message, universityId });
                 if (error.name === 'AbortError') {
-                    notificationSystem.showNotification('Request timed out. Please try again.');
+                    notificationSystem.showNotification('Request timed out. Please try again.', true);
                 } else if (error.message.includes('limit')) {
-                    notificationSystem.showNotification('Subscription limit reached. Please upgrade your plan.');
+                    notificationSystem.showNotification('Subscription limit reached. Please upgrade your plan.', true);
                 } else {
-                    notificationSystem.showNotification(`Error: ${error.message}`);
+                    notificationSystem.showNotification(`Error: ${error.message}`, true);
                 }
             }
         }
@@ -128,8 +137,15 @@
             if (this.isSubmitting) return;
             this.isSubmitting = true;
             const form = document.getElementById('marksForm');
+            const csrfToken = getCookie('csrftoken');
             if (!form) {
                 debugLog('Marks form missing');
+                this.isSubmitting = false;
+                return;
+            }
+            if (!csrfToken) {
+                debugLog('CSRF token missing for marks form');
+                notificationSystem.showNotification('Error: Authentication issue. Please refresh.', true);
                 this.isSubmitting = false;
                 return;
             }
@@ -138,7 +154,7 @@
             try {
                 const response = await fetch(form.action, {
                     method: 'POST',
-                    headers: { 'X-CSRFToken': getCookie('csrftoken') || '' },
+                    headers: { 'X-CSRFToken': csrfToken },
                     body: formData
                 });
                 if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
@@ -162,7 +178,7 @@
                 setTimeout(() => window.location.reload(), 1000);
             } catch (error) {
                 debugLog('Marks submission error', { error: error.message });
-                notificationSystem.showNotification(`Error: ${error.message}`);
+                notificationSystem.showNotification(`Error: ${error.message}`, true);
             } finally {
                 this.isSubmitting = false;
             }
@@ -172,8 +188,15 @@
             if (this.isSubmitting) return;
             this.isSubmitting = true;
             const form = document.getElementById('uploadForm');
+            const csrfToken = getCookie('csrftoken');
             if (!form) {
                 debugLog('Upload form missing');
+                this.isSubmitting = false;
+                return;
+            }
+            if (!csrfToken) {
+                debugLog('CSRF token missing for upload form');
+                notificationSystem.showNotification('Error: Authentication issue. Please refresh.', true);
                 this.isSubmitting = false;
                 return;
             }
@@ -181,7 +204,7 @@
             try {
                 const response = await fetch(form.action, {
                     method: 'POST',
-                    headers: { 'X-CSRFToken': getCookie('csrftoken') || '' },
+                    headers: { 'X-CSRFToken': csrfToken },
                     body: formData
                 });
                 if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
@@ -202,7 +225,7 @@
                 setTimeout(() => window.location.reload(), 1000);
             } catch (error) {
                 debugLog('Document upload error', { error: error.message });
-                notificationSystem.showNotification(`Error: ${error.message}`);
+                notificationSystem.showNotification(`Error: ${error.message}`, true);
             } finally {
                 this.isSubmitting = false;
             }
@@ -254,6 +277,15 @@
                     return;
                 }
 
+                const csrfToken = getCookie('csrftoken');
+                if (!csrfToken) {
+                    debugLog('CSRF token missing for chat submission');
+                    notificationSystem.showNotification('Error: Authentication issue. Please refresh.', true);
+                    this.isSubmitting = false;
+                    chatInput.disabled = false;
+                    return;
+                }
+
                 const userMsg = document.createElement('div');
                 userMsg.className = 'chat-message user';
                 userMsg.textContent = message;
@@ -268,7 +300,7 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRFToken': getCookie('csrftoken') || ''
+                            'X-CSRFToken': csrfToken
                         },
                         body: JSON.stringify({ message }),
                         signal: controller.signal
@@ -338,7 +370,7 @@
                     bootstrap: typeof bootstrap !== 'undefined',
                     carouselClass: !!(bootstrap && bootstrap.Carousel)
                 });
-                notificationSystem.showNotification('University slideshow is temporarily unavailable.');
+                notificationSystem.showNotification('University slideshow is temporarily unavailable.', true);
             }
         }
     };
@@ -369,7 +401,7 @@
                 }
             } catch (error) {
                 debugLog('Initialization error', { error: error.message });
-                notificationSystem.showNotification('Error initializing dashboard. Please refresh.');
+                notificationSystem.showNotification('Error initializing dashboard. Please refresh.', true);
             }
         });
     };
@@ -385,3 +417,4 @@
         debugLog('Failed to initialize dashboard', { error: error.message });
     }
 })();
+```
