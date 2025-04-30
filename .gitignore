@@ -1,5 +1,41 @@
-.env 
-db.sqlite3 
-__pycache__/ 
-media/ 
-venv/ 
+# Environment files
+.env
+
+# Django local database
+db.sqlite3
+db.sqlite3-journal
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Media files
+media/
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Django static files (collected, not source)
+staticfiles/
+
+# IDE and editor files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Testing and coverage
+htmlcov/
+.coverage
+.tox/
+.pytest_cache/
