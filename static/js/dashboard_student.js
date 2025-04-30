@@ -1,4 +1,3 @@
-```javascript
 (function () {
     // Configuration constants for dashboard behavior
     const CONFIG = {
@@ -45,6 +44,12 @@
         console.log(`[VarsityPlug ${timestamp}] ${message}`, data || '');
     }
 
+    // Ensure HTTPS for API URLs in production
+    function getApiUrl(baseUrl) {
+        const isProduction = window.location.protocol === 'https:';
+        return isProduction ? baseUrl.replace(/^http:/, 'https:') : baseUrl;
+    }
+
     // Notification System
     const notificationSystem = {
         isShowing: false,
@@ -81,7 +86,7 @@
     const universitySystem = {
         async selectUniversity(universityId) {
             const button = document.querySelector(`button[onclick='selectUniversity(${universityId})']`);
-            const url = button?.dataset.url;
+            let url = button?.dataset.url;
             const csrfToken = getCookie('csrftoken');
             if (!url) {
                 debugLog('Select university URL missing', { universityId });
@@ -93,6 +98,7 @@
                 notificationSystem.showNotification('Error: Authentication issue. Please refresh.', true);
                 return;
             }
+            url = getApiUrl(url); // Ensure HTTPS in production
             try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), CONFIG.API_TIMEOUT);
@@ -152,7 +158,7 @@
             const formData = new FormData(form);
             formData.append('submit_marks', 'true');
             try {
-                const response = await fetch(form.action, {
+                const response = await fetch(getApiUrl(form.action), {
                     method: 'POST',
                     headers: { 'X-CSRFToken': csrfToken },
                     body: formData
@@ -202,7 +208,7 @@
             }
             const formData = new FormData(form);
             try {
-                const response = await fetch(form.action, {
+                const response = await fetch(getApiUrl(form.action), {
                     method: 'POST',
                     headers: { 'X-CSRFToken': csrfToken },
                     body: formData
@@ -252,7 +258,7 @@
             const chatMessages = document.getElementById('aiChatMessages');
             const chatToggle = document.getElementById('aiChatToggle');
             const chatBody = document.getElementById('aiChatBody');
-            const chatUrl = chatForm?.dataset.url;
+            let chatUrl = chatForm?.dataset.url;
 
             if (!chatForm || !chatInput || !chatMessages || !chatUrl) {
                 debugLog('Chat elements or URL missing', {
@@ -264,6 +270,7 @@
                 return;
             }
 
+            chatUrl = getApiUrl(chatUrl); // Ensure HTTPS in production
             const submitChat = this.debounce(async (e) => {
                 e.preventDefault();
                 if (this.isSubmitting) return;
@@ -417,4 +424,3 @@
         debugLog('Failed to initialize dashboard', { error: error.message });
     }
 })();
-```
