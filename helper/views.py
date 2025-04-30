@@ -8,7 +8,8 @@ from .forms import DocumentUploadForm
 from .models import DocumentUpload, University, StudentProfile
 from .faculty_data import FACULTY_COURSES, FACULTIES_OPEN
 from django_ratelimit.decorators import ratelimit
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseNotFound
+from django.utils.html import escape
 import openai
 from django.conf import settings
 import logging
@@ -152,6 +153,10 @@ def calculate_aps(marks):
                 aps += 1
     logger.info(f"Calculated APS: {aps} for marks: {marks}")
     return aps
+
+def custom_404(request, exception):
+    """Handle 404 errors with a custom page."""
+    return render(request, '404.html', status=404)
 
 def home(request):
     """Render the homepage and handle action button redirects."""
@@ -355,7 +360,7 @@ def dashboard_student(request):
                 aps_score = calculate_aps(new_marks)
                 student_profile.stored_aps_score = aps_score
                 student_profile.save()
-                logger.debug(f"Marks updated and APS stored for user {request.user.username}: {student_profile.stored_aps_score}")
+                logger.info(f"Marks updated and APS stored for user {request.user.username}: {student_profile.stored_aps_score}")
                 if aps_score is None:
                     messages.warning(request, "APS score could not be calculated due to invalid marks.")
                 else:
@@ -377,7 +382,7 @@ def dashboard_student(request):
                             doc.university = university
                             doc.save()
                             messages.success(request, f"Proof of payment for {university.name} uploaded successfully!")
-                            logger.debug(f"Payment proof uploaded by {request.user.username} for {university.name}: {doc.file.name}")
+                            logger.info(f"Payment proof uploaded by {request.user.username} for {university.name}: {doc.file.name}")
                         except University.DoesNotExist:
                             messages.error(request, "Invalid university selected for payment proof.")
                             logger.error(f"Invalid university ID {university_id} for payment proof by {request.user.username}")
@@ -385,20 +390,21 @@ def dashboard_student(request):
                     else:
                         doc.save()
                         messages.success(request, "Document uploaded successfully!")
-                        logger.debug(f"Document uploaded by {request.user.username}: {doc.file.name}")
+                        logger.info(f"Document uploaded by {request.user.username}: {doc.file.name}")
                     return redirect('helper:dashboard_student')
                 messages.error(request, "Document upload failed. Please try again.")
                 logger.error(f"Document upload failed for {request.user.username}: {form.errors}")
                 return redirect('helper:dashboard_student')
 
-        # Use stored APS score if available, otherwise calculate from marks
+        # Use stored APS score if available
         student_aps = student_profile.stored_aps_score
         if student_aps is None and student_profile.marks:
+            logger.debug(f"No stored APS for {request.user.username}, calculating from marks")
             student_aps = calculate_aps(student_profile.marks)
             if student_aps is not None:
                 student_profile.stored_aps_score = student_aps
                 student_profile.save()
-                logger.debug(f"Calculated and stored APS for {request.user.username}: {student_aps}")
+                logger.info(f"Calculated and stored APS for {request.user.username}: {student_aps}")
             else:
                 logger.warning(f"Failed to calculate APS for {request.user.username}: Invalid marks {student_profile.marks}")
 
@@ -470,7 +476,7 @@ def delete_document(request, doc_id):
     if request.method == 'POST':
         document.delete()
         messages.success(request, "Document deleted successfully!")
-        logger.debug(f"Document {doc_id} deleted by {request.user.username}")
+        logger.info(f"Document {doc_id} deleted by {request.user.username}")
     return redirect('helper:dashboard_student')
 
 @login_required
@@ -482,7 +488,7 @@ def edit_document(request, doc_id):
         if form.is_valid():
             form.save()
             messages.success(request, "Document updated successfully!")
-            logger.debug(f"Document {doc_id} updated by {request.user.username}")
+            logger.info(f"Document {doc_id} updated by {request.user.username}")
             return redirect('helper:dashboard_student')
         messages.error(request, "Document update failed. Please try again.")
         logger.error(f"Document update failed for {request.user.username}: {form.errors}")
@@ -514,7 +520,7 @@ def universities_list(request):
             student_profile.application_count = new_application_count
             student_profile.save()
             messages.success(request, "Selected universities updated successfully!")
-            logger.debug(f"Selected universities updated for {request.user.username}: {new_application_count} universities")
+            logger.info(f"Selected universities updated for {request.user.username}: {new_application_count} universities")
         except Exception as e:
             logger.error(f"Error updating selected universities for {request.user.username}: {str(e)}", exc_info=True)
             messages.error(request, "An error occurred while updating selected universities.")
@@ -740,14 +746,14 @@ def pay_all_application_fees(request):
 @login_required
 @ratelimit(key='user', rate='10/m', method='POST')
 def ai_chat(request):
-    """Handle AI chat requests for user queries."""
+    """Handle AI chat requests for user queries with input sanitization."""
     if request.method != 'POST':
         logger.error("Invalid request method for ai_chat")
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
     try:
         data = json.loads(request.body)
-        user_message = data.get('message', '').strip()
+        user_message = escape(data.get('message', '').strip())  # Sanitize input
         if not user_message:
             logger.debug("Empty message received in ai_chat")
             return JsonResponse({'error': 'Message cannot be empty'}, status=400)
@@ -770,7 +776,7 @@ def ai_chat(request):
         )
 
         ai_response = response.choices[0].message['content'].strip()
-        logger.debug(f"AI chat response for {request.user.username}: {ai_response}")
+        logger.info(f"AI chat response for {request.user.username}: {ai_response}")
         return JsonResponse({'response': ai_response}, status=200)
 
     except json.JSONDecodeError:
