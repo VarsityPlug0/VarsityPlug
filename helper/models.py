@@ -6,10 +6,15 @@ import logging
 
 logger = logging.getLogger('helper')
 
+def validate_minimum_aps(value):
+    """Validates that the minimum APS score is between 20 and 48."""
+    if not 20 <= value <= 48:
+        raise ValidationError('Minimum APS score must be between 20 and 48.')
+
 class University(models.Model):
     """Represents a university with its name, minimum APS score, province, and description."""
     name = models.CharField(max_length=100, unique=True)
-    minimum_aps = models.IntegerField()
+    minimum_aps = models.IntegerField(validators=[validate_minimum_aps])
     province = models.CharField(max_length=50)
     description = models.TextField(blank=True, null=True)
 
