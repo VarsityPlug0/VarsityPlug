@@ -50,7 +50,7 @@
                                         <p class="card-text">{{ uni.description|default:"Explore opportunities at this university." }}</p>
                                         <p><strong>Due Date:</strong> {{ uni.due_date|default:"Not specified" }}</p>
                                         <p><strong>Application Fee:</strong> {{ uni.application_fee|default:"Not available" }}</p>
-                                        <div class="d-flex gap-2">
+                                        <div class="d-flex gap-2 justify-content-center"> {# Centered buttons #}
                                             <a href="{% url 'helper:university_detail' uni.id %}" class="btn btn-outline-secondary btn-sm" aria-label="View details for {{ uni.name|default:'university' }}">View Details</a>
                                             <button onclick="selectUniversity({{ uni.id }})" class="btn btn-primary btn-sm" data-url="{% url 'helper:select_university' uni.id %}" aria-label="Select {{ uni.name|default:'university' }}">Select</button>
                                         </div>
@@ -234,11 +234,11 @@
                     </div>
 
                     <button class="carousel-control-prev" type="button" data-bs-target="#qualifiedUnisCarousel" data-bs-slide="prev" aria-label="Previous slide">
-                        <span class="carousel-control-prev-icon" aria-hidden="true"></span> {# Removed style here, rely on CSS block in <head> or external CSS #}
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span> {# Style handled by CSS #}
                         <span class="visually-hidden">Previous</span>
                     </button>
                     <button class="carousel-control-next" type="button" data-bs-target="#qualifiedUnisCarousel" data-bs-slide="next" aria-label="Next slide">
-                        <span class="carousel-control-next-icon" aria-hidden="true"></span> {# Removed style here, rely on CSS block in <head> or external CSS #}
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span> {# Style handled by CSS #}
                         <span class="visually-hidden">Next</span>
                     </button>
                 </div>
@@ -405,7 +405,7 @@
 
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script> {# DEFER ADDED #}
 <script src="{% static 'js/dashboard_student.js' %}" defer></script>
 
 {# JavaScript removed - place in a separate JS file or <script> block #}
