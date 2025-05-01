@@ -422,7 +422,10 @@ def dashboard_student(request):
                         'application_fee': APPLICATION_FEES_2025.get(uni.name, "Not available")
                     } for uni in eligible_universities
                 ]
-                logger.debug(f"Fetched {len(recommendations)} recommendations for APS {student_aps}")
+                logger.info(f"Fetched {len(recommendations)} university recommendations for APS {student_aps} for user {request.user.username}")
+                if not recommendations:
+                    logger.warning(f"No universities found for APS {student_aps} for user {request.user.username}")
+                    messages.info(request, "No university recommendations available. Please update your marks or contact support.")
             except Exception as e:
                 logger.error(f"Error fetching recommendations for {request.user.username}: {str(e)}", exc_info=True)
                 messages.error(request, "Unable to fetch university recommendations at this time.")
