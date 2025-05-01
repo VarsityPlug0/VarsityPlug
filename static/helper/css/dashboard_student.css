@@ -11,21 +11,21 @@
     gap: 20px;
 }
 
-.section {
-    margin-bottom: 40px;
-    padding: 20px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background-color: #f9f9f9;
+.section, .card { /* Apply section-like margin to cards as well */
+    margin-bottom: 25px; /* Consistent spacing */
 }
 
-h1, h2 {
+/* Use card-header for section titles if using cards */
+/* h1, h2 {
     color: #333;
     text-align: center;
     margin-bottom: 20px;
-}
+} */
 
-/* Slideshow styles for recommendations */
+
+/* --- Obsolete Custom Slideshow Styles (Commented Out) --- */
+/* These appear unused as Bootstrap Carousel is implemented */
+/*
 .recommendations-section .slideshow-container {
     position: relative;
     width: 100%;
@@ -35,37 +35,31 @@ h1, h2 {
     border-radius: 8px;
     border: 1px solid #ddd;
 }
-
 .slideshow-container .slides {
     display: flex;
     transition: transform 0.5s ease-in-out;
 }
-
 .slideshow-container .slide {
     min-width: 100%;
     box-sizing: border-box;
     padding: 20px;
     background-color: #fff;
     text-align: center;
-    display: none !important; /* Force hide by default */
+    display: none !important;
 }
-
 .slideshow-container .slide.active {
-    display: block !important; /* Force show active slide */
+    display: block !important;
 }
-
 .slideshow-container .slide h3 {
     margin: 0 0 10px;
     font-size: 1.5em;
     color: #007bff;
 }
-
 .slideshow-container .slide p {
     margin: 0 0 15px;
     color: #666;
     line-height: 1.5;
 }
-
 .slideshow-container .slide a {
     display: inline-block;
     padding: 10px 20px;
@@ -75,11 +69,9 @@ h1, h2 {
     border-radius: 5px;
     transition: background-color 0.3s;
 }
-
 .slideshow-container .slide a:hover {
     background-color: #0056b3;
 }
-
 .slideshow-container .prev, .slideshow-container .next {
     background-color: rgba(0, 0, 0, 0.5);
     color: #fff;
@@ -91,21 +83,17 @@ h1, h2 {
     top: 50%;
     transform: translateY(-50%);
     transition: background-color 0.3s;
-    z-index: 10; /* Ensure buttons are clickable */
+    z-index: 10;
 }
-
 .slideshow-container .prev:hover, .slideshow-container .next:hover {
     background-color: rgba(0, 0, 0, 0.8);
 }
-
 .slideshow-container .prev { left: 10px; }
 .slideshow-container .next { right: 10px; }
-
 .slideshow-container .dots {
     text-align: center;
     padding: 10px 0;
 }
-
 .slideshow-container .dot {
     display: inline-block;
     width: 10px;
@@ -116,77 +104,131 @@ h1, h2 {
     cursor: pointer;
     transition: background-color 0.3s;
 }
-
 .slideshow-container .dot.active {
     background-color: #007bff;
 }
+*/
+/* --- End Obsolete Styles --- */
 
-/* Bootstrap carousel styles for recommendations */
-#universitySlideshow.carousel {
-    max-width: 800px;
-    margin: 0 auto;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    overflow: hidden;
+
+/* Bootstrap carousel styles (Applied to both carousels) */
+#universitySlideshow.carousel,
+#qualifiedUnisCarousel.carousel { /* Apply to both */
+    max-width: 800px; /* Max width for the carousel container */
+    margin: 0 auto; /* Center the carousel */
+    /* border: 1px solid #ddd; */ /* Removed border from container, applied to card inside */
+    /* border-radius: 8px; */ /* Removed border-radius from container */
+    overflow: hidden; /* Keep this */
+    background-color: #f8f9fa; /* Light background for the carousel area */
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    border-radius: 0.375rem; /* Standard Bootstrap border-radius */
 }
 
-.carousel-item .card {
-    margin: 0 auto;
-    max-width: 500px;
-    border: none;
-    border-radius: 8px;
+/* Styling for the card INSIDE each carousel item */
+#universitySlideshow .carousel-item .card,
+#qualifiedUnisCarousel .carousel-item .card { /* Apply to both */
+    margin: 0 auto; /* Center card within the item */
+    max-width: 90%; /* Allow card to take up most of the carousel width */
+    width: auto; /* Adjust width based on content */
+    min-height: 180px; /* Ensure a minimum height for consistency */
+    display: flex; /* Use flexbox for alignment */
+    flex-direction: column;
+    justify-content: center; /* Center content vertically */
+    border: 1px solid #dee2e6; /* Add border to the card */
+    border-radius: 8px; /* Add border-radius to the card */
     background-color: #fff;
     padding: 20px;
     text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05); /* Subtle shadow */
 }
 
-.carousel-item .card-body {
-    padding: 0;
+#universitySlideshow .carousel-item .card-body,
+#qualifiedUnisCarousel .carousel-item .card-body { /* Apply to both */
+    padding: 0; /* Remove default card body padding if direct children are used */
 }
 
-.carousel-item .card-title {
-    font-size: 1.5em;
-    color: #007bff;
+#universitySlideshow .carousel-item .card-title,
+#qualifiedUnisCarousel .carousel-item .card-title { /* Apply to both */
+    font-size: 1.3em; /* Adjusted size */
+    color: #0d6efd; /* Bootstrap primary color */
     margin-bottom: 10px;
 }
 
-.carousel-item .card-text {
-    color: #666;
+#universitySlideshow .carousel-item .card-text,
+#qualifiedUnisCarousel .carousel-item .card-text { /* Apply to both */
+    color: #6c757d; /* Bootstrap secondary text color */
     line-height: 1.5;
-    margin-bottom: 15px;
+    margin-bottom: 10px; /* Consistent margin */
+    font-size: 0.95rem;
+}
+#universitySlideshow .carousel-item .card-text small,
+#qualifiedUnisCarousel .carousel-item .card-text small { /* Apply to both */
+    font-size: 0.85rem; /* Smaller text for due date/fee */
+    color: #6c757d;
 }
 
-.carousel-item .btn {
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: #fff;
-    border-radius: 5px;
-    transition: background-color 0.3s;
+#universitySlideshow .carousel-item .btn,
+#qualifiedUnisCarousel .carousel-item .btn { /* Apply to both */
+    /* Using default Bootstrap button styles, no need to override padding/color unless desired */
+    margin-top: 10px; /* Add space above buttons */
 }
 
-.carousel-item .btn:hover {
-    background-color: #0056b3;
-}
-
-.carousel-control-prev, .carousel-control-next {
-    background-color: rgba(0, 0, 0, 0.5);
-    width: 40px;
-    height: 40px;
-    top: 50%;
+/* Styling for Carousel Controls (Arrows) */
+#universitySlideshow .carousel-control-prev,
+#universitySlideshow .carousel-control-next,
+#qualifiedUnisCarousel .carousel-control-prev,
+#qualifiedUnisCarousel .carousel-control-next { /* Apply to both */
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+    width: 40px; /* Fixed width */
+    height: 40px; /* Fixed height */
+    top: 50%; /* Center vertically */
     transform: translateY(-50%);
+    border-radius: 50%; /* Make them circular */
+    opacity: 0.7;
+    transition: opacity 0.2s ease-in-out;
+}
+
+#universitySlideshow .carousel-control-prev:hover,
+#universitySlideshow .carousel-control-next:hover,
+#qualifiedUnisCarousel .carousel-control-prev:hover,
+#qualifiedUnisCarousel .carousel-control-next:hover { /* Apply to both */
+    background-color: rgba(0, 0, 0, 0.8); /* Darker on hover */
+    opacity: 1;
+}
+
+/* Styling for Carousel Control Icons (Inside the Arrows) */
+#universitySlideshow .carousel-control-prev-icon,
+#universitySlideshow .carousel-control-next-icon,
+#qualifiedUnisCarousel .carousel-control-prev-icon,
+#qualifiedUnisCarousel .carousel-control-next-icon { /* Apply to both */
+    background-size: 60% 60%; /* Make the arrow icon smaller */
+    /* filter: invert(100%); */ /* Removed invert if using Bootstrap's default SVG icons */
+}
+
+/* Styling for Carousel Indicators (Dots) */
+#universitySlideshow .carousel-indicators [data-bs-target],
+#qualifiedUnisCarousel .carousel-indicators [data-bs-target] { /* Apply to both */
+    background-color: #6c757d; /* Default indicator color (grey) */
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
-    transition: background-color 0.3s;
+    opacity: 0.5;
+    border: none;
+    margin: 0 4px;
 }
 
-.carousel-control-prev:hover, .carousel-control-next:hover {
-    background-color: rgba(0, 0, 0, 0.8);
+#universitySlideshow .carousel-indicators .active,
+#qualifiedUnisCarousel .carousel-indicators .active { /* Apply to both */
+    background-color: #0d6efd; /* Active indicator color (primary) */
+    opacity: 1;
 }
 
-.carousel-control-prev-icon, .carousel-control-next-icon {
-    filter: invert(100%);
-}
 
-/* University list styles for qualified and selected universities */
+/* --- Obsolete University List Styles (Commented Out) --- */
+/* These styles might be used on other pages, but not for the dashboard's
+   "Qualified Universities" section which now uses a carousel. */
+/*
 .universities-section .university-list, .selected-universities-section .university-list {
     list-style: none;
     padding: 0;
@@ -194,7 +236,6 @@ h1, h2 {
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 20px;
 }
-
 .university-card {
     padding: 15px;
     border: 1px solid #ddd;
@@ -203,24 +244,20 @@ h1, h2 {
     transition: transform 0.2s;
     text-align: center;
 }
-
 .university-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
-
 .university-card h3 {
     margin: 0 0 10px;
     font-size: 1.3em;
     color: #007bff;
 }
-
 .university-card p {
     margin: 0 0 10px;
     color: #666;
     font-size: 0.95em;
 }
-
 .university-card a {
     display: inline-block;
     padding: 8px 16px;
@@ -231,26 +268,38 @@ h1, h2 {
     font-size: 0.9em;
     transition: background-color 0.3s;
 }
-
 .university-card a:hover {
     background-color: #0056b3;
 }
+*/
+/* --- End Obsolete Styles --- */
 
 /* Form and table styles */
-.marks-section table, .document-section table {
+/* Use Bootstrap table classes directly in HTML for better consistency */
+/* .marks-section table, .document-section table, .selected-universities-section table {
     width: 100%;
     margin-bottom: 20px;
-}
+} */
 
+/* Limit width of specific form controls if needed */
 .marks-section .form-control, .document-section .form-control {
-    max-width: 300px;
+    /* max-width: 300px; */ /* Removed max-width for better responsiveness within tables/forms */
 }
 
 .marks-section .btn, .document-section .btn {
     margin-top: 10px;
 }
 
-/* Original chat widget styles */
+/* Table container */
+.table-responsive {
+    max-height: 400px; /* Limit height and enable scroll for large tables */
+    overflow-y: auto;
+}
+
+
+/* --- Obsolete Chat Widget Styles (Commented Out) --- */
+/* Assuming the HTML uses the structure corresponding to .ai-chat-widget */
+/*
 .chat-container {
     position: fixed;
     bottom: 20px;
@@ -263,11 +312,9 @@ h1, h2 {
     z-index: 1000;
     display: none;
 }
-
 .chat-container.active {
     display: block;
 }
-
 .chat-header {
     background-color: #007bff;
     color: #fff;
@@ -276,38 +323,32 @@ h1, h2 {
     cursor: pointer;
     text-align: center;
 }
-
 .chat-body {
     max-height: 200px;
     overflow-y: auto;
     padding: 10px;
     border-bottom: 1px solid #ddd;
 }
-
 .chat-message {
     margin: 5px 0;
     padding: 8px;
     border-radius: 5px;
 }
-
 .chat-message.user {
     background-color: #007bff;
     color: #fff;
     margin-left: 20%;
     text-align: right;
 }
-
 .chat-message.ai {
     background-color: #f1f1f1;
     color: #333;
     margin-right: 20%;
 }
-
 .chat-input {
     display: flex;
     padding: 10px;
 }
-
 .chat-input input {
     flex: 1;
     border: 1px solid #ddd;
@@ -315,7 +356,6 @@ h1, h2 {
     padding: 5px;
     margin-right: 5px;
 }
-
 .chat-input button {
     background-color: #007bff;
     color: #fff;
@@ -324,229 +364,281 @@ h1, h2 {
     padding: 5px 10px;
     cursor: pointer;
 }
-
 .chat-input button:hover {
     background-color: #0056b3;
 }
+*/
+/* --- End Obsolete Styles --- */
 
-/* New AI chat widget styles */
-.ai-chat-widget {
+
+/* New AI chat widget styles (Keep if HTML uses this structure) */
+/* Renaming main container class to match HTML */
+.chat-container { /* Using .chat-container as seen in HTML */
     position: fixed;
     bottom: 20px;
     right: 20px;
     width: 300px;
+    max-width: 90%; /* Ensure it fits on small screens */
     background: #fff;
-    border: 1px solid #ddd;
+    border: 1px solid #dee2e6;
     border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1050; /* Ensure it's above most elements */
 }
 
-.ai-chat-header {
-    background: #007bff;
+.chat-header { /* Using .chat-header as seen in HTML */
+    background: #0d6efd; /* Bootstrap primary */
     color: white;
-    padding: 10px;
+    padding: 10px 15px;
     border-radius: 8px 8px 0 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
+    font-weight: 500;
+}
+/* Style for the toggle button */
+#aiChatToggle {
+     background: none;
+     border: none;
+     color: white;
+     font-size: 1.2rem;
+     line-height: 1;
+     padding: 0 5px;
 }
 
-.ai-chat-body {
-    display: block;
-    max-height: 300px;
+
+.chat-body { /* Using .chat-body as seen in HTML */
+    /* display: block; */ /* Initially visible or toggled by JS */
+    max-height: 300px; /* Max height before scrolling */
+    display: flex;
+    flex-direction: column; /* Stack messages and form */
 }
 
-.ai-chat-messages {
+#aiChatMessages { /* Target the specific messages container */
     padding: 10px;
     overflow-y: auto;
-    max-height: 250px;
+    flex-grow: 1; /* Allow messages to take available space */
+    min-height: 100px; /* Minimum height for messages area */
+    max-height: 240px; /* Adjust based on total chat-body max-height */
 }
 
-.ai-chat-messages .chat-message {
-    margin: 5px 0;
-    padding: 8px;
-    border-radius: 5px;
+#aiChatMessages .chat-message {
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    border-radius: 15px; /* More rounded messages */
+    line-height: 1.4;
+    max-width: 80%; /* Prevent messages taking full width */
+    word-wrap: break-word; /* Break long words */
 }
 
-.ai-chat-messages .chat-message.ai {
-    background: #f1f1f1;
+#aiChatMessages .chat-message.ai {
+    background: #e9ecef; /* Bootstrap light grey */
     text-align: left;
-    margin-right: 20%;
+    margin-right: auto; /* Align left */
+    border-bottom-left-radius: 5px; /* Slightly different shape */
+}
+#aiChatMessages .chat-message.ai.thinking { /* Style for thinking indicator */
+    background: #e9ecef;
+    color: #6c757d;
+    font-style: italic;
 }
 
-.ai-chat-messages .chat-message.user {
-    background: #007bff;
+#aiChatMessages .chat-message.user {
+    background: #0d6efd; /* Bootstrap primary */
     color: white;
-    text-align: right;
-    margin-left: 20%;
+    text-align: left; /* Align text left within bubble */
+    margin-left: auto; /* Align bubble right */
+    border-bottom-right-radius: 5px; /* Slightly different shape */
 }
 
-.ai-chat-messages .chat-message.error {
-    background: #f8d7da;
-    color: #721c24;
+#aiChatMessages .chat-message.error {
+    background: #f8d7da; /* Bootstrap danger light */
+    color: #842029; /* Bootstrap danger dark */
+    margin-right: auto;
+    border-bottom-left-radius: 5px;
 }
 
-.ai-chat-form {
+#aiChatForm { /* Target the specific form */
     display: flex;
     padding: 10px;
-    border-top: 1px solid #ddd;
+    border-top: 1px solid #dee2e6; /* Bootstrap border color */
+    background-color: #f8f9fa; /* Light background for input area */
 }
 
-.ai-chat-form input {
+#aiChatForm input {
     flex: 1;
     margin-right: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    padding: 5px;
+    border: 1px solid #ced4da; /* Bootstrap input border */
+    border-radius: 0.25rem; /* Bootstrap border-radius */
+    padding: 0.375rem 0.75rem; /* Bootstrap padding */
+}
+#aiChatForm input:focus {
+     border-color: #86b7fe;
+     outline: 0;
+     box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
 
-.ai-chat-form button {
-    background-color: #007bff;
+#aiChatForm button {
+    /* Using Bootstrap btn classes in HTML is better */
+    /* background-color: #0d6efd;
     color: #fff;
     border: none;
-    border-radius: 5px;
-    padding: 5px 10px;
-    cursor: pointer;
+    border-radius: 0.25rem;
+    padding: 0.375rem 0.75rem;
+    cursor: pointer; */
 }
 
-.ai-chat-form button:hover {
-    background-color: #0056b3;
-}
+/* #aiChatForm button:hover {
+    background-color: #0b5ed7;
+} */
 
-/* Popup styles */
+
+/* Popup styles (Generic Confirmation?) */
 .popup-overlay {
-    display: none !important;
+    display: none !important; /* Hide by default */
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
+    background-color: rgba(0, 0, 0, 0.6); /* Darker overlay */
+    z-index: 1060; /* Higher than chat */
     align-items: center;
     justify-content: center;
 }
 
 .popup-overlay.active {
-    display: flex !important;
+    display: flex !important; /* Show when active */
 }
 
 .popup-content {
     background-color: #fff;
-    padding: 20px;
+    padding: 30px;
     border-radius: 8px;
     text-align: center;
     max-width: 400px;
     width: 90%;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
 .popup-buttons {
     margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
 }
 
 .popup-buttons button {
-    padding: 10px 20px;
-    margin: 0 10px;
-    border: none;
+    padding: 10px 25px; /* Larger buttons */
+    /* Using Bootstrap btn classes in HTML is better */
+    /* border: none;
     border-radius: 5px;
     cursor: pointer;
+    font-weight: 500; */
 }
 
-.popup-buttons .confirm {
-    background-color: #28a745;
+/* .popup-buttons .confirm {
+    background-color: #198754; Bootstrap success
     color: #fff;
-}
-
-.popup-buttons .confirm:hover {
-    background-color: #218838;
-}
-
-.popup-buttons .cancel {
-    background-color: #dc3545;
+} */
+/* .popup-buttons .confirm:hover {
+    background-color: #157347;
+} */
+/* .popup-buttons .cancel {
+    background-color: #6c757d; Bootstrap secondary
     color: #fff;
-}
-
-.popup-buttons .cancel:hover {
-    background-color: #c82333;
-}
+} */
+/* .popup-buttons .cancel:hover {
+    background-color: #5c636a;
+} */
 
 /* Notification popup */
 .notification-popup {
     position: fixed;
     top: 20px;
     right: 20px;
-    background-color: #28a745;
     color: #fff;
-    padding: 10px 20px;
-    border-radius: 5px;
-    z-index: 1000;
+    padding: 12px 24px; /* Slightly more padding */
+    border-radius: 0.375rem; /* Standard Bootstrap */
+    z-index: 1070; /* Highest */
     display: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    font-size: 0.95rem;
+    opacity: 0; /* Start hidden */
+    transition: opacity 0.3s ease-in-out;
 }
 
 .notification-popup.active {
     display: block;
+    opacity: 1;
 }
+/* Add background colors based on context (e.g., bg-primary, bg-danger) */
+
 
 /* Responsive design */
 @media (max-width: 768px) {
     .dashboard-container {
-        padding: 10px;
+        padding: 15px; /* More padding on smaller screens */
     }
 
-    .section {
+    .section, .card {
         padding: 15px;
     }
 
-    .recommendations-section .slideshow-container {
-        max-width: 100%;
+    #universitySlideshow.carousel,
+    #qualifiedUnisCarousel.carousel { /* Apply to both */
+        max-width: 100%; /* Full width on smaller screens */
     }
 
-    #universitySlideshow.carousel {
-        max-width: 100%;
+     /* Ensure cards inside carousel don't get too wide */
+    #universitySlideshow .carousel-item .card,
+    #qualifiedUnisCarousel .carousel-item .card {
+        max-width: 95%;
     }
 
-    .slideshow-container .slide h3 {
-        font-size: 1.2em;
-    }
-
-    .slideshow-container .slide p {
-        font-size: 0.9em;
-    }
-
-    .universities-section .university-list, .selected-universities-section .university-list {
-        grid-template-columns: 1fr;
-    }
-
-    .chat-container, .ai-chat-widget {
+    .chat-container { /* Adjusted AI chat widget */
         width: 90%;
         bottom: 10px;
-        right: 10px;
+        right: 5%; /* Center horizontally */
+        left: 5%;
     }
 }
 
 @media (max-width: 576px) {
-    .slideshow-container .slide {
-        padding: 15px;
-    }
-
-    .slideshow-container .prev, .slideshow-container .next {
-        padding: 8px;
-        font-size: 16px;
-    }
-
-    .slideshow-container .dot {
-        width: 8px;
-        height: 8px;
-    }
-
     .carousel-control-prev, .carousel-control-next {
-        width: 30px;
-        height: 30px;
+        width: 35px; /* Slightly smaller controls */
+        height: 35px;
+    }
+
+    /* Adjust padding/font size in cards if needed */
+    #universitySlideshow .carousel-item .card,
+    #qualifiedUnisCarousel .carousel-item .card {
+         padding: 15px;
+    }
+     #universitySlideshow .carousel-item .card-title,
+    #qualifiedUnisCarousel .carousel-item .card-title {
+        font-size: 1.15em;
+    }
+     #universitySlideshow .carousel-item .card-text,
+    #qualifiedUnisCarousel .carousel-item .card-text {
+         font-size: 0.9rem;
     }
 
     .marks-section .form-control, .document-section .form-control {
-        max-width: 100%;
+        max-width: 100%; /* Allow full width */
     }
+
+     .chat-container {
+         width: 95%;
+         right: 2.5%;
+         left: 2.5%;
+     }
+     #aiChatMessages {
+         max-height: 200px; /* Reduce messages height */
+     }
+     .chat-body {
+         max-height: 260px; /* Adjust overall height */
+     }
+
 }
