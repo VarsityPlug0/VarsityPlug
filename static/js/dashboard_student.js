@@ -55,7 +55,12 @@
     // Debug logging with enhanced error context
     function debugLog(message, data = null) {
         const timestamp = new Date().toISOString();
-        console.log(`[VarsityPlug ${timestamp}] ${message}`, data || '');
+        // Use console.info for debug, console.error for errors to make filtering easier
+        if (data && (data.error || data.name === 'AbortError' || message.toLowerCase().includes('error') || message.toLowerCase().includes('fail'))) {
+             console.error(`[VarsityPlug ${timestamp}] ${message}`, data || '');
+        } else {
+             console.log(`[VarsityPlug ${timestamp}] ${message}`, data || '');
+        }
     }
 
     // Ensure HTTPS for API URLs in production
@@ -95,9 +100,15 @@
             }
 
             notificationMessage.textContent = message;
-            notificationPopup.classList.remove('bg-danger', 'bg-primary', 'bg-warning', 'bg-info'); // Clear previous types
-            notificationPopup.classList.add(isError ? 'bg-danger' : 'bg-primary', 'active'); // Default to primary, use danger for errors
-            notificationPopup.setAttribute('role', isError ? 'alert' : 'status');
+            notificationPopup.classList.remove('bg-danger', 'bg-primary', 'bg-warning', 'bg-info', 'active'); // Clear previous types and active
+             // Delay adding active class slightly to allow CSS transitions
+             setTimeout(() => {
+                notificationPopup.classList.add(isError ? 'bg-danger' : 'bg-primary', 'active'); // Default to primary, use danger for errors
+                notificationPopup.setAttribute('role', isError ? 'alert' : 'status');
+             }, 50); // Small delay
+
+            // Clear any existing timeout before setting a new one
+             clearTimeout(this.showTimeout);
 
             this.showTimeout = setTimeout(() => {
                 notificationPopup.classList.remove('active');
@@ -109,6 +120,7 @@
         showNotification(message, isError = false) {
             const defaultMessage = `${this.getRandomName()} has sent their applications`;
             this.queue.push({ message: message || defaultMessage, isError });
+            // Prevent multiple rapid calls to _displayNext if already processing queue
             if (!this.isShowing) {
                  this._displayNext();
             }
@@ -171,8 +183,11 @@
                     if (appCountElement && data.application_count !== undefined) {
                        appCountElement.textContent = data.application_count;
                        debugLog(`Updated application count to ${data.application_count}`);
-                       // Consider adding the university to the 'Selected Universities' table dynamically here
+                       // TODO: Consider adding the university to the 'Selected Universities' table dynamically here
                        // This avoids a full page reload but requires more complex DOM manipulation
+                       // For now, we still rely on reload as fallback. Consider removing reload if dynamic update is implemented.
+                       debugLog('Reloading page after university selection (fallback).');
+                       setTimeout(() => window.location.reload(), 1500); // Slightly longer delay
                     } else {
                         // Fallback to reload if dynamic update isn't feasible/implemented
                         debugLog('Reloading page after university selection.');
@@ -205,7 +220,10 @@
     const formSystem = {
         isSubmitting: false,
         async submitForm(formElement, successCallback, errorCallback) {
-            if (!formElement || this.isSubmitting) return;
+            if (!formElement || this.isSubmitting) {
+                debugLog(`Form submission blocked for ${formElement?.id}`, { isSubmitting: this.isSubmitting, formElementExists: !!formElement });
+                return;
+            }
 
             this.isSubmitting = true;
             const submitButton = formElement.querySelector('button[type="submit"]');
@@ -222,42 +240,67 @@
 
             const formData = new FormData(formElement);
             const formAction = getApiUrl(formElement.action);
+            debugLog(`Submitting form ${formElement.id} to ${formAction}`);
 
             try {
                  const controller = new AbortController();
-                 const timeoutId = setTimeout(() => controller.abort(), CONFIG.API_TIMEOUT * 2); // Longer timeout for uploads/marks
+                 // Longer timeout for uploads/marks potentially
+                 const timeoutDuration = formElement.enctype === 'multipart/form-data' ? CONFIG.API_TIMEOUT * 3 : CONFIG.API_TIMEOUT * 2;
+                 const timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
 
                 const response = await fetch(formAction, {
                     method: 'POST',
                     headers: {
                         'X-CSRFToken': csrfToken,
                         'X-Requested-With': 'XMLHttpRequest' // Important for Django request.is_ajax()
+                        // 'Content-Type' header is NOT set for FormData, browser handles it
                     },
                     body: formData,
                     signal: controller.signal
                 });
                  clearTimeout(timeoutId);
 
-                // Check for successful redirect (status 200 usually means form re-rendered with errors)
-                // Or check for specific success status/JSON if view returns JSON on success
-                 if (response.ok && response.redirected) { // Or status === 201 or custom header/JSON
-                     if (successCallback) {
-                         successCallback(response);
-                     } else {
-                        notificationSystem.showNotification('Submission successful!');
-                        setTimeout(() => window.location.reload(), 1000); // Default reload
-                     }
+                // Check for successful redirect or specific success status/JSON
+                // Django form views often return 200 OK even on success if re-rendering the page with messages.
+                // A redirect (3xx) is also common on success.
+                // Let's assume success if status is 2xx or 3xx and check content for errors later.
 
-                 } else if (response.ok) { // Status 200 likely means form re-rendered with errors
-                      // Attempt to parse and display errors from the re-rendered HTML
+                 if (response.ok || (response.status >= 300 && response.status < 400)) {
+                      debugLog(`Form ${formElement.id} submitted, Status: ${response.status}, Redirected: ${response.redirected}`);
+
+                      // If redirected, assume success (Django often redirects after successful POST)
+                      if (response.redirected) {
+                           if (successCallback) {
+                               successCallback(response); // Callback might handle the redirect or further actions
+                           } else {
+                              notificationSystem.showNotification('Submission successful! Reloading...');
+                              setTimeout(() => window.location.reload(), 1000); // Reload to see changes
+                           }
+                           return; // Stop processing here if redirected
+                      }
+
+                      // If not redirected but status is OK (200), check response content for error messages
+                      // This handles cases where Django re-renders the form with errors.
                       const text = await response.text();
                       const parser = new DOMParser();
                       const doc = parser.parseFromString(text, 'text/html');
-                      const errorMessages = Array.from(doc.querySelectorAll('.alert-danger, .errorlist li')) // Common Django error indicators
+                      const errorMessages = Array.from(doc.querySelectorAll('.alert-danger, .errorlist li'))
                                              .map(el => el.textContent.trim())
-                                             .filter(msg => msg) // Filter out empty messages
+                                             .filter(msg => msg)
                                              .join('; ');
-                      throw new Error(errorMessages || "Submission failed. Please check the form.");
+
+                      if (errorMessages) {
+                           // Found errors in the response HTML
+                           throw new Error(errorMessages);
+                      } else {
+                           // No errors found in HTML, assume success (e.g., page re-rendered with success message)
+                            if (successCallback) {
+                                successCallback(response, text); // Pass text maybe useful for extracting success message
+                            } else {
+                               notificationSystem.showNotification('Submission successful!');
+                               setTimeout(() => window.location.reload(), 1000); // Default reload
+                            }
+                      }
 
                  } else {
                       // Handle other errors (4xx, 5xx)
@@ -281,9 +324,18 @@
         // Specific handlers using the generic submitForm
         handleMarksSubmit(e) {
             e.preventDefault();
+            debugLog("Handling marks form submit...");
             this.submitForm(e.target,
-               () => { // Success callback
-                   notificationSystem.showNotification('Marks updated successfully! Reloading...');
+               (response, responseText) => { // Success callback
+                   let successMessage = 'Marks updated successfully! Reloading...';
+                    // Try to extract specific success message if Django renders it
+                    if (responseText) {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(responseText, 'text/html');
+                        const successAlert = doc.querySelector('.alert-success');
+                         if (successAlert) successMessage = successAlert.textContent.trim();
+                    }
+                   notificationSystem.showNotification(successMessage);
                    setTimeout(() => window.location.reload(), 1500);
                },
                (error) => { // Error callback
@@ -293,15 +345,23 @@
         },
         handleUploadSubmit(e) {
             e.preventDefault();
+             debugLog(`Handling upload form submit for form: ${e.target.id}`);
             // Check if it's the PoP form being submitted via the modal
             const isPopForm = e.target.id === 'popUploadForm';
-             const successMsg = isPopForm ? 'Proof of Payment uploaded successfully! Reloading...' : 'Document uploaded successfully! Reloading...';
+            const successMsg = isPopForm ? 'Proof of Payment uploaded successfully! Reloading...' : 'Document uploaded successfully! Reloading...';
 
             this.submitForm(e.target,
-                () => { // Success callback
-                   notificationSystem.showNotification(successMsg);
+                (response, responseText) => { // Success callback
+                   let extractedSuccessMsg = null;
+                    if (responseText) {
+                         const parser = new DOMParser();
+                         const doc = parser.parseFromString(responseText, 'text/html');
+                         const successAlert = doc.querySelector('.alert-success');
+                          if (successAlert) extractedSuccessMsg = successAlert.textContent.trim();
+                    }
+                   notificationSystem.showNotification(extractedSuccessMsg || successMsg); // Use extracted if available
                     if (isPopForm) {
-                         // Optionally close the modal first
+                         // Close the modal on success
                          const popModalElement = document.getElementById('uploadPopModal');
                          if (popModalElement && bootstrap?.Modal) {
                             const modalInstance = bootstrap.Modal.getInstance(popModalElement);
@@ -312,9 +372,8 @@
                 },
                 (error) => { // Error callback
                     notificationSystem.showNotification(`Upload Failed: ${error.message}`, true);
-                     if (isPopForm) {
-                         // Maybe keep the modal open on error?
-                     }
+                     // Optionally keep PoP modal open on error
+                     // if (isPopForm) { ... }
                 }
             );
         }
@@ -341,10 +400,15 @@
             const appendChatMessage = (message, type) => {
                  const messageDiv = document.createElement('div');
                  messageDiv.classList.add('chat-message', type);
-                 messageDiv.textContent = message; // Use textContent for security
+                 // Sanitize potentially harmful HTML before setting textContent or innerHTML
+                 // Using textContent is generally safer unless HTML formatting is explicitly needed and trusted.
+                 messageDiv.textContent = message;
                  chatMessages.appendChild(messageDiv);
                   // Scroll to bottom
-                 if(chatBody) chatBody.scrollTop = chatBody.scrollHeight;
+                 if(chatBody) {
+                     // Use setTimeout to ensure scrolling happens after DOM update
+                     setTimeout(() => { chatBody.scrollTop = chatBody.scrollHeight; }, 0);
+                 }
                  return messageDiv; // Return the element for potential removal
             };
 
@@ -395,7 +459,7 @@
                      thinkingMsg.remove(); // Remove thinking indicator
 
                     if (!response.ok) {
-                        if (response.status === 429) {
+                        if (response.status === 429) { // Rate limit specific error
                             throw new Error('Too many requests. Please try again later.');
                         }
                         throw new Error(data.error || `Assistant error! Status: ${response.status}`);
@@ -427,8 +491,9 @@
             // Toggle chat window
             if (chatToggle && chatBody) {
                 chatToggle.addEventListener('click', () => {
+                    // Use class toggling for better CSS control if needed
                     const isHidden = chatBody.style.display === 'none';
-                    chatBody.style.display = isHidden ? 'block' : 'none';
+                    chatBody.style.display = isHidden ? 'block' : 'none'; // Simple toggle
                     chatToggle.textContent = isHidden ? '−' : '+'; // Update icon based on new state
                      chatToggle.setAttribute('aria-label', isHidden ? 'Minimize chat window' : 'Expand chat window');
                      if(isHidden) chatInput.focus(); // Focus input when opened
@@ -449,6 +514,14 @@
         init(attempts = CONFIG.CAROUSEL_RETRY_ATTEMPTS, delay = CONFIG.CAROUSEL_RETRY_DELAY) {
             // Select ALL carousels on the page
             const carousels = document.querySelectorAll('.carousel.slide');
+
+             // *** ADDED DIAGNOSTIC LOGGING ***
+             debugLog('Carousel init check:', {
+                'Carousels Found': carousels.length,
+                'Bootstrap Object Type': typeof bootstrap,
+                'Bootstrap Carousel Type': typeof bootstrap?.Carousel // Use optional chaining safely
+            });
+             // **********************************
 
             if (carousels.length > 0 && typeof bootstrap !== 'undefined' && bootstrap.Carousel) {
                 carousels.forEach(carousel => {
@@ -477,16 +550,24 @@
                 // If Bootstrap JS might not be ready, retry
                 debugLog('Retrying carousel initialization', { attemptsLeft: attempts - 1 });
                 setTimeout(() => this.init(attempts - 1, delay), delay);
-            } else if (carousels.length > 0) {
-                 // Carousels exist but Bootstrap object/class is missing after retries
-                  debugLog('Carousel initialization failed: Bootstrap library not found or Carousel class missing.', {
-                      bootstrapDefined: typeof bootstrap !== 'undefined',
-                      carouselClassExists: !!(typeof bootstrap !== 'undefined' && bootstrap.Carousel)
-                  });
-                 notificationSystem.showNotification('Slideshow functionality is unavailable (library missing).', true);
-            } else {
-                 // No carousels found on the page
-                  debugLog('No carousels found to initialize.');
+            } else { // Final attempt failed
+                 // *** ADDED DIAGNOSTIC LOGGING FOR FAILURE ***
+                 debugLog('Carousel initialization failed after retries. Final check state:', {
+                    'Carousels Found': carousels.length,
+                    'Bootstrap Object Type': typeof bootstrap,
+                    'Bootstrap Carousel Type': typeof bootstrap?.Carousel
+                });
+                 // ******************************************
+
+                 if (carousels.length > 0) {
+                     // Carousels exist but Bootstrap object/class is missing after retries
+                      debugLog('Reason: Bootstrap library not found or Carousel class missing.');
+                     notificationSystem.showNotification('Slideshow functionality is unavailable (library missing).', true);
+                 } else {
+                     // No carousels found on the page
+                      debugLog('Reason: No elements with class "carousel slide" found.');
+                      // Don't show an error if no carousels are expected on the page
+                 }
             }
         }
     };
@@ -506,7 +587,15 @@
                   return;
              }
 
-             const popModalInstance = new bootstrap.Modal(popModalElement);
+             // Initialize modal instance ONCE
+             let popModalInstance = null;
+             try {
+                popModalInstance = new bootstrap.Modal(popModalElement);
+             } catch (e) {
+                 debugLog("Error initializing PoP Bootstrap Modal instance", { error: e });
+                 return; // Cannot proceed without modal instance
+             }
+
              const popUniversityName = document.getElementById('popUniversityName');
              const popUploadUniversityId = document.getElementById('popUploadUniversityId');
              const popUploadForm = document.getElementById('popUploadForm'); // Get the form itself
@@ -520,9 +609,13 @@
                  return;
              }
 
-             // Add listener to all PoP upload buttons
+             // Use event delegation for dynamically added buttons if necessary,
+             // but direct binding is fine if the buttons are present on initial load.
              document.querySelectorAll('.upload-pop-btn').forEach(button => {
-                 button.addEventListener('click', () => {
+                 button.addEventListener('click', (e) => {
+                     // Prevent any default button behavior if necessary
+                     // e.preventDefault();
+
                      const uniId = button.dataset.uniId;
                      const uniName = button.dataset.uniName;
 
@@ -536,15 +629,24 @@
                      popUniversityName.textContent = uniName;
                      popUploadUniversityId.value = uniId;
 
-                     // Show the modal
-                     popModalInstance.show();
+                     // Show the modal using the initialized instance
+                     if (popModalInstance) {
+                          popModalInstance.show();
+                     } else {
+                          debugLog("PoP modal instance not available to show.");
+                     }
                  });
              });
-             debugLog("PoP modal listeners attached.");
+             debugLog("PoP modal button listeners attached.");
 
              // Attach submit handler to the specific PoP form
-             popUploadForm.addEventListener('submit', (e) => formSystem.handleUploadSubmit(e));
-             debugLog("PoP form submit listener attached.");
+             // Make sure this listener isn't attached multiple times if init runs again
+             if (!popUploadForm.dataset.listenerAttached) {
+                  popUploadForm.addEventListener('submit', (e) => formSystem.handleUploadSubmit(e));
+                  popUploadForm.dataset.listenerAttached = 'true'; // Mark as attached
+                  debugLog("PoP form submit listener attached.");
+             }
+
          }
     };
 
@@ -559,27 +661,31 @@
                 carouselSystem.init(); // Initialize ALL carousels
                 chatSystem.init();
                 popModalSystem.init(); // Initialize PoP modal triggers
-                setInterval(() => notificationSystem.simulateNewSubmission(), CONFIG.SUBMISSION_CHECK_INTERVAL);
+
+                 // Only start simulation interval if configured (optional)
+                 if (CONFIG.SUBMISSION_CHECK_INTERVAL > 0 && CONFIG.NOTIFICATION_CHANCE > 0) {
+                     setInterval(() => notificationSystem.simulateNewSubmission(), CONFIG.SUBMISSION_CHECK_INTERVAL);
+                     debugLog(`Notification simulation started (Interval: ${CONFIG.SUBMISSION_CHECK_INTERVAL}ms, Chance: ${CONFIG.NOTIFICATION_CHANCE*100}%)`);
+                 }
+
 
                 // Attach form listeners using the refined formSystem
                 const marksForm = document.getElementById('marksForm');
                 const uploadForm = document.getElementById('uploadForm'); // Main upload form
 
-                if (marksForm) {
+                if (marksForm && !marksForm.dataset.listenerAttached) { // Prevent double-binding
                     marksForm.addEventListener('submit', (e) => formSystem.handleMarksSubmit(e));
+                    marksForm.dataset.listenerAttached = 'true';
                     debugLog('Marks form listener attached');
-                } else {
+                } else if (!marksForm) {
                     debugLog('Marks form not found');
                 }
 
-                if (uploadForm) {
-                     // Ensure this listener doesn't conflict with the PoP form listener if IDs are the same
-                     // Since PoP form has its own listener via popModalSystem.init, we only attach to the main one here.
-                     if (uploadForm.id !== 'popUploadForm') { // Prevent double-binding if IDs were the same
-                        uploadForm.addEventListener('submit', (e) => formSystem.handleUploadSubmit(e));
-                        debugLog('Main Upload form listener attached');
-                    }
-                } else {
+                if (uploadForm && uploadForm.id !== 'popUploadForm' && !uploadForm.dataset.listenerAttached) { // Prevent double-binding
+                    uploadForm.addEventListener('submit', (e) => formSystem.handleUploadSubmit(e));
+                     uploadForm.dataset.listenerAttached = 'true';
+                    debugLog('Main Upload form listener attached');
+                } else if (!uploadForm) {
                     debugLog('Main Upload form not found');
                 }
 
@@ -596,8 +702,13 @@
     // Ensure it's robustly attached to the window object
     try {
          if (typeof window !== 'undefined') {
-             window.selectUniversity = (universityId) => universitySystem.selectUniversity(universityId);
-              debugLog('selectUniversity function exposed globally.');
+             // Check if it already exists to prevent potential issues with hot-reloading dev servers
+             if (!window.selectUniversity) {
+                  window.selectUniversity = (universityId) => universitySystem.selectUniversity(universityId);
+                  debugLog('selectUniversity function exposed globally.');
+             } else {
+                   debugLog('selectUniversity function already exposed.');
+             }
          } else {
              debugLog('Window object not found, cannot expose selectUniversity globally.');
          }
@@ -608,8 +719,14 @@
 
     // Initialize event listeners safely
     try {
-        initEventListeners();
-        debugLog('Dashboard JavaScript initialization sequence started.');
+        // Check if the script is already initialized (simple flag)
+         if (!window.dashboardScriptInitialized) {
+            initEventListeners();
+            window.dashboardScriptInitialized = true;
+            debugLog('Dashboard JavaScript initialization sequence started.');
+         } else {
+             debugLog('Dashboard JavaScript initialization skipped (already initialized).');
+         }
     } catch (error) {
         debugLog('Failed to start dashboard initialization', { error: error.message, stack: error.stack });
         // Attempt to show notification even if init failed early
