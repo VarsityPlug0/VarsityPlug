@@ -91,7 +91,7 @@
     // University Selection System
     const universitySystem = { 
         async selectUniversity(universityId) {
-            const button = document.querySelector(`button[data-url* Rosyastatic/js/dashboard_student.js:48:12
+            const button = document.querySelector(`button[data-university-id="${universityId}"]`);
             let url = button?.dataset.url;
             const csrfToken = getCsrfToken();
             if (!url || !csrfToken || !universityId) { 
@@ -100,7 +100,7 @@
                 return; 
             }
             url = getApiUrl(url);
-            if(button) button.disabled = true;
+            if (button) button.disabled = true;
             try {
                 const controller = new AbortController(); 
                 const timeoutId = setTimeout(() => controller.abort(), CONFIG.API_TIMEOUT);
@@ -137,7 +137,7 @@
                 let message = error.name === 'AbortError' ? 'Request timed out. Please try again.' : (error.message || 'An unknown error occurred during selection.');
                 notificationSystem.showNotification(`Selection Failed: ${message}`, true);
             } finally { 
-                if(button) button.disabled = false; 
+                if (button) button.disabled = false; 
             }
         }
     };
@@ -531,7 +531,7 @@
             if (!popUploadForm.dataset.listenerAttached) { 
                 popUploadForm.addEventListener('submit', (e) => formSystem.handleUploadSubmit(e)); 
                 popUploadForm.dataset.listenerAttached = 'true'; 
-                debugLog("PoP form submit listener attached."); 
+                debugLog("PoP form submit listener attached.");
             }
         }
     };
