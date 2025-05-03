@@ -91,7 +91,7 @@
     // University Selection System
     const universitySystem = { 
         async selectUniversity(universityId) {
-            const button = document.querySelector(`button[data-url*="/select_university/${universityId}/"]`);
+            const button = document.querySelector(`button[data-url* Rosyastatic/js/dashboard_student.js:48:12
             let url = button?.dataset.url;
             const csrfToken = getCsrfToken();
             if (!url || !csrfToken || !universityId) { 
