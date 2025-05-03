@@ -6,7 +6,9 @@
         SUBMISSION_CHECK_INTERVAL: 30000,  // Check for new submissions every 30s
         NOTIFICATION_CHANCE: 0.1,         // 10% chance to show notification
         API_TIMEOUT: 10000,               // API request timeout (ms)
-        CHAT_DEBOUNCE_DELAY: 500          // Debounce delay for chat input (ms)
+        CHAT_DEBOUNCE_DELAY: 500,         // Debounce delay for chat input (ms)
+        CAROUSEL_RETRY_ATTEMPTS: 3,       // Number of carousel init retries
+        CAROUSEL_RETRY_DELAY: 500         // Delay between retries (ms)
     };
 
     // Name arrays for random notification messages
@@ -344,16 +346,21 @@
 
     // Bootstrap Carousel Initialization
     const carouselSystem = {
-        init(attempts = 3, delay = 500) {
+        init(attempts = CONFIG.CAROUSEL_RETRY_ATTEMPTS, delay = CONFIG.CAROUSEL_RETRY_DELAY) {
             const carousel = document.getElementById('universitySlideshow');
             if (carousel && typeof bootstrap !== 'undefined' && bootstrap.Carousel) {
-                new bootstrap.Carousel(carousel, {
-                    interval: CONFIG.SLIDE_INTERVAL,
-                    ride: 'carousel'
-                });
-                debugLog('Carousel initialized');
+                try {
+                    new bootstrap.Carousel(carousel, {
+                        interval: CONFIG.SLIDE_INTERVAL,
+                        ride: 'carousel'
+                    });
+                    debugLog('Carousel initialized successfully');
+                } catch (error) {
+                    debugLog('Carousel initialization error', { error: error.message });
+                    notificationSystem.showNotification('Error initializing university slideshow.', true);
+                }
             } else if (attempts > 0) {
-                debugLog('Retrying carousel initialization', { attemptsLeft: attempts });
+                debugLog('Retrying carousel initialization', { attemptsLeft: attempts - 1 });
                 setTimeout(() => this.init(attempts - 1, delay), delay);
             } else {
                 debugLog('Carousel initialization failed', {
@@ -361,7 +368,11 @@
                     bootstrap: typeof bootstrap !== 'undefined',
                     carouselClass: !!(bootstrap && bootstrap.Carousel)
                 });
-                notificationSystem.showNotification('University slideshow is temporarily unavailable.', true);
+                if (!carousel) {
+                    notificationSystem.showNotification('No university recommendations available.', true);
+                } else {
+                    notificationSystem.showNotification('University slideshow is temporarily unavailable.', true);
+                }
             }
         }
     };

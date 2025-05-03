@@ -1,11 +1,11 @@
 {% extends "helper/base.html" %}
 {% load static %}
+{% load index %}
 
 {% block extra_css %}
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 <link rel="stylesheet" href="{% static 'helper/css/dashboard_student.css' %}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-{# Link to your actual CSS file if styles were moved #}
 {% endblock %}
 
 {% block content %}
@@ -35,7 +35,7 @@
         <div class="card-body">
             {% if recommended_universities %}
                 <div id="universitySlideshow" class="carousel slide" data-bs-ride="carousel">
-                     <div class="carousel-indicators">
+                    <div class="carousel-indicators">
                         {% for uni in recommended_universities %}
                             <button type="button" data-bs-target="#universitySlideshow" data-bs-slide-to="{{ forloop.counter0 }}" class="{% if forloop.first %}active{% endif %}" aria-current="{% if forloop.first %}true{% endif %}" aria-label="Slide {{ forloop.counter }}"></button>
                         {% endfor %}
@@ -49,7 +49,7 @@
                                         <p class="card-text">{{ uni.description|default:"Explore opportunities at this university." }}</p>
                                         <p><strong>Due Date:</strong> {{ uni.due_date|default:"Not specified" }}</p>
                                         <p><strong>Application Fee:</strong> {{ uni.application_fee|default:"Not available" }}</p>
-                                        <div class="d-flex gap-2 justify-content-center"> {# Centered buttons #}
+                                        <div class="d-flex gap-2 justify-content-center">
                                             <a href="{{ uni.detail_url }}" class="btn btn-outline-secondary btn-sm" aria-label="View details for {{ uni.name|default:'university' }}">View Details</a>
                                             <button onclick="selectUniversity({{ uni.id }})" class="btn btn-primary btn-sm" data-url="{{ uni.select_url }}" aria-label="Select {{ uni.name|default:'university' }}">Select</button>
                                         </div>
@@ -58,7 +58,7 @@
                             </div>
                         {% endfor %}
                     </div>
-                     <button class="carousel-control-prev" type="button" data-bs-target="#universitySlideshow" data-bs-slide="prev" aria-label="Previous slide">
+                    <button class="carousel-control-prev" type="button" data-bs-target="#universitySlideshow" data-bs-slide="prev" aria-label="Previous slide">
                         <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                         <span class="visually-hidden">Previous</span>
                     </button>
@@ -70,7 +70,7 @@
             {% else %}
                 <div class="alert alert-info">
                     No recommendations available currently. This may update as you add marks.
-                     {% if user.is_staff %}
+                    {% if user.is_staff %}
                         <p class="small mt-2"><strong>Admin Debug:</strong> {% if student_aps is None %}APS score not calculated or invalid.{% else %}APS score is {{ student_aps }}, but no recommendations generated.{% endif %}</p>
                     {% endif %}
                 </div>
@@ -93,34 +93,23 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for mark_item in marks_list %} {# Renamed loop variable #}
+                            {% for i in "012456" %}
                                 <tr>
                                     <td>
-                                        {% if mark_item.label == 'Life Orientation' %}
-                                            <input type="text" value="{{ mark_item.selected_subject }}" readonly class="form-control bg-light" disabled aria-label="Life Orientation subject">
-                                            <input type="hidden" name="subject_{{ forloop.counter0 }}" value="Life Orientation">
-                                        {% else %}
-                                            <select name="subject_{{ forloop.counter0 }}" class="form-select" required aria-label="Select subject {{ mark_item.label }}">
-                                                <option value="">Select {{ mark_item.label }}</option>
-                                                {% for option in mark_item.options %}
-                                                    <option value="{{ option }}" {% if option == mark_item.selected_subject %}selected{% endif %}>{{ option }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        {% endif %}
+                                        <select name="subject_{{ i }}" class="form-select" required aria-label="Select subject {{ marks_list|index:i|attr:'label' }}">
+                                            <option value="">Select {{ marks_list|index:i|attr:'label' }}</option>
+                                            {% for option in marks_list|index:i|attr:'options' %}
+                                                <option value="{{ option }}" {% if option == marks_list|index:i|attr:'selected_subject' %}selected{% endif %}>{{ option }}</option>
+                                            {% endfor %}
+                                        </select>
                                     </td>
                                     <td>
-                                        {% if mark_item.label == 'Life Orientation' %}
-                                            <input type="number" name="mark_{{ forloop.counter0 }}" value="0" readonly class="form-control bg-light" disabled aria-label="Life Orientation mark">
-                                        {% else %}
-                                            <input type="number" name="mark_{{ forloop.counter0 }}" value="{% if mark_item.mark is not None %}{{ mark_item.mark }}{% endif %}" min="0" max="100" class="form-control" required placeholder="0-100" aria-label="Mark for {{ mark_item.label }}">
-                                        {% endif %}
+                                        <input type="number" name="mark_{{ i }}" value="{% if marks_list|index:i|attr:'mark' is not None %}{{ marks_list|index:i|attr:'mark' }}{% endif %}" min="0" max="100" class="form-control" required placeholder="0-100" aria-label="Mark for {{ marks_list|index:i|attr:'label' }}">
                                     </td>
-                                </tr>
-                            {% empty %}
-                                <tr>
-                                    <td colspan="2" class="text-center">Marks form structure unavailable. Please contact support.</td>
                                 </tr>
                             {% endfor %}
+                            <input type="hidden" name="subject_3" value="Life Orientation">
+                            <input type="hidden" name="mark_3" value="0">
                         </tbody>
                     </table>
                 </div>
@@ -146,8 +135,7 @@
                     <label for="file" class="form-label">Upload File</label>
                     <input type="file" name="file" id="file" accept=".pdf,.jpg,.png" class="form-control" required aria-label="Upload document file">
                 </div>
-                 {# Hidden field for proof of payment university association - still needed for PoP modal #}
-                 <input type="hidden" name="university_id" id="paymentProofUniversityId">
+                <input type="hidden" name="university_id" id="paymentProofUniversityId">
                 <button type="submit" class="btn btn-primary" aria-label="Upload document">Upload Document</button>
             </form>
             {% if documents %}
@@ -194,43 +182,34 @@
     <section class="card mb-4">
         <h2 class="card-header bg-primary text-white">Qualified Universities (Based on APS: {{ student_aps|default:"N/A" }})</h2>
         <div class="card-body">
-            {% if universities %} {# universities should now be the JSON string #}
-                {# Embed JSON data - MUST use |safe filter #}
+            {% if universities %}
                 <script id="qualifiedUniversitiesData" type="application/json">
                     {{ universities|safe }}
                 </script>
-
-                {# Placeholder where JS will insert the university card #}
-                <div id="qualifiedUniversityDisplayArea" class="text-center" style="min-height: 200px; display: flex; align-items: center; justify-content: center;">
-                    {# Initial loading message (optional) #}
-                    <p>Loading qualified universities...</p>
+                <div id="qualifiedUniversityDisplayArea" class="text-center" style="min-height: 200px; display: flex; align-items: center; justify-content: center; padding: 1rem 0;">
+                    <p class="text-muted">Loading qualified universities...</p>
                 </div>
-
-                {# Browse All button remains accessible #}
                 <div class="text-center mt-3">
                     <a href="{% url 'helper:universities_list' %}" class="btn btn-secondary" aria-label="Browse all universities">Browse All Universities</a>
                 </div>
-
             {% else %}
-                {# Message when no universities are found #}
                 <div class="alert alert-info">
-                     {% if student_aps is not None %}
+                    {% if student_aps is not None %}
                         Based on your APS score of {{ student_aps }}, no universities currently meet the minimum requirements in our database. Please double-check your marks or contact support.
                     {% else %}
-                       No qualified universities to display. Please enter your marks first to calculate your APS score.
+                        No qualified universities to display. Please enter your marks first to calculate your APS score.
                     {% endif %}
-
                     {% if user.is_staff %}
                         <p class="small mt-2"><strong>Admin Debug:</strong> {% if student_aps is None %}APS score not calculated or invalid.{% else %}APS score is {{ student_aps }}, but no qualified universities found.{% endif %}</p>
                     {% endif %}
                 </div>
-                 {# Optionally add the browse button here too #}
                 <div class="text-center mt-3">
-                     <a href="{% url 'helper:universities_list' %}" class="btn btn-secondary" aria-label="Browse all universities">Browse All Universities</a>
+                    <a href="{% url 'helper:universities_list' %}" class="btn btn-secondary" aria-label="Browse all universities">Browse All Universities</a>
                 </div>
             {% endif %}
         </div>
     </section>
+
     <section class="card mb-4">
         <h2 class="card-header bg-primary text-white">Selected Universities</h2>
         <div class="card-body">
@@ -246,20 +225,18 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for uni in selected_universities %} {# Uses selected_universities_list from context #}
+                            {% for uni in selected_universities %}
                                 <tr>
                                     <td>{{ uni.name|default:"Unknown University" }}</td>
                                     <td>{{ uni.due_date|default:"Not specified" }}</td>
                                     <td>{{ uni.application_fee|default:"Not available" }}</td>
-                                    <td class="d-flex gap-2">
+                                    <td class="d-flex gap-2 flex-wrap">
                                         <a href="{% url 'helper:university_detail' uni.id %}" class="btn btn-outline-secondary btn-sm" aria-label="View details for {{ uni.name|default:'university' }}">View</a>
-                                        {# Only show Pay Fee button if fee is not FREE and not Not available #}
                                         {% if uni.application_fee != "FREE" and uni.application_fee != "Not available" %}
                                             <a href="{% url 'helper:pay_application_fee' uni.id %}" class="btn btn-success btn-sm" aria-label="Pay application fee for {{ uni.name|default:'university' }}">Pay Fee</a>
-                                            {# Button to trigger upload of proof of payment #}
                                             <button class="btn btn-info btn-sm upload-pop-btn" data-uni-id="{{ uni.id }}" data-uni-name="{{ uni.name }}" aria-label="Upload Proof of Payment for {{ uni.name }}">Upload PoP</button>
                                         {% else %}
-                                             <span class="badge bg-secondary">No Fee / Paid</span> {# Indicate no fee needed or potentially paid #}
+                                            <span class="badge bg-secondary align-self-center">No Fee Required</span>
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -267,9 +244,9 @@
                         </tbody>
                     </table>
                 </div>
-                 {% if selected_universities %} {# Only show Pay All if there are selections #}
+                {% if selected_universities %}
                     <a href="{% url 'helper:pay_all_application_fees' %}" class="btn btn-success mt-3" aria-label="Pay all application fees">Pay All Fees</a>
-                 {% endif %}
+                {% endif %}
             {% else %}
                 <div class="alert alert-info">
                     No universities selected. <a href="{% url 'helper:universities_list' %}" class="text-primary text-decoration-underline" aria-label="Browse universities">Browse universities</a> to select.
@@ -292,7 +269,7 @@
                             <div class="mb-3">
                                 <label for="document_type_{{ doc.id }}" class="form-label">Document Type</label>
                                 <select name="document_type" id="document_type_{{ doc.id }}" class="form-select" required aria-label="Select document type for editing">
-                                    {% with current_type=doc.document_type|stringformat:"s" %} {# Ensure comparison works #}
+                                    {% with current_type=doc.document_type|stringformat:"s" %}
                                     {% for value, label in form.document_type.field.choices %}
                                         <option value="{{ value }}" {% if value|stringformat:"s" == current_type %}selected{% endif %}>{{ label }}</option>
                                     {% endfor %}
@@ -312,34 +289,29 @@
         </div>
     {% endfor %}
 
-     <div class="modal fade" id="uploadPopModal" tabindex="-1" aria-labelledby="uploadPopModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="uploadPopModalLabel">Upload Proof of Payment</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-             <p>Uploading for: <strong id="popUniversityName"></strong></p>
-             {# Re-use the main upload form structure but specifically for PoP #}
-             <form id="popUploadForm" method="post" enctype="multipart/form-data" action="{% url 'helper:dashboard_student' %}">
-                 {% csrf_token %}
-                 {# Set document_type to payment_proof #}
-                 <input type="hidden" name="document_type" value="payment_proof">
-                 {# Hidden field for university ID, will be set by JS #}
-                 <input type="hidden" name="university_id" id="popUploadUniversityId">
-
-                 <div class="mb-3">
-                     <label for="popFile" class="form-label">Proof of Payment File</label>
-                     <input type="file" name="file" id="popFile" accept=".pdf,.jpg,.png" class="form-control" required aria-label="Upload proof of payment file">
-                 </div>
-                 <button type="submit" class="btn btn-primary" aria-label="Upload proof of payment">Upload Proof</button>
-             </form>
-          </div>
+    <div class="modal fade" id="uploadPopModal" tabindex="-1" aria-labelledby="uploadPopModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="uploadPopModalLabel">Upload Proof of Payment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Uploading for: <strong id="popUniversityName"></strong></p>
+                    <form id="popUploadForm" method="post" enctype="multipart/form-data" action="{% url 'helper:dashboard_student' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="document_type" value="payment_proof">
+                        <input type="hidden" name="university_id" id="popUploadUniversityId">
+                        <div class="mb-3">
+                            <label for="popFile" class="form-label">Proof of Payment File</label>
+                            <input type="file" name="file" id="popFile" accept=".pdf,.jpg,.png" class="form-control" required aria-label="Upload proof of payment file">
+                        </div>
+                        <button type="submit" class="btn btn-primary" aria-label="Upload proof of payment">Upload Proof</button>
+                    </form>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-
 
     <div id="notificationPopup" class="notification-popup" role="alert" aria-live="polite">
         <span id="notificationMessage"></span>
@@ -355,22 +327,16 @@
                 <div class="chat-message ai">Hello! I'm here to help with your university applications. Ask me anything!</div>
             </div>
             <form id="aiChatForm" class="d-flex" data-url="{% url 'helper:ai_chat' %}">
-                {% csrf_token %} {# Add CSRF token to chat form as well #}
+                {% csrf_token %}
                 <input id="aiChatInput" type="text" placeholder="Type your question..." class="form-control flex-grow-1" required aria-label="Type your question for the Varsity Assistant">
                 <button type="submit" class="btn btn-primary btn-sm ms-2" aria-label="Send chat message">Send</button>
             </form>
         </div>
     </div>
 </div>
-
 {% endblock %}
-
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous" defer></script>
 <script src="{% static 'js/dashboard_student.js' %}" defer></script>
-
-{# Ensure your dashboard_student.js contains the necessary functions like selectUniversity #}
-{# and the new logic for the auto-cycling display #}
-
 {% endblock %}

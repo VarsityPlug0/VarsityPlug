@@ -1,29 +1,37 @@
 services:
   - type: web
-    name: varsity-plug-app
+    name: varsityplugapp
     runtime: python
-    buildCommand: >-
-      pip install -r requirements.txt &&
-      python manage.py collectstatic --noinput
-    startCommand: >-
-      python manage.py migrate &&
-      python manage.py createsuperuser_auto &&
-      gunicorn varsity_plug.wsgi:application
-    postBuild: >-
-      apt-get update &&
-      apt-get install -y tesseract-ocr libtesseract-dev
+    region: oregon
+    plan: free
+    pythonVersion: "3.11"
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput --verbosity 2
+    startCommand: python manage.py migrate && python manage.py createsuperuser_auto --noinput || true && gunicorn varsity_plug.wsgi:application
+    postBuild: apt-get update && apt-get install -y tesseract-ocr libtesseract-dev poppler-utils
     envVars:
       - key: DEBUG
         value: "False"
-      - key: SECRET_KEY
+      - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
-        value: "postgresql://varsity_plug_db_user:1dOGthjtnXPsff38kIdMtw4vM2NF1OUa@dpg-d033gnadbo4c73c8f1i0-a.oregon-postgres.render.com/varsity_plug_db"
+        fromDatabase:
+          name: varsity_plug_db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: varsity_plug_redis
+          property: connectionString
       - key: OPENAI_API_KEY
         sync: false
-      - key: SUPERUSER_PASSWORD
-        sync: false
+  - type: redis
+    name: varsity_plug_redis
+    region: oregon
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+
 databases:
-  - name: varsity-plug-db
+  - name: varsity_plug_db
     databaseName: varsity_plug_db
     user: varsity_plug_db_user
+    region: oregon

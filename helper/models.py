@@ -62,7 +62,7 @@ class StudentProfile(models.Model):
     phone_number = models.CharField(max_length=12, validators=[validate_phone_number], blank=True, null=True)
     selected_universities = models.ManyToManyField(University, blank=True)
     marks = models.JSONField(default=dict, blank=True, null=True)
-    stored_aps_score = models.IntegerField(null=True, blank=True)
+    stored_aps_score = models.IntegerField(default=0, blank=True)  # Updated to default=0, removed null=True
     subscription_package = models.CharField(max_length=20, choices=SUBSCRIPTION_PACKAGES, default='basic')
     application_count = models.IntegerField(default=0)
     subscription_status = models.BooleanField(default=False)
@@ -110,7 +110,7 @@ class StudentProfile(models.Model):
     def save(self, *args, **kwargs):
         """Updates stored_aps_score with the calculated APS score before saving."""
         calculated_aps = self.aps_score
-        self.stored_aps_score = calculated_aps if calculated_aps is not None else None
+        self.stored_aps_score = calculated_aps if calculated_aps is not None else 0  # Default to 0 if calculation fails
         super().save(*args, **kwargs)
 
     def get_application_limit(self):
