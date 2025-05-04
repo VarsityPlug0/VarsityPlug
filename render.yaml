@@ -6,8 +6,9 @@ services:
     plan: free
     pythonVersion: "3.11"
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput --verbosity 2
-    startCommand: python manage.py migrate && python manage.py createsuperuser_auto --noinput || true && gunicorn varsity_plug.wsgi:application
-    postBuild: apt-get update && apt-get install -y tesseract-ocr libtesseract-dev poppler-utils
+    startCommand: python manage.py migrate --noinput && gunicorn varsity_plug.wsgi:application --workers 2 --timeout 120
+    healthCheckPath: /health/
+    autoDeploy: true
     envVars:
       - key: DEBUG
         value: "False"
@@ -24,14 +25,20 @@ services:
           property: connectionString
       - key: OPENAI_API_KEY
         sync: false
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: DJANGO_LOG_LEVEL
+        value: "INFO"
   - type: redis
     name: varsity_plug_redis
     region: oregon
     plan: free
     maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
 
 databases:
   - name: varsity_plug_db
     databaseName: varsity_plug_db
     user: varsity_plug_db_user
     region: oregon
+    plan: free

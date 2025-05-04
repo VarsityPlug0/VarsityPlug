@@ -26,17 +26,19 @@ class University(models.Model):
         verbose_name_plural = 'Universities'
 
 class DocumentUpload(models.Model):
-    """Stores uploaded documents for a user, such as ID pictures or academic results."""
+    """Stores uploaded documents for a user, such as ID pictures, academic results, or proof of payment."""
     DOCUMENT_TYPES = (
         ('id_picture', 'ID Picture'),
         ('grade_11_results', 'Grade 11 Results'),
         ('grade_12_results', 'Grade 12 Results'),
+        ('payment_proof', 'Proof of Payment'),
         ('other', 'Other'),
     )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     document_type = models.CharField(max_length=20, choices=DOCUMENT_TYPES)
     file = models.FileField(upload_to='documents/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
+    university = models.ForeignKey(University, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f"{self.get_document_type_display()} by {self.user.username}"
@@ -62,7 +64,7 @@ class StudentProfile(models.Model):
     phone_number = models.CharField(max_length=12, validators=[validate_phone_number], blank=True, null=True)
     selected_universities = models.ManyToManyField(University, blank=True)
     marks = models.JSONField(default=dict, blank=True, null=True)
-    stored_aps_score = models.IntegerField(default=0, blank=True)  # Updated to default=0, removed null=True
+    stored_aps_score = models.IntegerField(default=0, blank=True)
     subscription_package = models.CharField(max_length=20, choices=SUBSCRIPTION_PACKAGES, default='basic')
     application_count = models.IntegerField(default=0)
     subscription_status = models.BooleanField(default=False)
@@ -81,7 +83,7 @@ class StudentProfile(models.Model):
             aps = 0
             for subject, mark in self.marks.items():
                 if subject == 'Life Orientation':
-                    continue  # Skip Life Orientation for APS
+                    continue
                 try:
                     mark = int(mark)
                     if mark >= 80:
@@ -110,7 +112,7 @@ class StudentProfile(models.Model):
     def save(self, *args, **kwargs):
         """Updates stored_aps_score with the calculated APS score before saving."""
         calculated_aps = self.aps_score
-        self.stored_aps_score = calculated_aps if calculated_aps is not None else 0  # Default to 0 if calculation fails
+        self.stored_aps_score = calculated_aps if calculated_aps is not None else 0
         super().save(*args, **kwargs)
 
     def get_application_limit(self):
@@ -149,7 +151,7 @@ class StudentProfile(models.Model):
         """Returns the service fee for applications, free for ultimate package."""
         if self.can_access_concierge_service():
             return 0
-        return 50  # R50 per application
+        return 50
 
     class Meta:
         ordering = ['user__username']

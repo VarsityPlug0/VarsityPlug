@@ -5,11 +5,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils.safestring import mark_safe
 from django.urls import reverse
-from .forms import DocumentUploadForm, MarksForm  # Import MarksForm
+from .forms import DocumentUploadForm, MarksForm
 from .models import DocumentUpload, University, StudentProfile
 from .faculty_data import FACULTY_COURSES, FACULTIES_OPEN
 from django_ratelimit.decorators import ratelimit
-from django.http import JsonResponse, HttpResponseNotFound
+from django.http import JsonResponse, HttpResponse, HttpResponseNotFound
 from django.utils.html import escape
 import openai
 from django.conf import settings
@@ -21,9 +21,12 @@ from django.core.serializers.json import DjangoJSONEncoder
 logger = logging.getLogger(__name__)
 
 # Set up OpenAI API key
-openai.api_key = settings.OPENAI_API_KEY
+if hasattr(settings, 'OPENAI_API_KEY') and settings.OPENAI_API_KEY:
+    openai.api_key = settings.OPENAI_API_KEY
+else:
+    logger.critical("OPENAI_API_KEY is not set in settings. AI chat functionality will fail.")
 
-# Valid NSC subjects (assuming this list is correct and complete)
+# Valid NSC subjects
 NSC_SUBJECTS = [
     "Accounting", "Agricultural Sciences", "Business Studies",
     "Computer Applications Technology", "Consumer Studies", "Dramatic Arts",
@@ -44,7 +47,7 @@ NSC_SUBJECTS = [
     "Xitsonga First Additional Language", "Life Orientation",
 ]
 
-# Constants for University Info (Consider moving to models or settings if more dynamic)
+# Constants for University Info
 UNIVERSITY_DUE_DATES = {
     "Cape Peninsula University of Technology (CPUT)": "2025-09-30",
     "Central University of Technology (CUT)": "2025-10-31",
@@ -163,6 +166,10 @@ def custom_404(request, exception):
     """Handle 404 errors with a custom page."""
     return render(request, '404.html', status=404)
 
+def health_check(request):
+    """Render health check endpoint for deployment monitoring."""
+    return HttpResponse("OK", status=200)
+
 def home(request):
     """Render the homepage and handle action button redirects."""
     if request.method == 'POST' and 'take_action' in request.POST:
@@ -266,7 +273,8 @@ def dashboard_student(request):
                 'id': uni.id,
                 'name': uni.name,
                 'due_date': UNIVERSITY_DUE_DATES.get(uni.name, "TBD"),
-                'application_fee': APPLICATION_FEES_2025.get(uni.name, "Not available")
+                'application_fee': APPLICATION_FEES_2025.get(uni.name, "Not available"),
+                'payment_proof': DocumentUpload.objects.filter(user=request.user, document_type='payment_proof', university=uni).first()
             } for uni in selected_universities_qs
         ]
         marks = student_profile.marks if student_profile.marks else {}
@@ -317,7 +325,7 @@ def dashboard_student(request):
                     }
                     student_profile.marks = new_marks
                     aps_score = calculate_aps(new_marks)
-                    student_profile.stored_aps_score = aps_score
+                    student_profile.stored_aps_score = aps_score if aps_score is not None else 0
                     student_profile.save()
                     local_logger.info(f"Marks updated and APS stored for user {request.user.username}: {aps_score}")
                     if aps_score is None:
@@ -361,7 +369,7 @@ def dashboard_student(request):
                     local_logger.error(f"Document upload failed for {request.user.username}: {form.errors.as_json()}")
                     return redirect('helper:dashboard_student')
         student_aps = student_profile.stored_aps_score
-        if student_aps is None and student_profile.marks:
+        if student_aps == 0 and student_profile.marks:
             local_logger.debug(f"No stored APS for {request.user.username}, calculating from marks")
             student_aps = calculate_aps(student_profile.marks)
             if student_aps is not None:
@@ -453,7 +461,20 @@ def edit_document(request, doc_id):
     if request.method == 'POST':
         form = DocumentUploadForm(request.POST, request.FILES, instance=document)
         if form.is_valid():
-            form.save()
+            doc = form.save(commit=False)
+            document_type = form.cleaned_data['document_type']
+            university_id = request.POST.get('university_id')
+            if document_type == 'payment_proof' and university_id:
+                try:
+                    university = University.objects.get(id=university_id)
+                    doc.university = university
+                except University.DoesNotExist:
+                    messages.error(request, "Invalid university specified for payment proof.")
+                    logger.error(f"Invalid university ID {university_id} for document edit by {request.user.username}")
+                    return redirect('helper:dashboard_student')
+            else:
+                doc.university = None
+            doc.save()
             messages.success(request, "Document updated successfully!")
             logger.info(f"Document {doc_id} updated by {request.user.username}")
             return redirect('helper:dashboard_student')
@@ -523,7 +544,8 @@ def universities_list(request):
             'university': uni,
             'due_date': UNIVERSITY_DUE_DATES.get(uni.name, "TBD"),
             'faculties_open': FACULTIES_OPEN.get(uni.name, ["N/A"]),
-            'application_fee': APPLICATION_FEES_2025.get(uni.name, "N/A")
+            'application_fee': APPLICATION_FEES_2025.get(uni.name, "N/A"),
+            'payment_proof': DocumentUpload.objects.filter(user=request.user, document_type='payment_proof', university=uni).first()
         } for uni in selected_universities_qs
     ]
     eligible_universities_with_details = []
@@ -579,12 +601,14 @@ def university_detail(request, uni_id):
     application_fee = APPLICATION_FEES_2025.get(university.name, "Not available")
     due_date = UNIVERSITY_DUE_DATES.get(university.name, "TBD")
     faculties_open = FACULTIES_OPEN.get(university.name, ["Faculty information not available yet."])
+    payment_proof = DocumentUpload.objects.filter(user=request.user, document_type='payment_proof', university=university).first()
     return render(request, 'helper/university_detail.html', {
         'university': university,
         'application_fee': application_fee,
         'due_date': due_date,
         'faculties_open': faculties_open,
         'student_profile': student_profile,
+        'payment_proof': payment_proof,
     })
 
 @login_required
@@ -646,12 +670,14 @@ def pay_application_fee_instructions(request, uni_id):
         "branch_code": "654321",
         "reference": f"VP{request.user.id}U{university.id}-{uni_id}"
     }
+    payment_proof = DocumentUpload.objects.filter(user=request.user, document_type='payment_proof', university=university).first()
     return render(request, 'helper/pay_application_fee_instructions.html', {
         'university': university,
         'university_fee': university_fee,
         'fee_display': fee_display,
         'total_fee': total_fee,
         'bank_details': bank_details,
+        'payment_proof': payment_proof,
     })
 
 @login_required
@@ -672,7 +698,8 @@ def pay_all_application_fees(request):
             payment_breakdown.append({
                 'university': uni.name,
                 'university_fee': university_fee,
-                'fee_display': APPLICATION_FEES_2025.get(uni.name, "N/A")
+                'fee_display': APPLICATION_FEES_2025.get(uni.name, "N/A"),
+                'payment_proof': DocumentUpload.objects.filter(user=request.user, document_type='payment_proof', university=uni).first()
             })
     package_costs = {'basic': 400, 'standard': 600, 'premium': 800, 'ultimate': 1000}
     package_cost = package_costs.get(student_profile.subscription_package, 0)
@@ -711,9 +738,12 @@ def ai_chat(request):
         local_logger.warning("Invalid request method for ai_chat (Non-POST)")
         return JsonResponse({'error': 'Invalid request method. Use POST.'}, status=405)
     student_profile, _ = StudentProfile.objects.get_or_create(user=request.user)
-    if not student_profile.can_access_chat():
+    if not student_profile.can_access_whatsapp_chat():
         local_logger.warning(f"Chat access denied for user {request.user.username} due to subscription.")
         return JsonResponse({'error': 'Your current subscription package does not include chat support.'}, status=403)
+    if not hasattr(settings, 'OPENAI_API_KEY') or not settings.OPENAI_API_KEY:
+        local_logger.error("OPENAI_API_KEY is not configured.")
+        return JsonResponse({'error': 'AI chat service is not available. Please contact support.'}, status=500)
     try:
         data = json.loads(request.body)
         user_message = data.get('message', '').strip()

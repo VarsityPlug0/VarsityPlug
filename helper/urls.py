@@ -5,6 +5,9 @@ from . import views
 app_name = 'helper'
 
 urlpatterns = [
+    # Health Check
+    path('health/', views.health_check, name='health_check'),  # Health check endpoint for deployment monitoring
+
     # Home
     path('', views.home, name='home'),  # Landing page for VarsityPlugApp
 
