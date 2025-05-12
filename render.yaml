@@ -2,8 +2,11 @@ services:
   - type: web
     name: varsity-plug
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn varsity_plug.wsgi:application --bind 0.0.0.0:$PORT
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+      python manage.py migrate
+    startCommand: gunicorn varsity_plug.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 2
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
@@ -24,6 +27,8 @@ services:
           property: connectionString
       - key: OPENAI_API_KEY
         sync: false
+      - key: ALLOWED_HOSTS
+        value: varsity-plug.onrender.com
 
 databases:
   - name: varsity-plug-db
