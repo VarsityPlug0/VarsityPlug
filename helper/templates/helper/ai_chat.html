@@ -1,0 +1,222 @@
+{% extends "helper/base.html" %}
+{% load static %}
+
+{% block title %}AI Assistant{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    .chat-box {
+        height: 400px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+        background-color: #f8f9fa;
+    }
+    .message {
+        margin-bottom: 15px;
+        padding: 10px;
+        border-radius: 8px;
+        max-width: 80%;
+    }
+    .user-message {
+        background-color: #007bff;
+        color: white;
+        margin-left: auto;
+    }
+    .ai-message {
+        background-color: #e9ecef;
+        color: #212529;
+    }
+    .quick-links {
+        margin-bottom: 20px;
+    }
+    .quick-links .btn {
+        margin: 5px;
+    }
+    .typing-indicator {
+        display: none;
+        color: #6c757d;
+        font-style: italic;
+    }
+    .context-info {
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    .context-info h5 {
+        color: #007bff;
+        margin-bottom: 10px;
+    }
+    .context-info p {
+        margin-bottom: 5px;
+    }
+    .feature-badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        margin: 2px;
+        background-color: #e9ecef;
+    }
+    .feature-badge.available {
+        background-color: #28a745;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="chat-container">
+        <h2 class="mb-4">AI Assistant</h2>
+        
+        <!-- Context Information -->
+        <div class="context-info">
+            <h5>Your Current Status</h5>
+            <p><strong>Subscription:</strong> {{ student_profile.get_subscription_package_display }}</p>
+            <p><strong>Applications:</strong> {{ student_profile.application_count }}/{{ student_profile.get_application_limit }}</p>
+            <p><strong>Available Features:</strong></p>
+            <div>
+                {% for feature in student_profile.get_available_features %}
+                    <span class="feature-badge available">{{ feature }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Quick Links -->
+        <div class="quick-links">
+            <h5>Quick Links</h5>
+            <a href="{% url 'helper:dashboard_student' %}" class="btn btn-outline-primary btn-sm">Dashboard</a>
+            <a href="{% url 'helper:universities_list' %}" class="btn btn-outline-primary btn-sm">Browse Universities</a>
+            <a href="{% url 'helper:document_list' %}" class="btn btn-outline-primary btn-sm">My Documents</a>
+            <a href="{% url 'helper:update_profile' %}" class="btn btn-outline-primary btn-sm">Update Profile</a>
+            {% if student_profile.can_access_whatsapp_chat %}
+                <a href="{% url 'helper:whatsapp_settings' %}" class="btn btn-outline-primary btn-sm">WhatsApp Settings</a>
+            {% endif %}
+            {% if student_profile.can_access_course_advice %}
+                <a href="{% url 'helper:course_advice' %}" class="btn btn-outline-primary btn-sm">Course Advice</a>
+            {% endif %}
+            {% if student_profile.can_access_fee_guidance %}
+                <a href="{% url 'helper:fee_guidance' %}" class="btn btn-outline-primary btn-sm">Fee Guidance</a>
+            {% endif %}
+            {% if student_profile.can_access_concierge_service %}
+                <a href="{% url 'helper:concierge_service' %}" class="btn btn-outline-primary btn-sm">Concierge Service</a>
+            {% endif %}
+        </div>
+        
+        <!-- Chat Box -->
+        <div class="chat-box" id="chatBox">
+            <div class="message ai-message">
+                Hello! I'm your Varsity Plug AI assistant. How can I help you today? I can assist with:
+                <ul>
+                    <li>University applications and requirements</li>
+                    <li>Document uploads and verification</li>
+                    <li>Subscription and payment queries</li>
+                    <li>Course selection and advice</li>
+                    <li>Application status tracking</li>
+                    <li>And much more!</li>
+                </ul>
+                Just type your question below.
+            </div>
+        </div>
+        
+        <!-- Typing Indicator -->
+        <div class="typing-indicator" id="typingIndicator">
+            AI is typing...
+        </div>
+        
+        <!-- Chat Form -->
+        <form id="chatForm" method="post">
+            {% csrf_token %}
+            <div class="input-group">
+                <input type="text" name="message" class="form-control" placeholder="Type your message here..." required>
+                <button type="submit" class="btn btn-primary">Send</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chatBox = document.getElementById('chatBox');
+    const chatForm = document.getElementById('chatForm');
+    const typingIndicator = document.getElementById('typingIndicator');
+    
+    // Function to add a message to the chat
+    function addMessage(message, isUser = false) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${isUser ? 'user-message' : 'ai-message'}`;
+        messageDiv.innerHTML = message;
+        chatBox.appendChild(messageDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+    
+    // Handle form submission
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const messageInput = this.querySelector('input[name="message"]');
+        const message = messageInput.value.trim();
+        
+        if (message) {
+            // Add user message to chat
+            addMessage(message, true);
+            messageInput.value = '';
+            
+            // Show typing indicator
+            typingIndicator.style.display = 'block';
+            
+            // Send message to server
+            fetch('{% url "helper:ai_chat" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: `message=${encodeURIComponent(message)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide typing indicator
+                typingIndicator.style.display = 'none';
+                
+                if (data.error) {
+                    addMessage(data.error);
+                } else {
+                    addMessage(data.response);
+                    
+                    // Update context if provided
+                    if (data.context) {
+                        // Update subscription info
+                        const subscriptionInfo = document.querySelector('.context-info');
+                        if (subscriptionInfo) {
+                            subscriptionInfo.querySelector('p:nth-child(1)').innerHTML = 
+                                `<strong>Subscription:</strong> ${data.context.subscription.package}`;
+                            subscriptionInfo.querySelector('p:nth-child(2)').innerHTML = 
+                                `<strong>Applications:</strong> ${data.context.subscription.applications_used}/${data.context.subscription.application_limit}`;
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                typingIndicator.style.display = 'none';
+                addMessage('Sorry, there was an error processing your request. Please try again.');
+            });
+        }
+    });
+    
+    // Auto-scroll to bottom of chat
+    chatBox.scrollTop = chatBox.scrollHeight;
+});
+</script>
+{% endblock %} 

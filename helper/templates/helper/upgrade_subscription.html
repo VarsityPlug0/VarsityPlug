@@ -1,0 +1,58 @@
+{% extends 'helper/base.html' %}
+{% block title %}Upgrade Subscription{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Upgrade Your Subscription</h2>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'warning' %}alert-warning{% else %}alert-danger{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Current Package</h5>
+            <p><strong>Package:</strong> {{ current_package.name }}</p>
+            <p><strong>Price:</strong> R{{ current_package.price }}</p>
+            <p><strong>Includes:</strong> {{ current_package.includes }}</p>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Available Upgrades</h5>
+            {% if available_upgrades %}
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="new_package" class="form-label">Select Upgrade Package</label>
+                        <select name="new_package" id="new_package" class="form-select">
+                            {% for package, details in available_upgrades.items %}
+                                <option value="{{ package }}">{{ details.name }} - R{{ details.price }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="payment_proof" class="form-label">Upload Payment Proof</label>
+                        <input type="file" name="payment_proof" id="payment_proof" class="form-control" required>
+                        <small class="text-muted">Please upload a screenshot or photo of your payment confirmation.</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Upgrade Package</button>
+                </form>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-check-circle"></i> You are already on the highest tier plan!
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="mt-3">
+        <a href="{% url 'helper:dashboard_student' %}" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %} 

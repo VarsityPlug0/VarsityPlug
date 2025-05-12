@@ -5,43 +5,75 @@ from . import views
 app_name = 'helper'
 
 urlpatterns = [
-    # Health Check
-    path('health/', views.health_check, name='health_check'),  # Health check endpoint for deployment monitoring
+    # Public pages
+    path('', views.home, name='home'),
+    path('about/', views.about, name='about'),
+    path('services/', views.services, name='services'),
+    path('contact/', views.contact, name='contact'),
+    path('health/', views.health_check, name='health_check'),
 
-    # Home
-    path('', views.home, name='home'),  # Landing page for VarsityPlugApp
+    # Authentication
+    path('register/', views.register, name='register'),
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
+    path('redirect-after-login/', views.redirect_after_login, name='redirect_after_login'),
+    path('subscription-selection/', views.subscription_selection, name='subscription_selection'),
 
-    # Static Pages
-    path('about/', views.about, name='about'),  # About page
-    path('services/', views.services, name='services'),  # Services page
-    path('contact/', views.contact, name='contact'),  # Contact page
+    # Student dashboard and profile
+    path('dashboard/', views.dashboard_student, name='dashboard_student'),
+    path('profile/update/', views.update_profile, name='update_profile'),
+    path('profile/marks/', views.update_marks, name='update_marks'),
+    path('profile/whatsapp/', views.whatsapp_settings, name='whatsapp_settings'),
 
-    # User Authentication and Registration
-    path('register/', views.register, name='register'),  # User registration
-    path('redirect_after_login/', views.redirect_after_login, name='redirect_after_login'),  # Redirects after login based on user role
+    # Documents
+    path('documents/upload/', views.upload_document, name='upload_document'),
+    path('documents/list/', views.document_list, name='document_list'),
+    path('documents/<int:doc_id>/delete/', views.delete_document, name='delete_document'),
+    path('documents/<int:doc_id>/edit/', views.edit_document, name='edit_document'),
+    path('documents/<int:doc_id>/verify/', views.verify_document, name='verify_document'),
 
-    # Subscription Selection
-    path('subscription/', views.subscription_selection, name='subscription_selection'),  # Choose or upgrade subscription package
+    # Universities
+    path('universities/', views.universities_list, name='universities_list'),
+    path('universities/api/', views.universities_api, name='universities_api'),
+    path('universities/<int:uni_id>/', views.university_detail, name='university_detail'),
+    path('universities/<int:uni_id>/faculties/', views.university_faculties, name='university_faculties'),
+    path('universities/<int:uni_id>/select/', views.select_university, name='select_university'),
+    path('universities/<int:uni_id>/deselect/', views.deselect_university, name='deselect_university'),
 
-    # Dashboards
-    path('dashboard/student/', views.dashboard_student, name='dashboard_student'),  # Student dashboard with marks, documents, and university selection
-    path('dashboard/guide/', views.dashboard_guide, name='dashboard_guide'),  # Guide dashboard (for non-students)
+    # Applications
+    path('applications/', views.application_list, name='application_list'),
+    path('applications/<int:app_id>/', views.application_detail, name='application_detail'),
+    path('applications/<int:app_id>/status/', views.update_application_status, name='update_application_status'),
+    path('applications/pay/<int:uni_id>/', views.pay_application_fee, name='pay_application_fee'),
+    path('applications/pay/<int:uni_id>/instructions/', views.pay_application_fee_instructions, name='pay_application_fee_instructions'),
+    path('applications/pay/all/', views.pay_all_application_fees, name='pay_all_application_fees'),
+    path('applications/pay/<int:university_id>/', views.pay_application_fee, name='pay_application_fee'),
+    path('applications/payment-proof/<int:application_id>/', views.view_payment_proof, name='view_payment_proof'),
+    path('payments/', views.payments, name='payments'),
+    path('payments/unified/', views.unified_payment, name='unified_payment'),
 
-    # Document Management
-    path('document/delete/<int:doc_id>/', views.delete_document, name='delete_document'),  # Delete uploaded document
-    path('document/edit/<int:doc_id>/', views.edit_document, name='edit_document'),  # Edit uploaded document
+    # AI Chat
+    path('chat/', views.ai_chat, name='ai_chat'),
+    path('chat/history/', views.chat_history, name='chat_history'),
 
-    # University-Related Views
-    path('universities/', views.universities_list, name='universities_list'),  # List all universities with selection options
-    path('university/<int:uni_id>/', views.university_detail, name='university_detail'),  # View university details
-    path('university/<int:uni_id>/faculties/', views.university_faculties, name='university_faculties'),  # View university faculties and courses
-    path('select-university/<int:uni_id>/', views.select_university, name='select_university'),  # Select a university for application
+    # Course Advice
+    path('course-advice/', views.course_advice, name='course_advice'),
+    path('course-advice/<int:uni_id>/', views.university_course_advice, name='university_course_advice'),
 
-    # Payment-Related Views
-    path('pay/<int:uni_id>/', views.pay_application_fee, name='pay_application_fee'),  # Initiate payment for a single university
-    path('pay/<int:uni_id>/instructions/', views.pay_application_fee_instructions, name='pay_application_fee_instructions'),  # Payment instructions for a single university
-    path('pay/all/', views.pay_all_application_fees, name='pay_all_application_fees'),  # Pay fees for all selected universities
+    # Fee Guidance
+    path('fee-guidance/', views.fee_guidance, name='fee_guidance'),
+    path('fee-guidance/<int:uni_id>/', views.university_fee_guidance, name='university_fee_guidance'),
 
-    # AI Chat Endpoint
-    path('ai-chat/', views.ai_chat, name='ai_chat'),  # Handle AI chat requests for the chat widget
+    # Concierge Service
+    path('concierge/', views.concierge_service, name='concierge_service'),
+    path('concierge/request/', views.concierge_request, name='concierge_request'),
+
+    # API endpoints
+    path('api/universities/search/', views.university_search_api, name='university_search_api'),
+    path('api/chat/message/', views.chat_message_api, name='chat_message_api'),
+    path('api/documents/verify/', views.verify_document_api, name='verify_document_api'),
+    path('edit-marks/', views.edit_marks, name='edit_marks'),
+    path('pay-subscription-fee/', views.pay_subscription_fee, name='pay_subscription_fee'),
+    path('upgrade-subscription/', views.upgrade_subscription, name='upgrade_subscription'),
+    path('upload-payment-proof/', views.upload_payment_proof, name='upload_payment_proof'),
 ]

@@ -64,6 +64,35 @@
         margin: 0.5rem 0;
     }
 
+    .payment-status-section {
+        margin-top: 2rem;
+    }
+
+    .payment-status-section .card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        transition: transform 0.2s;
+    }
+
+    .payment-status-section .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .payment-status-section .card-title {
+        color: #2c3e50;
+        margin-bottom: 1rem;
+    }
+
+    .payment-status-section .badge {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+    }
+
+    .payment-status-section .text-muted {
+        font-size: 0.85rem;
+    }
+
     @media (max-width: 576px) {
         .payment-section {
             padding: 10px;
@@ -125,6 +154,35 @@
         <p class="total">Total University Fees: R{{ total_university_fee }}</p>
         <p class="total">Total Package Cost: R{{ package_cost }}</p>
         <p class="total">Grand Total to Pay: R{{ total_payment }}</p>
+    </div>
+
+    <div class="payment-status-section mb-4">
+        <h3>Payment Status for Each Application</h3>
+        {% for application in applications %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">{{ application.university.name }}</h5>
+                    {% with payment_proof=application.documentupload_set.all|filter_document_type:'payment_proof'|first %}
+                        {% if payment_proof %}
+                            {% if payment_proof.verified %}
+                                <p><strong>Payment Status:</strong> <span class="badge bg-success">Verified</span></p>
+                                {% if payment_proof.verification_date %}
+                                    <p><small class="text-muted">Verified on {{ payment_proof.verification_date|date:"F j, Y, g:i a" }}</small></p>
+                                {% endif %}
+                            {% else %}
+                                <p><strong>Payment Status:</strong> <span class="badge bg-warning">Pending Verification</span></p>
+                                <p><small class="text-muted">Uploaded {{ payment_proof.uploaded_at|timesince }} ago</small></p>
+                                {% with verification_time=payment_proof.uploaded_at|add:"24:00:00" %}
+                                    <p><small class="text-muted">Verification will be available in {{ verification_time|time_until }} hours</small></p>
+                                {% endwith %}
+                            {% endif %}
+                        {% else %}
+                            <p><strong>Payment Status:</strong> <span class="badge bg-danger">Not Paid</span></p>
+                        {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+        {% endfor %}
     </div>
 
     <div class="bank-details">

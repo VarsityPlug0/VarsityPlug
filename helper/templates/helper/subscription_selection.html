@@ -52,6 +52,25 @@
         font-size: 1rem;
     }
 
+    .current-plan {
+        background-color: #e3f2fd;
+        border: 2px solid #2196f3;
+    }
+
+    .current-plan .card-header {
+        background-color: #2196f3;
+        color: white;
+    }
+
+    .upgrade-available {
+        border: 2px solid #4caf50;
+    }
+
+    .upgrade-available .card-header {
+        background-color: #4caf50;
+        color: white;
+    }
+
     @media (max-width: 576px) {
         .subscription-section {
             padding: 10px;
@@ -90,18 +109,62 @@
     <form method="post">
         {% csrf_token %}
         {% for package in packages %}
-            <div class="card">
+            <div class="card {% if package.value == user.studentprofile.subscription_package %}current-plan{% elif package.value in available_upgrades %}upgrade-available{% endif %}">
                 <div class="card-header">
                     <h3>{{ package.name }} - {{ package.price }}</h3>
                 </div>
                 <div class="card-body">
                     <p><strong>Includes:</strong> {{ package.includes }}</p>
-                    <button type="submit" name="package" value="{{ package.value }}" class="btn btn-primary btn-select">
-                        {% if is_upgrade %}Upgrade to {{ package.name }}{% else %}Select {{ package.name }}{% endif %}
-                    </button>
+                    {% if package.value == user.studentprofile.subscription_package %}
+                        <button type="button" class="btn btn-secondary btn-select" disabled>Current Plan</button>
+                    {% elif package.value in available_upgrades %}
+                        <button type="submit" name="package" value="{{ package.value }}" class="btn btn-success btn-select">
+                            Upgrade to {{ package.name }}
+                        </button>
+                    {% else %}
+                        <button type="submit" name="package" value="{{ package.value }}" class="btn btn-primary btn-select">
+                            {% if is_upgrade %}Upgrade to {{ package.name }}{% else %}Select {{ package.name }}{% endif %}
+                        </button>
+                    {% endif %}
                 </div>
             </div>
         {% endfor %}
     </form>
+
+    {% if user.studentprofile.subscription_package %}
+        <div class="mt-4">
+            <h4>Your Current Plan Details:</h4>
+            <div class="card">
+                <div class="card-body">
+                    <p><strong>Current Plan:</strong> {{ user.studentprofile.get_subscription_package_display }}</p>
+                    <p><strong>Applications Used:</strong> {{ user.studentprofile.application_count }} / {{ user.studentprofile.get_application_limit }}</p>
+                    <p><strong>Features Available:</strong></p>
+                    <ul>
+                        {% if user.studentprofile.subscription_package == 'basic' %}
+                            <li>Up to 4 applications</li>
+                            <li>Document uploads</li>
+                            <li>Application tracking</li>
+                            <li>Basic support</li>
+                        {% elif user.studentprofile.subscription_package == 'standard' %}
+                            <li>Up to 6 applications</li>
+                            <li>Fee guidance</li>
+                            <li>Priority support</li>
+                            <li>Document verification</li>
+                        {% elif user.studentprofile.subscription_package == 'premium' %}
+                            <li>Up to 8 applications</li>
+                            <li>Course advice</li>
+                            <li>WhatsApp support</li>
+                            <li>Premium features</li>
+                        {% elif user.studentprofile.subscription_package == 'ultimate' %}
+                            <li>Unlimited applications</li>
+                            <li>Concierge service</li>
+                            <li>24/7 priority support</li>
+                            <li>All premium features</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    {% endif %}
 </div>
 {% endblock %}

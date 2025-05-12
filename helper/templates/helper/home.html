@@ -1,133 +1,162 @@
 <!-- helper/templates/helper/home.html -->
 {% extends 'helper/base.html' %}
-{% block title %}{{ title|default:"Welcome to Varsity Plug" }}{% endblock %}
+{% load static %}
+
+{% block title %}Welcome to Varsity Plug{% endblock %}
 
 {% block content %}
-<style>
-    .hero-section {
-        text-align: center;
-        padding: 50px 0;
-        background-color: #f8f9fa;
-    }
-
-    .hero-section h1 {
-        font-size: 2.5rem;
-        margin-bottom: 1rem;
-    }
-
-    .hero-section p {
-        font-size: 1.2rem;
-        margin-bottom: 2rem;
-    }
-
-    .btn-primary {
-        padding: 10px 20px;
-        font-size: 1.1rem;
-        background-color: #007bff;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        margin: 0 10px;
-    }
-
-    .btn-primary:hover {
-        background-color: #0056b3;
-    }
-
-    .btn-outline-secondary {
-        padding: 10px 20px;
-        font-size: 1.1rem;
-        border-radius: 5px;
-        border: 1px solid #6c757d;
-        color: #6c757d;
-        background-color: transparent;
-        margin-top: 10px;
-        text-decoration: none;
-    }
-
-    .btn-outline-secondary:hover {
-        background-color: #6c757d;
-        color: #fff;
-    }
-
-    @media (max-width: 576px) {
-        .hero-section {
-            padding: 30px 0;
-        }
-
-        .hero-section h1 {
-            font-size: 1.8rem;
-        }
-
-        .hero-section p {
-            font-size: 1rem;
-        }
-
-        .btn-primary,
-        .btn-outline-secondary {
-            font-size: 1rem;
-            padding: 8px 16px;
-            margin: 5px 0;
-        }
-    }
-</style>
-
-<!-- Hero Section -->
-<div class="hero-section">
-    <h1>{{ title|default:"Welcome to Varsity Plug" }}</h1>
-    <p>Your one-stop platform for university applications in South Africa.</p>
-    
-    <form method="post" action="" class="d-inline">
-        {% csrf_token %}
-        <button type="submit" name="take_action" value="get_started" class="btn-primary">Get Started</button>
-    </form>
-    
-    <a href="#about" class="btn-outline-secondary">Learn More</a>
-
-    {% if not request.user.is_authenticated %}
-        <p class="mt-3">Already a member? <a href="{% url 'login' %}">Login</a> | New here? <a href="{% url 'helper:register' %}">Sign Up</a></p>
-    {% endif %}
-</div>
-
-<!-- About Section -->
-<section id="about" class="mt-5">
-    <div class="row">
-        <div class="col-lg-10 mx-auto">
-            <h2 class="mb-3">What is Varsity Plug?</h2>
-            <p>
-                Varsity Plug is a platform that helps South African students simplify and succeed in their university applications.
-                Whether you’re applying for the first time or trying again, we provide tools and support to help you get accepted into your dream program.
+<div class="container">
+    <!-- Hero Section -->
+    <div class="row align-items-center py-5">
+        <div class="col-lg-6">
+            <h1 class="display-4 fw-bold mb-4">Your University Application Journey Starts Here</h1>
+            <p class="lead mb-4">
+                Let us help you navigate the complex world of university applications. 
+                From APS calculations to document management, we've got you covered.
             </p>
+            {% if not user.is_authenticated %}
+                <div class="d-grid gap-2 d-md-flex">
+                    <a href="{% url 'helper:register' %}" class="btn btn-primary btn-lg px-4 me-md-2">Get Started</a>
+                    <a href="{% url 'login' %}" class="btn btn-outline-secondary btn-lg px-4">Login</a>
+                </div>
+            {% else %}
+                <a href="{% url 'helper:dashboard_student' %}" class="btn btn-primary btn-lg px-4">Go to Dashboard</a>
+            {% endif %}
+        </div>
+        <div class="col-lg-6">
+            <img src="{% static 'helper/images/hero-image.png' %}" alt="Students" class="img-fluid rounded shadow">
+        </div>
+    </div>
 
-            <h4 class="mt-4">What You Can Do Here:</h4>
-            <ul>
-                <li><strong>Upload Documents:</strong> Easily upload your ID, results, and other required documents.</li>
-                <li><strong>Use Smart AI Support:</strong> Ask questions like “Which course suits me?” and get smart answers from our AI bot.</li>
-                <li><strong>Get Course Recommendations:</strong> Coming soon — get AI-powered course suggestions based on your marks.</li>
-                <li><strong>Explore Universities:</strong> Browse APS requirements, deadlines, and programs from top SA institutions.</li>
-                <li><strong>Guided Help:</strong> Work with our professional guides to submit your applications correctly and on time.</li>
-            </ul>
-
-            <div class="text-center mt-4">
-                {% if request.user.is_authenticated %}
-                    <a href="{% url 'helper:universities_list' %}" class="btn btn-info">View Universities</a>
-                {% endif %}
-                <a href="{% url 'helper:about' %}" class="btn btn-outline-dark">More About Us</a>
+    <!-- Features Section -->
+    <div class="row py-5">
+        <div class="col-12 text-center mb-5">
+            <h2 class="display-5 fw-bold">Why Choose Varsity Plug?</h2>
+            <p class="lead">We make university applications simple and stress-free</p>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-calculator fa-3x mb-3 text-primary"></i>
+                    <h3 class="card-title h4">APS Calculator</h3>
+                    <p class="card-text">Instantly calculate your APS score and see which universities you qualify for.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-file-upload fa-3x mb-3 text-primary"></i>
+                    <h3 class="card-title h4">Document Management</h3>
+                    <p class="card-text">Securely upload and manage all your application documents in one place.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-robot fa-3x mb-3 text-primary"></i>
+                    <h3 class="card-title h4">AI Assistant</h3>
+                    <p class="card-text">Get instant answers to your questions with our AI-powered chat assistant.</p>
+                </div>
             </div>
         </div>
     </div>
-</section>
 
-<!-- Announcement Section -->
-<section class="mt-5 bg-light p-4 rounded">
-    <div class="row">
-        <div class="col-lg-10 mx-auto">
-            <h3 class="mb-3">🎓 New Feature Coming Soon!</h3>
-            <p>
-                Personalized course recommendations based on your matric results and interests. Stay tuned for smarter, tailored guidance!
-            </p>
+    <!-- Subscription Plans -->
+    <div class="row py-5 bg-light rounded-3 px-3">
+        <div class="col-12 text-center mb-5">
+            <h2 class="display-5 fw-bold">Choose Your Plan</h2>
+            <p class="lead">Find the perfect package for your needs</p>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header text-center bg-primary text-white">
+                    <h4 class="my-0 fw-normal">Basic</h4>
+                </div>
+                <div class="card-body text-center">
+                    <h1 class="card-title">R400</h1>
+                    <ul class="list-unstyled mt-3 mb-4">
+                        <li>Up to 3 applications</li>
+                        <li>Document uploads</li>
+                        <li>Application tracking</li>
+                        <li>Basic support</li>
+                    </ul>
+                    <a href="{% url 'helper:subscription_selection' %}" class="btn btn-outline-primary">Select Plan</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header text-center bg-primary text-white">
+                    <h4 class="my-0 fw-normal">Standard</h4>
+                </div>
+                <div class="card-body text-center">
+                    <h1 class="card-title">R600</h1>
+                    <ul class="list-unstyled mt-3 mb-4">
+                        <li>Up to 5 applications</li>
+                        <li>Fee guidance</li>
+                        <li>Priority support</li>
+                        <li>Document verification</li>
+                    </ul>
+                    <a href="{% url 'helper:subscription_selection' %}" class="btn btn-outline-primary">Select Plan</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header text-center bg-primary text-white">
+                    <h4 class="my-0 fw-normal">Premium</h4>
+                </div>
+                <div class="card-body text-center">
+                    <h1 class="card-title">R800</h1>
+                    <ul class="list-unstyled mt-3 mb-4">
+                        <li>Up to 7 applications</li>
+                        <li>Course advice</li>
+                        <li>WhatsApp support</li>
+                        <li>Premium features</li>
+                    </ul>
+                    <a href="{% url 'helper:subscription_selection' %}" class="btn btn-outline-primary">Select Plan</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header text-center bg-primary text-white">
+                    <h4 class="my-0 fw-normal">Ultimate</h4>
+                </div>
+                <div class="card-body text-center">
+                    <h1 class="card-title">R1000</h1>
+                    <ul class="list-unstyled mt-3 mb-4">
+                        <li>Unlimited applications</li>
+                        <li>Concierge service</li>
+                        <li>24/7 priority support</li>
+                        <li>All premium features</li>
+                    </ul>
+                    <a href="{% url 'helper:subscription_selection' %}" class="btn btn-outline-primary">Select Plan</a>
+                </div>
+            </div>
         </div>
     </div>
-</section>
+
+    <!-- Call to Action -->
+    <div class="row py-5">
+        <div class="col-12 text-center">
+            <h2 class="display-5 fw-bold mb-4">Ready to Start Your Journey?</h2>
+            <p class="lead mb-4">Join thousands of students who have successfully applied to their dream universities with Varsity Plug.</p>
+            {% if not user.is_authenticated %}
+                <a href="{% url 'helper:register' %}" class="btn btn-primary btn-lg px-4">Get Started Now</a>
+            {% else %}
+                <a href="{% url 'helper:dashboard_student' %}" class="btn btn-primary btn-lg px-4">Go to Dashboard</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
 {% endblock %}

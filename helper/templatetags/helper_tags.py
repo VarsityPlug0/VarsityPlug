@@ -92,41 +92,14 @@ def index(sequence, position, template=None):
         return None
 
 @register.filter
-def attr(obj, attr_name, template=None):
+def attr(obj, attr_name):
     """
-    Safely retrieve an attribute or dictionary key from an object, returning None if invalid.
+    Gets an attribute of an object dynamically from a string name
     """
     try:
-        # Log context for debugging
-        context = f"Caller: {template.__file__}" if template and hasattr(template, '__file__') else "Unknown caller"
-
-        # Input validation
-        if obj is None:
-            logger.error(f"attr: object is None [{context}]")
+        return getattr(obj, attr_name)
+    except (AttributeError, TypeError):
+        try:
+            return obj[attr_name]
+        except (KeyError, TypeError):
             return None
-        if attr_name is None:
-            logger.error(f"attr: attribute name is None [{context}]")
-            return None
-        if not isinstance(attr_name, str):
-            logger.error(f"attr: attribute name is not a string, got {type(attr_name)}: {attr_name} [{context}]")
-            return None
-
-        # Try attribute access
-        if hasattr(obj, attr_name):
-            value = getattr(obj, attr_name)
-        # Try dictionary access
-        elif isinstance(obj, dict):
-            value = obj.get(attr_name, None)
-        else:
-            logger.error(f"attr: object is neither attributable nor a dict, got {type(obj)} [{context}]")
-            return None
-
-        if value is not None:
-            value = str(value)  # Ensure safe rendering
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f"attr: attr_name={attr_name}, value={value}, type={type(value)} [{context}]")
-        return value
-
-    except Exception as e:
-        logger.error(f"attr error: {str(e)} [{context}]")
-        return None

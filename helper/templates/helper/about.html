@@ -1,92 +1,99 @@
 <!-- helper/templates/helper/about.html -->
 {% extends 'helper/base.html' %}
-{% block title %}{{ title|default:"About Varsity Plug" }}{% endblock %}
+{% load static %}
+
+{% block title %}About Us{% endblock %}
 
 {% block content %}
-<style>
-    .about-section {
-        padding: 30px 0;
-    }
-
-    .about-section h1 {
-        font-size: 2rem;
-        margin-bottom: 1rem;
-    }
-
-    .about-section p,
-    .about-section li {
-        font-size: 1rem;
-    }
-
-    @media (max-width: 576px) {
-        .about-section h1 {
-            font-size: 1.5rem;
-        }
-
-        .about-section p,
-        .about-section li {
-            font-size: 0.9rem;
-        }
-
-        .btn {
-            font-size: 0.9rem;
-            padding: 0.4rem 0.8rem;
-        }
-    }
-</style>
-
-<div class="container about-section">
+<div class="container py-5">
     <div class="row">
-        <div class="col-lg-10 mx-auto">
-            <h1 class="mb-4">{{ title|default:"About Varsity Plug" }}</h1>
+        <div class="col-lg-8 mx-auto">
+            <h1 class="text-center mb-4">About Varsity Plug</h1>
+            
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">Our Mission</h2>
+                    <p class="lead">
+                        At Varsity Plug, we're dedicated to simplifying the university application process for South African students. 
+                        We understand that applying to universities can be overwhelming, which is why we've created a platform that 
+                        makes it easier, faster, and more accessible.
+                    </p>
+                </div>
+            </div>
 
-            <p class="lead">
-                Varsity Plug is your trusted companion for simplifying the university application process across South Africa. We help matriculants and post-matric learners apply to universities and colleges with confidence, accuracy, and clarity.
-            </p>
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">What We Do</h2>
+                    <p>
+                        We help students navigate their university journey by providing:
+                    </p>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Easy university applications</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>APS score calculations</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Application fee payments</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Document management</li>
+                        <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Application tracking</li>
+                    </ul>
+                </div>
+            </div>
 
-            <form method="post" class="d-inline">
-                {% csrf_token %}
-                <button type="submit" name="take_action" class="btn btn-primary">Take Action</button>
-            </form>
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h2 class="h4 mb-3">Why Choose Us?</h2>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-clock text-primary me-2"></i>
+                                <h3 class="h5 mb-0">Save Time</h3>
+                            </div>
+                            <p class="small">Apply to multiple universities in minutes instead of hours</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-shield-alt text-primary me-2"></i>
+                                <h3 class="h5 mb-0">Stay Organized</h3>
+                            </div>
+                            <p class="small">Keep track of all your applications in one place</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-hand-holding-usd text-primary me-2"></i>
+                                <h3 class="h5 mb-0">Save Money</h3>
+                            </div>
+                            <p class="small">Pay application fees securely and efficiently</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-headset text-primary me-2"></i>
+                                <h3 class="h5 mb-0">Get Support</h3>
+                            </div>
+                            <p class="small">Access help and guidance throughout your application journey</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-            {% if not request.user.is_authenticated %}
-                <p class="mt-3">Already a member? <a href="{% url 'login' %}">Login</a> | New here? <a href="{% url 'helper:register' %}">Sign Up</a></p>
-            {% endif %}
-
-            <hr>
-
-            <h3>Our Mission</h3>
-            <p>
-                To eliminate the stress and confusion that often comes with university applications by providing step-by-step guidance, AI-powered support, and personalized services to help students get accepted into their dream programs.
-            </p>
-
-            <h3>What We Offer</h3>
-            <ul>
-                <li><strong>Guided Application Assistance:</strong> Our professional guides help students complete and submit accurate, on-time university applications.</li>
-                <li><strong>Document Upload & Verification:</strong> Easily upload your results, ID, and supporting documents with our secure platform.</li>
-                <li><strong>AI-Powered Q&A Assistant:</strong> Get answers to questions like “Which course should I take?” or “How do I improve my APS?” anytime.</li>
-                <li><strong>Course Recommendations:</strong> Coming soon — AI-generated course suggestions based on your interests and matric results.</li>
-                <li><strong>University Information:</strong> Access APS requirements, application deadlines, and key information for all major South African universities.</li>
-            </ul>
-
-            <h3>Why Varsity Plug?</h3>
-            <p>
-                We know that applying for university can feel overwhelming. Varsity Plug was created to give students the support they need — using both real people and smart technology. Whether you're the first in your family to go to university or just need help navigating the system, we're here for you.
-            </p>
-
-            <h3>Who We Help</h3>
-            <ul>
-                <li>Grade 12 learners preparing for varsity</li>
-                <li>Post-matric students trying again</li>
-                <li>Parents helping their children apply</li>
-                <li>Teachers guiding their learners</li>
-            </ul>
-
-            <div class="mt-4">
-                <a href="{% url 'helper:contact' %}" class="btn btn-primary">Contact Us</a>
-                <a href="{% url 'helper:universities_list' %}" class="btn btn-outline-info">View Universities</a>
+            <div class="text-center mt-4">
+                <a href="{% url 'helper:services' %}" class="btn btn-primary btn-lg">Explore Our Services</a>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    .card {
+        border: none;
+        border-radius: 10px;
+    }
+    .lead {
+        font-size: 1.1rem;
+        line-height: 1.6;
+    }
+    .list-unstyled li {
+        font-size: 1.1rem;
+    }
+    .small {
+        font-size: 0.95rem;
+    }
+</style>
 {% endblock %}

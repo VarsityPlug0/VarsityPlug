@@ -1,0 +1,209 @@
+{% extends 'helper/base.html' %}
+{% load static %}
+{% load helper_extras %}
+
+{% block title %}Unified Payment Center - Varsity Plug{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Payment Management</h2>
+    
+    <!-- Subscription Status -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Subscription Status</h4>
+        </div>
+        <div class="card-body">
+            <p><strong>Status:</strong> 
+                {% if student_profile.subscription_status %}
+                    <span class="badge bg-success">Active</span>
+                {% else %}
+                    <span class="badge bg-warning">Not Paid</span>
+                {% endif %}
+            </p>
+            {% if not student_profile.subscription_status %}
+                <a href="{% url 'helper:pay_subscription_fee' %}" class="btn btn-primary btn-sm">Pay Subscription Fee</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Bank Details -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Bank Details</h4>
+        </div>
+        <div class="card-body">
+            <p><strong>Bank:</strong> {{ bank_details.bank_name }}</p>
+            <p><strong>Account Holder:</strong> {{ bank_details.account_holder }}</p>
+            <p><strong>Account Number:</strong> {{ bank_details.account_number }}</p>
+            <p><strong>Branch Code:</strong> {{ bank_details.branch_code }}</p>
+            <p><strong>Reference:</strong> {{ bank_details.reference }}</p>
+        </div>
+    </div>
+
+    <!-- University Applications -->
+    <div class="card">
+        <div class="card-header">
+            <h4>University Applications</h4>
+        </div>
+        <div class="card-body">
+            {% for application in applications %}
+            <div class="application-item mb-4" data-university-id="{{ application.university.id }}">
+                <h5>{{ application.university.name }}</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Status:</strong> 
+                            <span class="badge {% if application.status == 'completed' %}bg-success{% elif application.status == 'pending' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                {{ application.get_status_display }}
+                            </span>
+                        </p>
+                        <p><strong>Application Date:</strong> {{ application.application_date|date:"d M Y" }}</p>
+                        <p><strong>Application Fee:</strong> 
+                            {% with fee=application_fees|get_item:application.university.name %}
+                                {% if fee %}
+                                    {{ fee }}
+                                {% else %}
+                                    Not specified
+                                {% endif %}
+                            {% endwith %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Payment Status:</strong> 
+                            {% with payment=payments|filter_by_university:application.university.name %}
+                                {% if payment %}
+                                    <span class="badge {% if payment.payment_status == 'paid' %}bg-success{% elif payment.payment_status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ payment.get_payment_status_display }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger">Not Paid</span>
+                                {% endif %}
+                            {% endwith %}
+                        </p>
+                        
+                        <!-- Display uploaded document if exists -->
+                        {% with doc=documents|filter_documents_by_university:application.university.name %}
+                            {% if doc %}
+                                <div class="d-flex align-items-center mb-2">
+                                    <strong class="me-2">Uploaded Document:</strong>
+                                    <a href="{{ doc.file.url }}" target="_blank" class="btn btn-info btn-sm me-2">
+                                        View Proof
+                                    </a>
+                                    <span class="badge {% if doc.verified %}bg-success{% elif doc.verified == False %}bg-warning{% else %}bg-secondary{% endif %}">
+                                        {{ doc.verified|yesno:"Verified,Pending Verification" }}
+                                    </span>
+                                </div>
+                                {% if not doc.verified %}
+                                    <div class="alert alert-info py-2 px-3 mb-0">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <i class="fas fa-info-circle me-2"></i>
+                                                <span>Payment proof uploaded. Awaiting verification.</span>
+                                            </div>
+                                            <a href="{% url 'helper:document_list' %}" class="btn btn-warning btn-sm">
+                                                <i class="fas fa-edit me-1"></i>Edit
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+                        {% endwith %}
+                        
+                        {% if application.status != 'completed' %}
+                            {% if application_fees|get_item:application.university.name == "FREE" %}
+                                <div class="alert alert-success mt-2">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    No payment proof required for free applications.
+                                </div>
+                            {% else %}
+                                <form method="POST" action="{% url 'helper:unified_payment' %}" enctype="multipart/form-data" class="mt-2">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="university" value="{{ application.university.name }}">
+                                    <div class="input-group mb-2">
+                                        <input type="text" name="reference_number" class="form-control" placeholder="Payment Reference Number" required>
+                                    </div>
+                                    <div class="input-group">
+                                        <input type="file" name="payment_proof" class="form-control" required>
+                                        <button type="submit" class="btn btn-primary">Upload Proof</button>
+                                    </div>
+                                </form>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Add real-time status updates using WebSocket or polling
+    function updateStatuses() {
+        fetch('/api/payment-statuses/')
+            .then(response => response.json())
+            .then(data => {
+                // Update status badges
+                data.forEach(item => {
+                    const statusElement = document.querySelector(`#status-${item.id}`);
+                    if (statusElement) {
+                        statusElement.textContent = item.status;
+                        statusElement.className = `badge ${getStatusClass(item.status)}`;
+                    }
+                });
+            });
+    }
+
+    function getStatusClass(status) {
+        switch(status) {
+            case 'paid': return 'bg-success';
+            case 'pending': return 'bg-warning';
+            default: return 'bg-danger';
+        }
+    }
+
+    // Update statuses every 30 seconds
+    setInterval(updateStatuses, 30000);
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get the selected university ID from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const selectedUniId = urlParams.get('selected_uni');
+        
+        if (selectedUniId) {
+            // Find the university card with the matching ID
+            const uniCard = document.querySelector(`[data-university-id="${selectedUniId}"]`);
+            if (uniCard) {
+                // Scroll to the university card with smooth animation
+                uniCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // Add a highlight effect
+                uniCard.classList.add('highlight-university');
+                setTimeout(() => {
+                    uniCard.classList.remove('highlight-university');
+                }, 2000);
+            }
+        }
+    });
+</script>
+
+<style>
+.highlight-university {
+    animation: highlight 2s ease-out;
+}
+
+@keyframes highlight {
+    0% {
+        box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(0, 123, 255, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
+    }
+}
+</style>
+{% endblock %}
+{% endblock %} 

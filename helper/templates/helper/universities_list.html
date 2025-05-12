@@ -1,13 +1,11 @@
 {% extends 'helper/base.html' %}
 {% load static %}
 
-{% block title %}University List{% endblock %}
+{% block title %}Universities{% endblock %}
 
 {% block extra_css %}
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <style>
-    .container {
+    .main-content-container {
         max-width: 1200px;
         margin: 0 auto;
         padding: 20px;
@@ -49,7 +47,6 @@
         margin-left: 2rem; /* Align button with details */
         margin-top: 0.5rem;
     }
-
     .selected-card {
          background-color: #fff; /* White background for selected */
     }
@@ -82,9 +79,94 @@
         padding-top: 0.75rem;
         margin-top: 0.75rem;
     }
+    
+    /* Universities grid styling */
+    .universities-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .university-card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1rem;
+        background-color: #fff;
+        transition: transform 0.2s;
+    }
+
+    .university-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .form-check {
+        margin: 0;
+    }
+
+    .form-check-label {
+        width: 100%;
+        cursor: pointer;
+    }
+
+    .form-check-label h5 {
+        margin-bottom: 0.5rem;
+        color: #2c3e50;
+    }
+
+    .form-check-label p {
+        margin: 0.25rem 0;
+        color: #666;
+    }
+
+    .selected-universities {
+        margin-top: 2rem;
+    }
+
+    .selected-card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background-color: #f8f9fa;
+    }
+
+    .payment-summary {
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-top: 2rem;
+    }
+
+    .summary-item {
+        display: flex;
+        justify-content: space-between;
+        margin: 0.5rem 0;
+        padding: 0.5rem 0;
+    }
+
+    .total {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #28a745;
+    }
+
+    .late-fee {
+        color: #dc3545;
+        font-size: 0.9rem;
+        margin-top: 0.25rem;
+        margin-left: 1.5rem;
+    }
+
+    .btn-apply {
+        margin-top: 0.5rem;
+    }
+    
     /* Responsive adjustments */
     @media (max-width: 576px) {
-        .container { padding: 10px; }
+        .main-content-container { padding: 10px; }
         h1 { font-size: 1.5rem; }
         h2 { font-size: 1.25rem; }
         .university-card, .selected-card, .payment-summary { padding: 0.75rem; }
@@ -92,108 +174,137 @@
         .btn, .btn-apply { font-size: 0.9rem; padding: 0.3rem 0.6rem; } /* Smaller padding */
         .payment-summary .total { font-size: 1rem; }
         .university-card p, .university-card .btn { margin-left: 0.5rem; } /* Reduce indent on small screens */
+        .universities-grid {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container">
-    <h1>Universities List</h1>
+<div class="main-content-container py-4">
+    <h1 class="mb-4">Universities</h1>
 
-    {% if messages %}
-        <div class="mb-4">
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" aria-live="assertive">
-                    {{ message|safe }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
+    <!-- Search Form -->
+    <div class="search-section mb-4">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                {{ form.search.label_tag }}
+                {{ form.search }}
+            </div>
+            <div class="col-md-3">
+                {{ form.province.label_tag }}
+                {{ form.province }}
+            </div>
+            <div class="col-md-3">
+                {{ form.min_aps.label_tag }}
+                {{ form.min_aps }}
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Search</button>
+            </div>
+        </form>
+    </div>
 
-    {% if not student_aps %}
-        <div class="alert alert-warning" role="alert">
-            Please update your marks in the <a href="{% url 'helper:dashboard_student' %}" class="alert-link">dashboard</a> to see universities you qualify for based on APS score.
-        </div>
-    {% endif %}
-
-    <div class="university-list">
-        <h2>Eligible Universities (Your APS: {{ student_aps|default:"Not calculated" }})</h2>
-        {% if eligible_universities %}
-            <form method="post" action="{% url 'helper:universities_list' %}">
-                {% csrf_token %}
-                {% for uni_data in eligible_universities %} {# CORRECTED: Loop over eligible_universities #}
+    <!-- Selected Universities Form -->
+    <form method="post" class="mb-4">
+        {% csrf_token %}
+        <div class="universities-grid">
+            {% if eligible_universities %}
+                {% for uni_data in eligible_universities %}
                     <div class="university-card">
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="universities" value="{{ uni_data.university.id }}"
-                                   id="uni-{{ uni_data.university.id }}"
-                                   {% if uni_data.is_selected %}checked{% endif %} {# CORRECTED: Use is_selected flag #}
-                                   aria-label="Select {{ uni_data.university.name }}">
-                            <label class="form-check-label" for="uni-{{ uni_data.university.id }}">
-                                {{ uni_data.university.name }} (Min APS: {{ uni_data.university.minimum_aps|default:"N/A" }})
+                            <input type="checkbox" class="form-check-input" name="universities" value="{{ uni_data.university.id }}" id="uni_{{ uni_data.university.id }}" {% if uni_data.is_selected %}checked{% endif %}>
+                            <label class="form-check-label" for="uni_{{ uni_data.university.id }}">
+                                <h5>{{ uni_data.university.name }}</h5>
+                                <p><i class="fas fa-map-marker-alt"></i> {{ uni_data.university.province }}</p>
+                                <p><i class="fas fa-graduation-cap"></i> Min APS: {{ uni_data.university.minimum_aps }}</p>
+                                <p><i class="fas fa-calendar-alt"></i> Due: {{ uni_data.due_date }}</p>
+                                <p><i class="fas fa-dollar-sign"></i> Fee: {{ uni_data.fee }}</p>
                             </label>
                         </div>
-                        <p>Application Fee: {{ uni_data.fee|default:"Not specified" }}</p> {# CORRECTED: Use uni_data.fee #}
-                        <p><i class="fas fa-calendar-alt"></i> Due Date: {{ uni_data.due_date|default:"Not specified" }}</p>
-                        <a href="{% url 'helper:university_faculties' uni_data.university.id %}" class="btn btn-outline-primary btn-sm" aria-label="View faculties for {{ uni_data.university.name }}">View Faculties</a>
                     </div>
                 {% endfor %}
-                <button type="submit" class="btn btn-primary mt-3" aria-label="Update university selections">Update Selections</button>
-            </form>
-        {% else %}
-             <div class="alert alert-info" role="alert">
-                {% if student_aps %}
-                     No universities found matching your APS score of {{ student_aps }}.
-                {% else %}
-                     Please update your marks on the dashboard to see eligible universities.
-                {% endif %}
-             </div>
+            {% else %}
+                <div class="alert alert-info" role="alert">
+                    {% if student_aps %}
+                        No universities found matching your APS score of {{ student_aps }}.
+                    {% else %}
+                        Please update your marks on the dashboard to see eligible universities.
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+
+        {% if eligible_universities %}
+            <div class="text-center mt-3">
+                <button type="submit" class="btn btn-primary">Update Selections</button>
+            </div>
         {% endif %}
-    </div>
+    </form>
 
     <div class="selected-universities">
         <h2>Your Selected Universities</h2>
-        {% if selected_with_details %} {# CORRECTED: Check selected_with_details #}
-            {% for sel_uni_data in selected_with_details %} {# CORRECTED: Loop over selected_with_details #}
+        {% if selected_with_details %}
+            {% for sel_uni_data in selected_with_details %}
                 <div class="selected-card">
-                    <p><strong>{{ sel_uni_data.university.name|default:"Unknown University" }}</strong></p> {# CORRECTED: Access nested data #}
+                    <p><strong>{{ sel_uni_data.university.name|default:"Unknown University" }}</strong></p>
                     <p><i class="fas fa-calendar-alt"></i> Application Closing Date: {{ sel_uni_data.due_date|default:"Not specified" }}</p>
                     <p><i class="fas fa-dollar-sign"></i> Application Fee: {{ sel_uni_data.application_fee|default:"N/A" }}</p>
                     <p><i class="fas fa-building"></i> Faculties Open: {{ sel_uni_data.faculties_open|join:", "|default:"Check Details" }}</p>
-                     {# Only show Apply button if fee is payable #}
                     {% if sel_uni_data.application_fee != "FREE" and sel_uni_data.application_fee != "N/A" and sel_uni_data.application_fee != "Upgrade Required" %}
-                        <a href="{% url 'helper:pay_application_fee' sel_uni_data.university.id %}" class="btn btn-success btn-apply btn-sm" aria-label="Pay application fee for {{ sel_uni_data.university.name }}">Pay Fee & Apply Instructions</a>
+                        <a href="{% url 'helper:unified_payment' %}" class="btn btn-success btn-apply btn-sm">Pay Fee & Apply Instructions</a>
                     {% else %}
-                         <span class="badge bg-secondary">No Fee / Info Only</span> {# Indicate no fee needed #}
+                        <span class="badge bg-secondary">No Fee / Info Only</span>
                     {% endif %}
-                     <a href="{% url 'helper:university_detail' sel_uni_data.university.id %}" class="btn btn-outline-secondary btn-apply btn-sm ms-2" aria-label="View details for {{ sel_uni_data.university.name }}">View Details</a>
-
+                    <a href="{% url 'helper:university_detail' sel_uni_data.university.id %}" class="btn btn-outline-secondary btn-apply btn-sm ms-2">View Details</a>
                 </div>
             {% endfor %}
             <div class="payment-summary">
                 <h3>Payment Summary</h3>
                 <hr>
                 {% for item in payment_breakdown %}
-                     <p class="summary-item"><span><i class="fas fa-university"></i> {{ item.university|default:"Unknown" }} (App Fee)</span> <span>R{{ item.university_fee|default:"0" }}</span></p>
+                    <p class="summary-item">
+                        <span><i class="fas fa-university"></i> {{ item.university|default:"Unknown" }} (App Fee)</span>
+                        <span>R{{ item.university_fee|default:"0" }}</span>
+                        {% if item.has_late_fee %}
+                            <div class="late-fee">Late application fee: R{{ item.late_fee }}</div>
+                        {% endif %}
+                    </p>
                 {% endfor %}
                 {% if payment_breakdown %}
-                 <p class="summary-item" style="border-top: 1px dashed #adb5bd; padding-top: 0.5rem;"><strong>Subtotal University Fees:</strong> <strong>R{{ total_university_fee|default:"0" }}</strong></p>
-                 {% endif %}
-                 <p class="summary-item"><span><i class="fas fa-box-open"></i> Subscription Package ({{ student_profile.get_subscription_package_display|default:"N/A" }})</span> <span>R{{ package_cost|default:"0" }}</span></p>
-                 <hr>
-                <p class="total summary-item"><span>Grand Total:</span> <span>R{{ total_payment|default:"0" }}</span></p>
+                    <p class="summary-item" style="border-top: 1px dashed #adb5bd; padding-top: 0.5rem;">
+                        <strong>Subtotal University Fees:</strong>
+                        <strong>R{{ total_university_fee|default:"0" }}</strong>
+                    </p>
+                {% endif %}
+                <p class="summary-item">
+                    <span><i class="fas fa-box-open"></i> Subscription Package ({{ student_profile.get_subscription_package_display|default:"N/A" }})</span>
+                    <span>R{{ package_cost|default:"0" }}</span>
+                </p>
+                <hr>
+                <p class="total summary-item">
+                    <span>Grand Total:</span>
+                    <span>R{{ total_payment|default:"0" }}</span>
+                </p>
+
+                {% if package_cost > 0 %}
+                    <div class="alert alert-warning text-center mt-3">
+                        <strong>Reminder:</strong> You need to pay your subscription fee (R{{ package_cost }}) to use Varsity Plug services, even if you select universities with free applications.
+                    </div>
+                {% endif %}
 
                 {% if total_payment > 0 %}
                     <div class="text-center mt-3">
-                        <a href="{% url 'helper:pay_all_application_fees' %}" class="btn btn-success" aria-label="Proceed to Pay Total Amount">Proceed to Pay R{{ total_payment|default:"0" }}</a>
+                        <a href="{% url 'helper:unified_payment' %}" class="btn btn-success">Proceed to Pay R{{ total_payment|default:"0" }}</a>
                     </div>
                 {% else %}
                     <p class="text-center mt-2">No payment required at this time.</p>
                 {% endif %}
             </div>
         {% else %}
-            <div class="alert alert-info" role="alert">
-                You have not selected any universities yet. Browse the list above and check the boxes next to the universities you want to apply to, then click "Update Selections".
+            <div class="alert alert-info">
+                You haven't selected any universities yet. Use the checkboxes above to select universities you're interested in.
             </div>
         {% endif %}
     </div>

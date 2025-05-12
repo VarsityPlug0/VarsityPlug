@@ -17,6 +17,8 @@ class University(models.Model):
     minimum_aps = models.IntegerField(validators=[validate_minimum_aps])
     province = models.CharField(max_length=50)
     description = models.TextField(blank=True, null=True)
+    application_fee = models.CharField(max_length=100, default="FREE")
+    due_date = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -27,21 +29,26 @@ class University(models.Model):
 
 class DocumentUpload(models.Model):
     """Stores uploaded documents for a user, such as ID pictures, academic results, or proof of payment."""
-    DOCUMENT_TYPES = (
+    DOCUMENT_TYPES = [
         ('id_picture', 'ID Picture'),
         ('grade_11_results', 'Grade 11 Results'),
         ('grade_12_results', 'Grade 12 Results'),
         ('payment_proof', 'Proof of Payment'),
-        ('other', 'Other'),
-    )
+        ('subscription_payment', 'Subscription Payment'),
+        ('other', 'Other')
+    ]
+    
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     document_type = models.CharField(max_length=20, choices=DOCUMENT_TYPES)
     file = models.FileField(upload_to='documents/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
     university = models.ForeignKey(University, on_delete=models.SET_NULL, null=True, blank=True)
+    verified = models.BooleanField(default=False)
+    verification_date = models.DateTimeField(null=True, blank=True)  # Track when the document was verified
+    notes = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.get_document_type_display()} by {self.user.username}"
+        return f"{self.user.username}'s {self.get_document_type_display()}"
 
     class Meta:
         ordering = ['-uploaded_at']
@@ -53,24 +60,76 @@ def validate_phone_number(value):
         raise ValidationError('Phone number must be in the format +27 followed by 9 digits, e.g., +27123456789.')
 
 class StudentProfile(models.Model):
-    """Stores user-specific profile data, including subscription details, marks, and APS score."""
-    SUBSCRIPTION_PACKAGES = (
-        ('basic', 'Basic Package'),
-        ('standard', 'Standard Package'),
-        ('premium', 'Premium Package'),
-        ('ultimate', 'Ultimate Package'),
-    )
+    """Represents a student's profile with subscription and application information."""
+    SUBSCRIPTION_PACKAGES = [
+        ('basic', 'Basic'),
+        ('standard', 'Standard'),
+        ('premium', 'Premium'),
+        ('ultimate', 'Ultimate')
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    phone_number = models.CharField(max_length=12, validators=[validate_phone_number], blank=True, null=True)
-    selected_universities = models.ManyToManyField(University, blank=True)
-    marks = models.JSONField(default=dict, blank=True, null=True)
-    stored_aps_score = models.IntegerField(default=0, blank=True)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
     subscription_package = models.CharField(max_length=20, choices=SUBSCRIPTION_PACKAGES, default='basic')
     application_count = models.IntegerField(default=0)
-    subscription_status = models.BooleanField(default=False)
+    selected_universities = models.ManyToManyField(University, blank=True)
+    marks = models.JSONField(null=True, blank=True)
+    stored_aps_score = models.IntegerField(null=True, blank=True)
+    whatsapp_enabled = models.BooleanField(default=False)
+    last_chat_date = models.DateTimeField(null=True, blank=True)
+
+    @property
+    def subscription_status(self):
+        """Dynamically checks if the subscription is active based on verified payment proof."""
+        subscription_payment_doc = self.user.documentupload_set.filter(document_type='subscription_payment').first()
+        if subscription_payment_doc and subscription_payment_doc.verified:
+            return True  # Active
+        return False # Not Paid (or pending verification, or proof deleted)
+
+    def get_subscription_fee(self):
+        """Return the subscription fee based on the package."""
+        fees = {
+            'basic': 400,
+            'standard': 600,
+            'premium': 800,
+            'ultimate': 1000
+        }
+        return fees.get(self.subscription_package, 0)
+
+    def get_application_limit(self):
+        """Return the application limit based on subscription package."""
+        # R100 per application, Ultimate is unlimited
+        # Using a large number for unlimited to simplify checks elsewhere.
+        limits = {
+            'basic': 4,     # R400 / R100 = 4 applications
+            'standard': 6,  # R600 / R100 = 6 applications
+            'premium': 8,   # R800 / R100 = 8 applications
+            'ultimate': 999 # Effectively unlimited
+        }
+        return limits.get(self.subscription_package, 0) # Default to 0 if package not found
+
+    def can_apply(self):
+        """Check if the student can apply to more universities."""
+        return self.application_count < self.get_application_limit()
+
+    def can_access_whatsapp_chat(self):
+        """Check if the student can access WhatsApp chat."""
+        return self.subscription_package in ['premium', 'ultimate']
+
+    def can_access_course_advice(self):
+        """Check if the student can access course advice."""
+        return self.subscription_package in ['premium', 'ultimate']
+
+    def can_access_fee_guidance(self):
+        """Check if the student can access fee guidance."""
+        return self.subscription_package in ['standard', 'premium', 'ultimate']
+
+    def can_access_concierge_service(self):
+        """Check if the student can access concierge service."""
+        return self.subscription_package == 'ultimate'
 
     def __str__(self):
-        return f"Profile of {self.user.username}"
+        return f"{self.user.username}'s Profile"
 
     @property
     def aps_score(self):
@@ -115,38 +174,6 @@ class StudentProfile(models.Model):
         self.stored_aps_score = calculated_aps if calculated_aps is not None else 0
         super().save(*args, **kwargs)
 
-    def get_application_limit(self):
-        """Returns the maximum number of applications allowed based on subscription package."""
-        package_limits = {
-            'basic': 3,
-            'standard': 5,
-            'premium': 7,
-            'ultimate': float('inf'),
-        }
-        return package_limits.get(self.subscription_package, 3)
-
-    def can_apply(self):
-        """Checks if the user can submit more applications based on their subscription."""
-        if not self.subscription_status:
-            return False
-        return self.application_count < self.get_application_limit()
-
-    def can_access_fee_guidance(self):
-        """Checks if the user can access fee guidance based on their subscription."""
-        return self.subscription_package in ['standard', 'premium', 'ultimate']
-
-    def can_access_course_advice(self):
-        """Checks if the user can access course advice based on their subscription."""
-        return self.subscription_package in ['premium', 'ultimate']
-
-    def can_access_whatsapp_chat(self):
-        """Checks if the user can access WhatsApp chat based on their subscription."""
-        return self.subscription_package in ['premium', 'ultimate']
-
-    def can_access_concierge_service(self):
-        """Checks if the user can access concierge service based on their subscription."""
-        return self.subscription_package == 'ultimate'
-
     def get_service_fee(self):
         """Returns the service fee for applications, free for ultimate package."""
         if self.can_access_concierge_service():
@@ -157,3 +184,52 @@ class StudentProfile(models.Model):
         ordering = ['user__username']
         verbose_name = 'Student Profile'
         verbose_name_plural = 'Student Profiles'
+
+class ApplicationStatus(models.Model):
+    """Tracks the status of university applications."""
+    STATUS_CHOICES = (
+        ('not_started', 'Not Started'),
+        ('pending', 'Pending'),
+        ('submitted', 'Submitted'),
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+        ('rejected', 'Rejected'),
+    )
+    student = models.ForeignKey(StudentProfile, on_delete=models.CASCADE)
+    university = models.ForeignKey(University, on_delete=models.CASCADE)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='not_started')
+    application_date = models.DateTimeField(auto_now_add=True)
+    last_updated = models.DateTimeField(auto_now=True)
+    notes = models.TextField(blank=True, null=True)
+    payment_verified = models.BooleanField(default=False)
+    tracking_number = models.CharField(max_length=50, blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.student.user.username}'s application to {self.university.name}"
+
+    class Meta:
+        ordering = ['-application_date']
+        unique_together = ('student', 'university')
+        verbose_name = 'Application Status'
+        verbose_name_plural = 'Application Statuses'
+
+class Payment(models.Model):
+    PAYMENT_STATUS_CHOICES = [
+        ('not_paid', 'Not Paid'),
+        ('pending', 'Pending Verification'),
+        ('paid', 'Paid'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    university = models.CharField(max_length=100)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='not_paid')
+    proof_of_payment = models.FileField(upload_to='payment_proofs/', null=True, blank=True)
+    upload_date = models.DateTimeField(auto_now_add=True)
+    verification_date = models.DateTimeField(null=True, blank=True)
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.university} - {self.payment_status}"
+    
+    class Meta:
+        ordering = ['-upload_date']

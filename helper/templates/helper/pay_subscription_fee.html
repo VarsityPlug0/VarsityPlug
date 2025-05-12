@@ -1,0 +1,90 @@
+{% extends "helper/base.html" %}
+{% load static %}
+
+{% block title %}Pay Subscription Fee{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Subscription Payment</h2>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Subscription Status</h5>
+            <p class="card-text">
+                Status: <strong>{{ subscription_status }}</strong>
+            </p>
+            {% if existing_payment %}
+                <p class="card-text">
+                    <small class="text-muted">Payment proof uploaded on: {{ existing_payment.uploaded_at|date:"d M Y H:i" }}</small>
+                </p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if not existing_payment %}
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Payment Details</h5>
+                <p class="card-text">
+                    Package: <strong>{{ student_profile.get_subscription_package_display }}</strong><br>
+                    Amount: <strong>R{{ package_cost }}</strong>
+                </p>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Bank Details</h5>
+                <p class="card-text">
+                    Bank: {{ bank_details.bank_name }}<br>
+                    Account Holder: {{ bank_details.account_holder }}<br>
+                    Account Number: {{ bank_details.account_number }}<br>
+                    Branch Code: {{ bank_details.branch_code }}<br>
+                    Reference: {{ bank_details.reference }}
+                </p>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Upload Proof of Payment</h5>
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="payment_proof" class="form-label">Proof of Payment</label>
+                        <input type="file" class="form-control" id="payment_proof" name="payment_proof" required>
+                        <div class="form-text">Please upload a clear image or PDF of your payment proof.</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Upload Payment Proof</button>
+                </form>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> You have already uploaded a payment proof. Please wait for verification.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Bootstrap components
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+
+        // Auto-dismiss alerts after 5 seconds
+        var alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            setTimeout(function() {
+                var bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            }, 5000);
+        });
+    });
+</script>
+{% endblock %} 

@@ -1,41 +1,51 @@
-# Environment files
-.env
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Django local database
+# Django
+*.log
+local_settings.py
 db.sqlite3
 db.sqlite3-journal
-
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Media files
 media/
-
-# Virtual environment
-venv/
-env/
-.venv/
-
-# Django static files (collected, not source)
 staticfiles/
 
-# IDE and editor files
+# Virtual Environment
+venv/
+ENV/
+
+# Environment variables
+.env
+
+# IDE
 .idea/
 .vscode/
-*.sublime-project
-*.sublime-workspace
+*.swp
+*.swo
 
-# macOS
+# OS
 .DS_Store
+Thumbs.db
 
-# Logs
-*.log
-
-# Testing and coverage
-htmlcov/
-.coverage
-.tox/
-.pytest_cache/
+# Project specific
+uploads/
+documents/
+*.bak

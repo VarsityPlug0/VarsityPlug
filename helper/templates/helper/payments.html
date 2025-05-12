@@ -1,0 +1,122 @@
+{% extends 'helper/base.html' %}
+{% load static %}
+{% load helper_extras %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Payment Management</h2>
+    
+    <!-- Subscription Status -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Subscription Status</h4>
+        </div>
+        <div class="card-body">
+            <p><strong>Status:</strong> 
+                {% if student_profile.subscription_status %}
+                    <span class="badge bg-success">Active</span>
+                {% else %}
+                    <span class="badge bg-warning">Not Paid</span>
+                {% endif %}
+            </p>
+            {% if not student_profile.subscription_status %}
+                <a href="{% url 'helper:pay_subscription_fee' %}" class="btn btn-primary btn-sm">Pay Subscription Fee</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- University Applications -->
+    <div class="card">
+        <div class="card-header">
+            <h4>University Applications</h4>
+        </div>
+        <div class="card-body">
+            {% for application in applications %}
+            <div class="application-item mb-4">
+                <h5>{{ application.university.name }}</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Status:</strong> 
+                            <span class="badge {% if application.status == 'completed' %}bg-success{% elif application.status == 'pending' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                {{ application.get_status_display }}
+                            </span>
+                        </p>
+                        <p><strong>Application Date:</strong> {{ application.application_date|date:"d M Y" }}</p>
+                        <p><strong>Application Fee:</strong> {{ application.university.application_fee }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Payment Status:</strong> 
+                            {% with payment=payments|filter_by_university:application.university.name %}
+                                {% if payment %}
+                                    <span class="badge {% if payment.payment_status == 'paid' %}bg-success{% elif payment.payment_status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ payment.get_payment_status_display }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger">Not Paid</span>
+                                {% endif %}
+                            {% endwith %}
+                        </p>
+                        
+                        <!-- Display uploaded document if exists -->
+                        {% with doc=documents|filter_documents_by_university:application.university.name %}
+                            {% if doc %}
+                                <p><strong>Uploaded Document:</strong> 
+                                    <a href="{{ doc.file.url }}" target="_blank" class="btn btn-info btn-sm">
+                                        View Proof
+                                    </a>
+                                    <span class="badge {% if doc.verified %}bg-success{% else %}bg-warning{% endif %}">
+                                        {{ doc.verified|yesno:"Verified,Pending Verification" }}
+                                    </span>
+                                </p>
+                            {% endif %}
+                        {% endwith %}
+                        
+                        {% if application.status != 'completed' %}
+                        <form method="POST" action="{% url 'helper:upload_payment_proof' %}" enctype="multipart/form-data" class="mt-2">
+                            {% csrf_token %}
+                            <input type="hidden" name="university" value="{{ application.university.name }}">
+                            <div class="input-group">
+                                <input type="file" name="proof_of_payment" class="form-control" required>
+                                <button type="submit" class="btn btn-primary">Upload Proof</button>
+                            </div>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    // Add real-time status updates using WebSocket or polling
+    function updateStatuses() {
+        fetch('/api/payment-statuses/')
+            .then(response => response.json())
+            .then(data => {
+                // Update status badges
+                data.forEach(item => {
+                    const statusElement = document.querySelector(`#status-${item.id}`);
+                    if (statusElement) {
+                        statusElement.textContent = item.status;
+                        statusElement.className = `badge ${getStatusClass(item.status)}`;
+                    }
+                });
+            });
+    }
+
+    function getStatusClass(status) {
+        switch(status) {
+            case 'paid': return 'bg-success';
+            case 'pending': return 'bg-warning';
+            default: return 'bg-danger';
+        }
+    }
+
+    // Update statuses every 30 seconds
+    setInterval(updateStatuses, 30000);
+</script>
+{% endblock %}
+{% endblock %} 

@@ -1,0 +1,139 @@
+{% extends "helper/base.html" %}
+{% load static %}
+{% load helper_extras %}
+
+{% block title %}Application Details - {{ application.university.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <!-- Subscription Plan Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Subscription Plan</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Current Plan:</strong> {{ application.student.get_subscription_package_display }}</p>
+                    <p><strong>Applications Used:</strong> {{ application.student.application_count }} / {{ application.student.get_application_limit }}</p>
+                    
+                    {% if application.student.subscription_package != 'ultimate' %}
+                        <div class="mt-3">
+                            <h6>Available Upgrades:</h6>
+                            <div class="list-group">
+                                {% if application.student.subscription_package == 'basic' %}
+                                    <a href="{% url 'helper:upgrade_subscription' %}" class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">Standard Plan</h6>
+                                            <small>R600</small>
+                                        </div>
+                                        <p class="mb-1">Up to 6 applications, Fee guidance, Priority support</p>
+                                    </a>
+                                    <a href="{% url 'helper:upgrade_subscription' %}" class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">Premium Plan</h6>
+                                            <small>R800</small>
+                                        </div>
+                                        <p class="mb-1">Up to 8 applications, Course advice, WhatsApp support</p>
+                                    </a>
+                                    <a href="{% url 'helper:upgrade_subscription' %}" class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">Ultimate Plan</h6>
+                                            <small>R1000</small>
+                                        </div>
+                                        <p class="mb-1">Unlimited applications, Concierge service, 24/7 support</p>
+                                    </a>
+                                {% elif application.student.subscription_package == 'standard' %}
+                                    <a href="{% url 'helper:upgrade_subscription' %}" class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">Premium Plan</h6>
+                                            <small>R800</small>
+                                        </div>
+                                        <p class="mb-1">Up to 8 applications, Course advice, WhatsApp support</p>
+                                    </a>
+                                    <a href="{% url 'helper:upgrade_subscription' %}" class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">Ultimate Plan</h6>
+                                            <small>R1000</small>
+                                        </div>
+                                        <p class="mb-1">Unlimited applications, Concierge service, 24/7 support</p>
+                                    </a>
+                                {% elif application.student.subscription_package == 'premium' %}
+                                    <a href="{% url 'helper:upgrade_subscription' %}" class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">Ultimate Plan</h6>
+                                            <small>R1000</small>
+                                        </div>
+                                        <p class="mb-1">Unlimited applications, Concierge service, 24/7 support</p>
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <p class="text-success mt-3"><i class="fas fa-check-circle"></i> You are on the highest tier plan!</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Application Details Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">Application Details</h2>
+                </div>
+                <div class="card-body">
+                    <h3 class="card-title">{{ application.university.name }}</h3>
+                    
+                    <div class="application-info mt-4">
+                        <p><strong>Application Status:</strong> {{ application.get_status_display }}</p>
+                        
+                        <p><strong>Application Date:</strong> {{ application.created_at|date:"F j, Y" }}</p>
+                        
+                        <p><strong>Last Updated:</strong> {{ application.updated_at|date:"F j, Y" }}</p>
+                        
+                        {% if payment_proof %}
+                            {% if payment_proof.verified %}
+                                <p><strong>Payment Status:</strong> <span class="text-success">Verified</span></p>
+                                {% if payment_proof.verification_date %}
+                                    <p><strong>Verified On:</strong> {{ payment_proof.verification_date|date:"F j, Y, g:i a" }}</p>
+                                {% endif %}
+                            {% else %}
+                                <p><strong>Payment Status:</strong> <span class="text-warning">Pending</span></p>
+                                {% with time_since_upload=payment_proof.uploaded_at|timesince %}
+                                    <p><small class="text-muted">Payment proof uploaded {{ time_since_upload }} ago</small></p>
+                                {% endwith %}
+                                {% with verification_time=payment_proof.uploaded_at|add:"24:00:00" %}
+                                    <p><small class="text-muted">Verification will be available in {{ verification_time|time_until }} hours</small></p>
+                                {% endwith %}
+                            {% endif %}
+                        {% else %}
+                            <p><strong>Payment Status:</strong> <span class="text-danger">Not Paid</span></p>
+                        {% endif %}
+
+                        {% if application.tracking_number %}
+                            <p><strong>Tracking Number:</strong> {{ application.tracking_number }}</p>
+                        {% endif %}
+
+                        {% if application.notes %}
+                            <div class="mt-3">
+                                <h5>Notes:</h5>
+                                <p>{{ application.notes }}</p>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mt-4">
+                        <a href="{% url 'helper:application_list' %}" class="btn btn-secondary">
+                            Back to Applications
+                        </a>
+                        {% if not payment_proof %}
+                            <a href="{% url 'helper:unified_payment' %}" class="btn btn-primary">
+                                Pay Application Fee
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

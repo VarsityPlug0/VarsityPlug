@@ -113,37 +113,17 @@
         </div>
     {% endif %}
 
-    <h3>Available Faculties and Courses</h3>
-    {% if faculty_courses %}
-        {% for faculty, courses in faculty_courses.items %}
+    <h3>Available Faculties</h3>
+    {% if faculties %}
+        {% for faculty in faculties %}
             <div class="faculty-card">
                 <div class="card-header">
-                    <h4>{{ faculty|default:"Unnamed Faculty" }}</h4>
+                    <h4>{{ faculty }}</h4>
                 </div>
                 <div class="card-body">
-                    {% if courses %}
-                        <ul>
-                            {% for course in courses %}
-                                <li>
-                                    {{ course.name|default:course }}
-                                    {% if course.minimum_aps %}
-                                        (Minimum APS: {{ course.minimum_aps }})
-                                    {% endif %}
-                                </li>
-                            {% endfor %}
-                        </ul>
-                        {% if show_course_advice %}
-                            <div class="course-advice">
-                                <p><strong>Course Advice:</strong> Based on your APS, contact our <a href="{% url 'helper:dashboard_student' %}#aiChatForm" class="text-primary">support team</a> for personalized advice on choosing courses in this faculty.</p>
-                            </div>
-                        {% endif %}
-                    {% else %}
-                        <p>No courses listed for this faculty.</p>
-                    {% endif %}
+                    <p>For detailed course information and requirements, please contact our <a href="{% url 'helper:dashboard_student' %}#aiChatForm" class="text-primary">support team</a>.</p>
                 </div>
             </div>
-        {% empty %}
-            <p class="error-message">No faculties available at this time.</p>
         {% endfor %}
     {% else %}
         <p class="error-message">No faculties available at this time.</p>
@@ -151,7 +131,7 @@
 
     <div class="action-buttons">
         {% if university.id %}
-            <a href="{% url 'helper:pay_application_fee' university.id %}" class="btn btn-primary">Apply to {{ university.name|default:"University" }}</a>
+            <a href="{% url 'helper:unified_payment' %}" class="btn btn-primary">Apply to {{ university.name|default:"University" }}</a>
         {% endif %}
         <a href="{% url 'helper:universities_list' %}" class="btn btn-secondary">Back to Universities</a>
         <a href="{% url 'helper:dashboard_student' %}" class="btn btn-outline-primary ms-2">Return to Dashboard</a>

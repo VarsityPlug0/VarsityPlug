@@ -1,0 +1,95 @@
+{% extends "helper/base.html" %}
+{% block title %}Pay Subscription Fee{% endblock %}
+
+{% block content %}
+<style>
+    /* Style for the payment section container */
+    .payment-section {
+        max-width: 600px; /* Limit width for readability */
+        margin: 0 auto;   /* Center the section horizontally */
+        padding: 20px;    /* Add padding inside the section */
+    }
+    .payment-section h1 {
+        font-size: 2rem;      /* Large heading */
+        margin-bottom: 1.5rem;/* Space below heading */
+        color: #333;          /* Dark text color */
+    }
+    .bank-details {
+        background-color: #f8f9fa; /* Light background for bank details */
+        padding: 1rem;             /* Padding inside the box */
+        border-radius: 8px;        /* Rounded corners */
+        margin-bottom: 1.5rem;     /* Space below the box */
+    }
+    .bank-details h3 {
+        font-size: 1.25rem; /* Slightly larger heading */
+        margin-bottom: 1rem;/* Space below heading */
+        color: #4a90e2;     /* Blue color for heading */
+    }
+    .bank-details p {
+        margin: 0.5rem 0;   /* Vertical spacing between paragraphs */
+        font-size: 1rem;    /* Standard font size */
+    }
+    .upload-form {
+        border: 1px solid #ddd;    /* Light border */
+        border-radius: 8px;        /* Rounded corners */
+        padding: 1rem;             /* Padding inside the form */
+        background-color: #fff;    /* White background */
+    }
+    .upload-form h3 {
+        font-size: 1.25rem;        /* Heading size */
+        margin-bottom: 1rem;       /* Space below heading */
+    }
+    .upload-form .form-label {
+        font-weight: 500;          /* Slightly bolder label */
+    }
+    @media (max-width: 576px) {
+        .payment-section { padding: 10px; }
+        .payment-section h1 { font-size: 1.5rem; }
+        .bank-details h3, .upload-form h3 { font-size: 1.1rem; }
+        .bank-details p, .upload-form label { font-size: 0.9rem; }
+    }
+</style>
+
+<div class="payment-section">
+    <h1>Pay Subscription Fee</h1>
+    <!-- Show any Django messages (success, error, etc.) -->
+    {% if messages %}
+        <div class="mb-3">
+            {% for message in messages %}
+                <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'warning' %}alert-warning{% else %}alert-danger{% endif %} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Bank details for payment -->
+    <div class="bank-details">
+        <h3>Payment Instructions</h3>
+        <p>Please make a payment of <strong>R{{ package_cost }}</strong> for your <strong>{{ package_name }}</strong> subscription to the following account:</p>
+        <p><strong>Bank Name:</strong> {{ bank_details.bank_name }}</p>
+        <p><strong>Account Holder:</strong> {{ bank_details.account_holder }}</p>
+        <p><strong>Account Number:</strong> {{ bank_details.account_number }}</p>
+        <p><strong>Branch Code:</strong> {{ bank_details.branch_code }}</p>
+        <p><strong>Reference:</strong> {{ bank_details.reference }}</p>
+        <p><strong>Note:</strong> Once payment is confirmed, your subscription will be activated.</p>
+    </div>
+
+    <!-- Form to upload proof of payment -->
+    <div class="upload-form">
+        <h3>Upload Proof of Payment</h3>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="payment_proof" class="form-label">Upload Payment Proof (PDF, JPG, PNG)</label>
+                <input type="file" class="form-control" id="payment_proof" name="payment_proof" accept=".pdf,.jpg,.png" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit Proof of Payment</button>
+        </form>
+    </div>
+    <div class="mt-3">
+        <a href="{% url 'helper:dashboard_student' %}" class="btn btn-outline-primary">Return to Dashboard</a>
+    </div>
+</div>
+{% endblock %} 
