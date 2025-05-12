@@ -6,7 +6,7 @@ services:
       pip install -r requirements.txt
       python manage.py collectstatic --noinput
       python manage.py migrate
-    startCommand: gunicorn varsity_plug.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 2
+    startCommand: gunicorn varsity_plug.wsgi:application
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
