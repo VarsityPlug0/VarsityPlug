@@ -4,6 +4,7 @@ services:
     env: python
     buildCommand: |
       pip install -r requirements.txt
+      python manage.py migrate
       python manage.py collectstatic --noinput
     startCommand: |
       cd $(pwd)
@@ -13,7 +14,6 @@ services:
         echo "Waiting for database connection..."
         sleep 2
       done
-      python manage.py migrate
       gunicorn varsity_plug.wsgi:application --bind 0.0.0.0:$PORT --chdir $(pwd)
     envVars:
       - key: PYTHON_VERSION
@@ -40,7 +40,7 @@ services:
       - key: OPENAI_API_KEY
         sync: false
       - key: ALLOWED_HOSTS
-        value: varsity-plug.onrender.com
+        value: varsityplug-nvg2.onrender.com
 
 databases:
   - name: varsity-plug-db
