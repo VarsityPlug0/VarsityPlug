@@ -4,10 +4,30 @@ services:
     env: python
     buildCommand: |
       pip install -r requirements.txt
+      echo "Checking database connection..."
+      python -c "
+      import os
+      import psycopg2
+      from urllib.parse import urlparse
+      url = urlparse(os.getenv('DATABASE_URL'))
+      conn = psycopg2.connect(
+          dbname=url.path[1:],
+          user=url.username,
+          password=url.password,
+          host=url.hostname,
+          port=url.port
+      )
+      print('Database connection successful!')
+      conn.close()
+      "
       echo "Running migrations..."
       python manage.py showmigrations --list
       echo "Applying migrations..."
-      python manage.py migrate --noinput --verbosity 2
+      python manage.py migrate auth --noinput --verbosity 2
+      python manage.py migrate contenttypes --noinput --verbosity 2
+      python manage.py migrate sessions --noinput --verbosity 2
+      python manage.py migrate admin --noinput --verbosity 2
+      python manage.py migrate helper --noinput --verbosity 2
       echo "Collecting static files..."
       python manage.py collectstatic --noinput
     startCommand: |
