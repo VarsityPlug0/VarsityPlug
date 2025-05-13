@@ -25,6 +25,7 @@ from .forms import (
 )
 import time
 from .utils import calculate_application_fees
+from django.db import transaction
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -230,15 +231,21 @@ def register(request):
     if request.method == 'POST':
         form = ExtendedUserCreationForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            # Create StudentProfile with default package
-            StudentProfile.objects.create(
-                user=user,
-                subscription_package='basic'  # Set default package to basic
-            )
-            login(request, user)
-            messages.success(request, "Registration successful! Welcome to Varsity Plug.")
-            return redirect('helper:subscription_selection')
+            try:
+                with transaction.atomic():
+                    user = form.save()
+                    # Create StudentProfile with default package
+                    StudentProfile.objects.create(
+                        user=user,
+                        subscription_package='basic'  # Set default package to basic
+                    )
+                    login(request, user)
+                    messages.success(request, "Registration successful! Welcome to Varsity Plug.")
+                    return redirect('helper:subscription_selection')
+            except Exception as e:
+                logger.error(f"Registration error: {str(e)}")
+                messages.error(request, "An error occurred during registration. Please try again.")
+                return render(request, 'helper/register.html', {'form': form})
     else:
         form = ExtendedUserCreationForm()
     return render(request, 'helper/register.html', {'form': form})
