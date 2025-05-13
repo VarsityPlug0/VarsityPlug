@@ -28,15 +28,18 @@ class DocumentUploadForm(forms.ModelForm):
     class Meta:
         model = DocumentUpload
         fields = ['document_type', 'file', 'university']
+        widgets = {
+            'file': forms.FileInput(attrs={'class': 'form-control'}),
+            'document_type': forms.Select(attrs={'class': 'form-control'}),
+            'university': forms.Select(attrs={'class': 'form-control'})
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Restrict document type choices to only the main types
-        self.fields['document_type'].choices = [
-            ('id', 'ID Document'),
-            ('matric_cert', 'Matric Certificate'),
-            ('grade_11', 'Grade 11 Results'),
-        ]
+        # Use the model's document type choices
+        self.fields['document_type'].choices = DocumentUpload.DOCUMENT_TYPES
+        # Make university field optional
+        self.fields['university'].required = False
 
     def clean_file(self):
         file = self.cleaned_data.get('file')

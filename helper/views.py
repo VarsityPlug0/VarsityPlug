@@ -231,7 +231,11 @@ def register(request):
         form = ExtendedUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            StudentProfile.objects.create(user=user)
+            # Create StudentProfile with default package
+            StudentProfile.objects.create(
+                user=user,
+                subscription_package='basic'  # Set default package to basic
+            )
             login(request, user)
             messages.success(request, "Registration successful! Welcome to Varsity Plug.")
             return redirect('helper:subscription_selection')
@@ -266,11 +270,20 @@ def redirect_after_login(request):
     try:
         profile = StudentProfile.objects.get(user=request.user)
     except StudentProfile.DoesNotExist:
-        # Create a new profile if it doesn't exist
-        profile = StudentProfile.objects.create(user=request.user)
+        # Create a new profile with default values
+        profile = StudentProfile.objects.create(
+            user=request.user,
+            subscription_package='basic'  # Set default package to basic
+        )
     
-    if not profile.subscription_status:
+    # Check subscription status using the property method
+    try:
+        if not profile.subscription_status:
+            return redirect('helper:subscription_selection')
+    except Exception:
+        # If there's any error checking subscription status, redirect to subscription selection
         return redirect('helper:subscription_selection')
+    
     return redirect('helper:dashboard_student')
 
 @login_required
@@ -524,16 +537,11 @@ def upload_document(request):
     # Get all document types
     all_types = dict(DocumentUpload.DOCUMENT_TYPES)
     # Get types already uploaded by the user
-    # For PoP, we might allow multiple, so this logic might need adjustment or PoP handled separately.
-    # For now, the PoP form has its own type, so it bypasses the dropdown availability check.
     uploaded_types = set(DocumentUpload.objects.filter(user=request.user).values_list('document_type', flat=True))
     # Only allow types not already uploaded
     available_types = [(k, v) for k, v in DocumentUpload.DOCUMENT_TYPES if k not in uploaded_types or k == 'payment_proof']
 
-
     if request.method == 'POST':
-        # Use a different form for PoP if it has special fields like university_id not in DocumentUploadForm
-        # Or, ensure DocumentUploadForm can handle 'university' if passed, or handle it manually.
         form = DocumentUploadForm(request.POST, request.FILES)
         if form.is_valid():
             document_type = form.cleaned_data['document_type']
@@ -543,7 +551,7 @@ def upload_document(request):
                 existing = DocumentUpload.objects.filter(user=request.user, document_type=document_type)
                 if existing.exists():
                     messages.error(request, f"You have already uploaded a document for '{dict(DocumentUpload.DOCUMENT_TYPES).get(document_type, document_type)}'. Please delete it before uploading a new one.")
-                    return redirect('helper:document_list') # Or dashboard
+                    return redirect('helper:document_list')
 
             document = form.save(commit=False)
             document.user = request.user
@@ -556,21 +564,16 @@ def upload_document(request):
                         document.university = university_instance
                     except University.DoesNotExist:
                         messages.error(request, "Associated university for Proof of Payment not found.")
-                        # Decide if this is a critical error or if PoP can be saved without uni
-                        # For now, let's make it non-critical, but log it
                         print(f"Warning: University with ID {university_id} not found for PoP upload by user {request.user.id}")
             
             document.save()
             messages.success(request, "Document uploaded successfully!")
-            return redirect('helper:dashboard_student') # Redirect to dashboard to see the updated list
+            return redirect('helper:document_list')  # Changed from dashboard_student to document_list
     else:
         form = DocumentUploadForm()
-        # Limit the dropdown to available types, ensure PoP is not in the general upload dropdown
-        # Or, if it is, ensure the university field is handled.
-        # The PoP modal directly sets document_type='payment_proof' so this form init is for the general upload page
+        # Limit the dropdown to available types
         form.fields['document_type'].choices = [(k, v) for k, v in DocumentUpload.DOCUMENT_TYPES if k not in uploaded_types and k != 'payment_proof']
         
-    # This render is for the general /upload_document/ page, not the PoP modal submission success.
     return render(request, 'helper/upload_document.html', {'form': form})
 
 @login_required

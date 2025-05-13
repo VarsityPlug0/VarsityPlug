@@ -238,7 +238,9 @@
                                 <p><strong>Application Fee:</strong> {{ application_fees|get_item:application.university.name }}</p>
                                 
                                 {% with payment_proof=application.documentupload_set.all|filter_document_type:'payment_proof'|first %}
-                                    {% if payment_proof %}
+                                    {% if application_fees|get_item:application.university.name == "FREE" %}
+                                        <p><strong>Payment Status:</strong> <span class="badge bg-info">Not Required</span></p>
+                                    {% elif payment_proof %}
                                         {% if payment_proof.verified %}
                                             <p><strong>Payment Status:</strong> <span class="badge bg-success">Verified</span></p>
                                             {% if payment_proof.verification_date %}

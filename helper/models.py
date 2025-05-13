@@ -81,10 +81,13 @@ class StudentProfile(models.Model):
     @property
     def subscription_status(self):
         """Dynamically checks if the subscription is active based on verified payment proof."""
-        subscription_payment_doc = self.user.documentupload_set.filter(document_type='subscription_payment').first()
-        if subscription_payment_doc and subscription_payment_doc.verified:
-            return True  # Active
-        return False # Not Paid (or pending verification, or proof deleted)
+        try:
+            subscription_payment_doc = self.user.documentupload_set.filter(document_type='subscription_payment').first()
+            if subscription_payment_doc and subscription_payment_doc.verified:
+                return True  # Active
+            return False  # Not Paid (or pending verification, or proof deleted)
+        except Exception:
+            return False  # Default to False if there's any error
 
     def get_subscription_fee(self):
         """Return the subscription fee based on the package."""

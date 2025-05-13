@@ -213,9 +213,9 @@
                     <label for="document_type" class="form-label">Document Type</label>
                     <select name="document_type" id="document_type" class="form-select" required aria-label="Select document type">
                         <option value="">Select Document Type</option>
-                        <option value="id">ID Document</option>
-                        <option value="matric_cert">Matric Certificate</option>
-                        <option value="grade_11">Grade 11 Results</option>
+                        <option value="id_picture">ID Picture</option>
+                        <option value="grade_12_results">Grade 12 Results</option>
+                        <option value="grade_11_results">Grade 11 Results</option>
                         <option value="payment_proof">Proof of Payment</option>
                     </select>
                 </div>
@@ -296,7 +296,7 @@
     <section class="card mb-4">
         <h2 class="card-header bg-primary text-white">Qualified Universities (Based on APS: {% if student_aps is not None %}{{ student_aps }}{% else %}Not Calculated{% endif %})</h2>
         <div class="card-body">
-            {% if universities %}
+            {% if universities and universities != '[]' %}
                 <script id="qualifiedUniversitiesData" type="application/json">
                     {{ universities|safe }}
                 </script>

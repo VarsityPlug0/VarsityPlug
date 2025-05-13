@@ -1,0 +1,87 @@
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Proof of Payment</h5>
+    </div>
+    <div class="card-body">
+        {% if application.proof_of_payment %}
+            <p><strong>Status:</strong> 
+                {% if application.is_payment_verified %}
+                    <span class="badge bg-success">Verified</span>
+                {% else %}
+                    <span class="badge bg-warning">Pending Verification</span>
+                {% endif %}
+            </p>
+            <p><strong>Uploaded:</strong> {{ application.proof_of_payment_uploaded_at|default:"Not uploaded" }}</p>
+            <p><strong>Verified:</strong> {{ application.payment_verified_at|default:"Not verified" }}</p>
+            <a href="{{ application.proof_of_payment.url }}" class="btn btn-primary" target="_blank">View Proof of Payment</a>
+        {% else %}
+            <p class="text-muted">No proof of payment uploaded yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Subscription Plan</h5>
+    </div>
+    <div class="card-body">
+        <p><strong>Current Plan:</strong> {{ application.user.studentprofile.get_subscription_package_display }}</p>
+        <p><strong>Applications Used:</strong> {{ application.user.studentprofile.application_count }} / {{ application.user.studentprofile.get_application_limit }}</p>
+        
+        {% if application.user.studentprofile.subscription_package != 'ultimate' %}
+            <div class="mt-3">
+                <h6>Available Upgrades:</h6>
+                <div class="list-group">
+                    {% if application.user.studentprofile.subscription_package == 'basic' %}
+                        <a href="{% url 'helper:upgrade_subscription' %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">Standard Plan</h6>
+                                <small>R600</small>
+                            </div>
+                            <p class="mb-1">Up to 6 applications, Fee guidance, Priority support</p>
+                        </a>
+                        <a href="{% url 'helper:upgrade_subscription' %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">Premium Plan</h6>
+                                <small>R800</small>
+                            </div>
+                            <p class="mb-1">Up to 8 applications, Course advice, WhatsApp support</p>
+                        </a>
+                        <a href="{% url 'helper:upgrade_subscription' %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">Ultimate Plan</h6>
+                                <small>R1000</small>
+                            </div>
+                            <p class="mb-1">Unlimited applications, Concierge service, 24/7 support</p>
+                        </a>
+                    {% elif application.user.studentprofile.subscription_package == 'standard' %}
+                        <a href="{% url 'helper:upgrade_subscription' %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">Premium Plan</h6>
+                                <small>R800</small>
+                            </div>
+                            <p class="mb-1">Up to 8 applications, Course advice, WhatsApp support</p>
+                        </a>
+                        <a href="{% url 'helper:upgrade_subscription' %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">Ultimate Plan</h6>
+                                <small>R1000</small>
+                            </div>
+                            <p class="mb-1">Unlimited applications, Concierge service, 24/7 support</p>
+                        </a>
+                    {% elif application.user.studentprofile.subscription_package == 'premium' %}
+                        <a href="{% url 'helper:upgrade_subscription' %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">Ultimate Plan</h6>
+                                <small>R1000</small>
+                            </div>
+                            <p class="mb-1">Unlimited applications, Concierge service, 24/7 support</p>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <p class="text-success mt-3"><i class="fas fa-check-circle"></i> You are on the highest tier plan!</p>
+        {% endif %}
+    </div>
+</div> 

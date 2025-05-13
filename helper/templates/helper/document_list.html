@@ -35,7 +35,7 @@
                             </thead>
                             <tbody>
                                 {% for doc in documents %}
-                                    {% if doc.document_type == 'id' or doc.document_type == 'matric_cert' or doc.document_type == 'grade_11' %}
+                                    {% if doc.document_type == 'id_picture' or doc.document_type == 'grade_11_results' or doc.document_type == 'grade_12_results' %}
                                         <tr>
                                             <td>
                                                 {{ doc.get_document_type_display }}
@@ -97,7 +97,7 @@
                             </thead>
                             <tbody>
                                 {% for doc in documents %}
-                                    {% if doc.document_type != 'id' and doc.document_type != 'matric_cert' and doc.document_type != 'grade_11' %}
+                                    {% if doc.document_type != 'id_picture' and doc.document_type != 'grade_11_results' and doc.document_type != 'grade_12_results' %}
                                         <tr>
                                             <td>
                                                 {{ doc.get_document_type_display }}
@@ -152,7 +152,7 @@
             {% endif %}
 
             <div class="mt-4">
-                <a href="{% url 'helper:dashboard_student' %}" class="btn btn-primary">
+                <a href="{% url 'helper:upload_document' %}" class="btn btn-primary">
                     Upload New Document
                 </a>
             </div>

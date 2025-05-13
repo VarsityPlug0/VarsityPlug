@@ -47,6 +47,13 @@
             <h4>University Applications</h4>
         </div>
         <div class="card-body">
+            {% if not student_profile.subscription_status %}
+                <div class="alert alert-warning mb-4">
+                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Subscription Required</h5>
+                    <p>You need to activate your subscription before you can apply to universities, even if they have free applications. Please pay your subscription fee to proceed.</p>
+                </div>
+            {% endif %}
+            
             {% for application in applications %}
             <div class="application-item mb-4" data-university-id="{{ application.university.id }}">
                 <h5>{{ application.university.name }}</h5>
@@ -71,7 +78,9 @@
                     <div class="col-md-6">
                         <p><strong>Payment Status:</strong> 
                             {% with payment=payments|filter_by_university:application.university.name %}
-                                {% if payment %}
+                                {% if application_fees|get_item:application.university.name == "FREE" %}
+                                    <span class="badge bg-info">Not Required</span>
+                                {% elif payment %}
                                     <span class="badge {% if payment.payment_status == 'paid' %}bg-success{% elif payment.payment_status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
                                         {{ payment.get_payment_status_display }}
                                     </span>
@@ -111,10 +120,17 @@
                         
                         {% if application.status != 'completed' %}
                             {% if application_fees|get_item:application.university.name == "FREE" %}
-                                <div class="alert alert-success mt-2">
-                                    <i class="fas fa-check-circle me-2"></i>
-                                    No payment proof required for free applications.
-                                </div>
+                                {% if student_profile.subscription_status %}
+                                    <div class="alert alert-success mt-2">
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        No payment proof required for free applications.
+                                    </div>
+                                {% else %}
+                                    <div class="alert alert-warning mt-2">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        Activate your subscription to proceed with this free application.
+                                    </div>
+                                {% endif %}
                             {% else %}
                                 <form method="POST" action="{% url 'helper:unified_payment' %}" enctype="multipart/form-data" class="mt-2">
                                     {% csrf_token %}
