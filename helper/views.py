@@ -391,7 +391,7 @@ def dashboard_student(request):
     # Get recommended universities based on APS score
     recommended_universities = []
     qualified_universities = []
-    if profile.stored_aps_score:
+    if profile.stored_aps_score is not None:  # Changed from if profile.stored_aps_score
         # Get universities that match the student's APS score
         qualified_universities = University.objects.filter(
             minimum_aps__lte=profile.stored_aps_score
