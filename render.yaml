@@ -23,6 +23,10 @@ services:
                   port=url.port
               )
               print('Database connection successful!')
+              # Test if we can create tables
+              with conn.cursor() as cursor:
+                  cursor.execute('SELECT version();')
+                  print(f'PostgreSQL version: {cursor.fetchone()[0]}')
               conn.close()
               break
           except Exception as e:
@@ -35,7 +39,24 @@ services:
       "
       echo "Running migrations..."
       python manage.py showmigrations --list
-      echo "Applying migrations..."
+      echo "Applying migrations in order..."
+      # First, apply auth migrations
+      echo "Applying auth migrations..."
+      python manage.py migrate auth --noinput --verbosity 3
+      # Then contenttypes
+      echo "Applying contenttypes migrations..."
+      python manage.py migrate contenttypes --noinput --verbosity 3
+      # Then sessions
+      echo "Applying sessions migrations..."
+      python manage.py migrate sessions --noinput --verbosity 3
+      # Then admin
+      echo "Applying admin migrations..."
+      python manage.py migrate admin --noinput --verbosity 3
+      # Then your app
+      echo "Applying helper migrations..."
+      python manage.py migrate helper --noinput --verbosity 3
+      # Finally, any remaining migrations
+      echo "Applying any remaining migrations..."
       python manage.py migrate --noinput --verbosity 3
       echo "Verifying migrations..."
       python manage.py showmigrations --list
