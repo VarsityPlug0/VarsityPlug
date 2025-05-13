@@ -18,7 +18,7 @@ DEBUG = os.getenv('DEBUG', 'True') == 'True'
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-key-only')  # Use environment variable in production
 
 # Allowed hosts for the application
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,varsityplug-nvg2.onrender.com').split(',')
 
 # Security settings - All SSL/HTTPS disabled for local development
 SECURE_SSL_REDIRECT = not DEBUG
@@ -38,7 +38,8 @@ X_FRAME_OPTIONS = 'SAMEORIGIN'
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',
     'http://127.0.0.1:8000',
-    'https://varsity-plug.onrender.com',  # Add your Render domain
+    'https://varsity-plug.onrender.com',
+    'https://varsityplug-nvg2.onrender.com',  # Add your Render domain
 ]
 
 # Application definition
