@@ -27,17 +27,11 @@ services:
       - key: DEBUG
         value: false
       - key: DATABASE_URL
-        fromDatabase:
-          name: varsity-plug-db
-          property: connectionString
+        value: postgresql://varsityplug_db_user:UDXToSK9S3Sn2jL6loHYNhMNeIa24Fb2@dpg-d0hnbst6ubrc73ah17g0-a/varsityplug_db
       - key: DATABASE_HOST
-        fromDatabase:
-          name: varsity-plug-db
-          property: host
+        value: dpg-d0hnbst6ubrc73ah17g0-a
       - key: DATABASE_PORT
-        fromDatabase:
-          name: varsity-plug-db
-          property: port
+        value: 5432
       - key: REDIS_URL
         fromService:
           type: redis
