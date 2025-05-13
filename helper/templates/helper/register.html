@@ -25,56 +25,106 @@
 
                     <form method="post" class="needs-validation" novalidate>
                         {% csrf_token %}
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="first_name" class="form-label">First Name</label>
+                                <label for="{{ form.first_name.id_for_label }}" class="form-label">First Name</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-user"></i></span>
-                                    <input type="text" class="form-control" id="first_name" name="first_name" required>
+                                    {{ form.first_name }}
                                 </div>
+                                {% if form.first_name.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.first_name.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="last_name" class="form-label">Last Name</label>
+                                <label for="{{ form.last_name.id_for_label }}" class="form-label">Last Name</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-user"></i></span>
-                                    <input type="text" class="form-control" id="last_name" name="last_name" required>
+                                    {{ form.last_name }}
                                 </div>
+                                {% if form.last_name.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.last_name.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label for="email" class="form-label">Email Address</label>
+                            <label for="{{ form.email.id_for_label }}" class="form-label">Email Address</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="fas fa-envelope"></i></span>
-                                <input type="email" class="form-control" id="email" name="email" required>
+                                {{ form.email }}
                             </div>
+                            {% if form.email.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.email.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
 
                         <div class="mb-3">
-                            <label for="username" class="form-label">Username</label>
+                            <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="fas fa-at"></i></span>
-                                <input type="text" class="form-control" id="username" name="username" required>
+                                {{ form.username }}
                             </div>
+                            {% if form.username.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.username.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
 
                         <div class="mb-3">
-                            <label for="password1" class="form-label">Password</label>
+                            <label for="{{ form.password1.id_for_label }}" class="form-label">Password</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                                <input type="password" class="form-control" id="password1" name="password1" required>
+                                {{ form.password1 }}
                             </div>
+                            {% if form.password1.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.password1.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                             <div class="form-text">
                                 Password must be at least 8 characters long and include numbers and special characters.
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label for="password2" class="form-label">Confirm Password</label>
+                            <label for="{{ form.password2.id_for_label }}" class="form-label">Confirm Password</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                                <input type="password" class="form-control" id="password2" name="password2" required>
+                                {{ form.password2 }}
                             </div>
+                            {% if form.password2.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.password2.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
 
                         <div class="mb-3 form-check">
@@ -147,6 +197,12 @@
         color: #6c757d;
         margin-top: 0.25rem;
     }
+    .invalid-feedback {
+        display: block;
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
 </style>
 
 <script>
@@ -164,14 +220,5 @@
             }, false)
         })
     })()
-
-    // Password confirmation validation
-    document.getElementById('password2').addEventListener('input', function() {
-        if (this.value !== document.getElementById('password1').value) {
-            this.setCustomValidity('Passwords do not match');
-        } else {
-            this.setCustomValidity('');
-        }
-    });
 </script>
 {% endblock %}

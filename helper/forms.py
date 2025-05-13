@@ -3,12 +3,41 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from .models import DocumentUpload, StudentProfile, University
 from django.core.exceptions import ValidationError
+from django.core import validators
 
 class ExtendedUserCreationForm(UserCreationForm):
     """Extended user registration form with email field."""
-    email = forms.EmailField(required=True)
-    first_name = forms.CharField(max_length=30, required=True)
-    last_name = forms.CharField(max_length=30, required=True)
+    email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(attrs={'class': 'form-control'})
+    )
+    first_name = forms.CharField(
+        max_length=30,
+        required=True,
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    last_name = forms.CharField(
+        max_length=30,
+        required=True,
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    username = forms.CharField(
+        max_length=150,
+        help_text='Required. 150 characters or fewer. Letters and digits only.',
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+        validators=[
+            validators.RegexValidator(
+                r'^[\w.@+-]+$',
+                'Enter a valid username. This value may contain only letters, numbers, and @/./+/-/_ characters.'
+            ),
+        ]
+    )
+    password1 = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+    )
+    password2 = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+    )
 
     class Meta:
         model = User
@@ -17,8 +46,9 @@ class ExtendedUserCreationForm(UserCreationForm):
     def clean_username(self):
         username = self.cleaned_data.get('username')
         if username:
-            # Convert both the input and database usernames to lowercase for comparison
-            if User.objects.filter(username__icontains=username).exists():
+            # Convert to lowercase for case-insensitive comparison
+            username_lower = username.lower()
+            if User.objects.filter(username__iexact=username_lower).exists():
                 raise forms.ValidationError("A user with that username already exists.")
         return username
 

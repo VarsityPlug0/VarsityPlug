@@ -228,7 +228,6 @@ def is_logged_out(user):
 @user_passes_test(is_logged_out, login_url='helper:dashboard_student')
 def register(request):
     """Handle user registration."""
-    # Added comment to trigger redeploy
     if request.method == 'POST':
         form = ExtendedUserCreationForm(request.POST)
         if form.is_valid():
