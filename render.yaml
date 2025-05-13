@@ -5,10 +5,15 @@ services:
     buildCommand: |
       pip install -r requirements.txt
       python manage.py collectstatic --noinput
-      python manage.py migrate
     startCommand: |
       cd $(pwd)
       export PYTHONPATH=$PYTHONPATH:$(pwd)
+      # Wait for database to be ready
+      while ! nc -z $DATABASE_HOST $DATABASE_PORT; do
+        echo "Waiting for database connection..."
+        sleep 2
+      done
+      python manage.py migrate
       gunicorn varsity_plug.wsgi:application --bind 0.0.0.0:$PORT --chdir $(pwd)
     envVars:
       - key: PYTHON_VERSION
@@ -25,6 +30,14 @@ services:
         fromDatabase:
           name: varsity-plug-db
           property: connectionString
+      - key: DATABASE_HOST
+        fromDatabase:
+          name: varsity-plug-db
+          property: host
+      - key: DATABASE_PORT
+        fromDatabase:
+          name: varsity-plug-db
+          property: port
       - key: REDIS_URL
         fromService:
           type: redis
