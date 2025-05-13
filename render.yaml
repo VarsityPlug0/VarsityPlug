@@ -5,8 +5,9 @@ services:
     buildCommand: |
       pip install -r requirements.txt
       echo "Running migrations..."
-      python manage.py showmigrations
-      python manage.py migrate --noinput
+      python manage.py showmigrations --list
+      echo "Applying migrations..."
+      python manage.py migrate --noinput --verbosity 2
       echo "Collecting static files..."
       python manage.py collectstatic --noinput
     startCommand: |
