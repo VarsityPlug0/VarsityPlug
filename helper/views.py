@@ -146,17 +146,26 @@ APPLICATION_FEES_2025 = {
 }
 
 def calculate_aps(marks):
-    """Calculate APS score based on NSC marks, excluding Life Orientation."""
+    """
+    Calculate APS score based on NSC marks according to official South African requirements.
+    APS is calculated using the best 6 subjects (excluding Life Orientation).
+    Points are awarded as follows:
+    80-100% = 7 points
+    70-79% = 6 points
+    60-69% = 5 points
+    50-59% = 4 points
+    40-49% = 3 points
+    30-39% = 2 points
+    0-29% = 1 point
+    """
     if not marks or not isinstance(marks, dict) or len(marks) != 7:
         return None
 
-    aps = 0
-    subjects_processed = set()
+    # Store all valid subject marks
+    subject_marks = []
+    has_life_orientation = False
 
     for subject, mark in marks.items():
-        if subject in subjects_processed:
-            continue
-
         if mark is None:
             return None
 
@@ -168,32 +177,35 @@ def calculate_aps(marks):
         if not 0 <= mark_num <= 100:
             return None
 
-        # Skip Life Orientation in APS calculation
+        # Track Life Orientation but don't include in APS calculation
         if subject == 'Life Orientation':
-            subjects_processed.add(subject)
+            has_life_orientation = True
             continue
 
         # Calculate points based on mark ranges
         if mark_num >= 80:
-            aps += 7
+            points = 7
         elif mark_num >= 70:
-            aps += 6
+            points = 6
         elif mark_num >= 60:
-            aps += 5
+            points = 5
         elif mark_num >= 50:
-            aps += 4
+            points = 4
         elif mark_num >= 40:
-            aps += 3
+            points = 3
         elif mark_num >= 30:
-            aps += 2
+            points = 2
         else:
-            aps += 1
+            points = 1
 
-        subjects_processed.add(subject)
+        subject_marks.append(points)
 
-    # Ensure all required subjects are present
-    if len(subjects_processed) != 7 or 'Life Orientation' not in subjects_processed:
+    # Validate requirements
+    if not has_life_orientation or len(subject_marks) != 6:
         return None
+
+    # Calculate total APS (sum of best 6 subjects)
+    aps = sum(subject_marks)
 
     return aps
 
