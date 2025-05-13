@@ -6,7 +6,7 @@ services:
       echo "Installing dependencies..."
       pip install -r requirements.txt
       echo "Running migrations..."
-      python manage.py showmigrations
+      python manage.py makemigrations
       python manage.py migrate --noinput
       echo "Collecting static files..."
       python manage.py collectstatic --noinput
@@ -28,6 +28,12 @@ services:
         sync: false
       - key: SECRET_KEY
         generateValue: true
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: varsity-plug-redis
+          property: connectionString
+    healthCheckPath: /health/
     shell: |
       python manage.py shell
 
