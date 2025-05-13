@@ -136,35 +136,44 @@ class StudentProfile(models.Model):
 
     @property
     def aps_score(self):
-        """Calculates the APS score based on marks, excluding Life Orientation."""
+        """Calculates the APS score based on the best 6 subjects, excluding Life Orientation."""
         if not self.marks or not isinstance(self.marks, dict) or len(self.marks) != 7:
             logger.warning(f"APS calculation for {self.user.username}: Invalid marks - {self.marks}")
             return None
 
         try:
-            aps = 0
+            # Convert marks to points and store in a list
+            subject_points = []
             for subject, mark in self.marks.items():
                 if subject == 'Life Orientation':
                     continue
                 try:
                     mark = int(mark)
                     if mark >= 80:
-                        aps += 7
+                        subject_points.append(7)
                     elif mark >= 70:
-                        aps += 6
+                        subject_points.append(6)
                     elif mark >= 60:
-                        aps += 5
+                        subject_points.append(5)
                     elif mark >= 50:
-                        aps += 4
+                        subject_points.append(4)
                     elif mark >= 40:
-                        aps += 3
+                        subject_points.append(3)
                     elif mark >= 30:
-                        aps += 2
+                        subject_points.append(2)
                     else:
-                        aps += 1
+                        subject_points.append(1)
                 except (ValueError, TypeError):
                     logger.error(f"Invalid mark for {subject}: {mark}")
                     return None
+
+            # Sort points in descending order and take top 6
+            subject_points.sort(reverse=True)
+            top_6_points = subject_points[:6]
+            
+            # Calculate total APS
+            aps = sum(top_6_points)
+            
             logger.info(f"APS calculation for {self.user.username}: Calculated APS = {aps}")
             return aps
         except Exception as e:

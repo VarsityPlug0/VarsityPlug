@@ -245,21 +245,66 @@
             e.preventDefault();
             debugLog("Handling marks form submit...");
             const form = e.target;
+            
+            // Validate form before submission
+            const formData = new FormData(form);
+            let hasEmptyFields = false;
+            let hasInvalidMarks = false;
+            
+            for (let i = 0; i < 7; i++) {
+                const subject = formData.get(`subject_${i}`);
+                const mark = formData.get(`mark_${i}`);
+                
+                if (!subject || !mark) {
+                    hasEmptyFields = true;
+                    break;
+                }
+                
+                const markNum = parseInt(mark);
+                if (isNaN(markNum) || markNum < 0 || markNum > 100) {
+                    hasInvalidMarks = true;
+                    break;
+                }
+            }
+            
+            if (hasEmptyFields) {
+                notificationSystem.showNotification("Please fill in all subject and mark fields.", true);
+                return;
+            }
+            
+            if (hasInvalidMarks) {
+                notificationSystem.showNotification("Marks must be between 0 and 100.", true);
+                return;
+            }
+            
             this.submitForm(form, 
                 (response, responseText, isRedirect) => {
-                    if (isRedirect) { window.location.href = response.url; return; }
-                    // Try to parse messages from response HTML if not a JSON response
+                    if (isRedirect) { 
+                        window.location.href = response.url; 
+                        return; 
+                    }
+                    
+                    // Try to parse messages from response HTML
                     const tempDiv = document.createElement('div');
                     tempDiv.innerHTML = responseText;
                     const successAlert = tempDiv.querySelector('.alert-success');
                     const errorAlert = tempDiv.querySelector('.alert-danger');
-                    if (successAlert) notificationSystem.showNotification(successAlert.textContent.trim());
-                    else if (errorAlert) notificationSystem.showNotification(errorAlert.textContent.trim(), true);
-                    else notificationSystem.showNotification("Marks updated! Reloading to reflect changes.");
+                    
+                    if (successAlert) {
+                        notificationSystem.showNotification(successAlert.textContent.trim());
+                    } else if (errorAlert) {
+                        notificationSystem.showNotification(errorAlert.textContent.trim(), true);
+                    } else {
+                        notificationSystem.showNotification("Marks updated! Reloading to reflect changes.");
+                    }
+                    
+                    // Store the expanded state in sessionStorage before reload
+                    sessionStorage.setItem('marksSectionExpanded', 'true');
                     setTimeout(() => window.location.reload(), 1500);
                 },
                 (error) => {
                     notificationSystem.showNotification(`Marks Update Failed: ${error.message}`, true);
+                    console.error('Marks submission error:', error);
                 }
             );
         },
@@ -439,27 +484,49 @@
     const qualifiedDisplaySystem = {
         displayElement: null,
         universities: [],
-        currentIndex: -1,
+        currentIndex: 0,
         intervalId: null,
-        intervalMs: CONFIG.DISPLAY_INTERVAL,
+        intervalMs: 7000,
+        isLoading: false,
+
         init() {
             debugLog('Starting qualified universities display initialization...');
             this.displayElement = document.getElementById('qualifiedUniversityDisplayArea');
-
+            
             if (!this.displayElement) {
-                debugLog('Qualified universities display element not found', { displayElement: !!this.displayElement });
+                debugLog('Qualified universities display element not found');
                 return;
             }
 
-            // Show spinner while loading
+            // Show loading state
+            this.isLoading = true;
             this.displayElement.innerHTML = `
                 <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>`;
+                    <span class="visually-hidden">Loading universities...</span>
+                </div>
+            `;
 
+            // Try to get data from the script tag first
+            const dataScript = document.getElementById('qualifiedUniversitiesData');
+            if (dataScript) {
+                try {
+                    this.universities = JSON.parse(dataScript.textContent);
+                    debugLog('Loaded qualified universities from script tag', { count: this.universities.length });
+                    this.initializeDisplay();
+                    return;
+                } catch (error) {
+                    debugLog('Error parsing universities data from script', { error });
+                }
+            }
+
+            // Fallback to API call if script data is not available
+            this.fetchUniversities();
+        },
+
+        fetchUniversities() {
             fetch('/universities/api/', {
                 method: 'GET',
-                credentials: 'same-origin', // Include cookies for authentication
+                credentials: 'same-origin',
                 headers: {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
@@ -467,9 +534,6 @@
             })
             .then(response => {
                 if (!response.ok) {
-                    if (response.status === 401 || response.status === 403) {
-                        throw new Error('Please log in to view university data');
-                    }
                     throw new Error(`Network response was not ok: ${response.statusText}`);
                 }
                 return response.json();
@@ -477,84 +541,72 @@
             .then(data => {
                 this.universities = data.universities || [];
                 debugLog('Fetched qualified universities data', { count: this.universities.length });
-                
-                if (!Array.isArray(this.universities)) {
-                    debugLog('Fetched data is not a valid array', { dataReceived: this.universities });
-                    this.universities = []; 
-                    throw new Error('University data is not in the expected array format.');
-                }
-
-                if (this.universities.length === 0) {
-                    this.displayElement.innerHTML = '<p class="text-muted">No qualified universities found.</p>';
-                    return;
-                }
-
-                if (this.intervalId) clearInterval(this.intervalId);
-                this.displayNextUniversity(); // Display first one immediately
-                this.intervalId = setInterval(() => this.displayNextUniversity(), this.intervalMs);
-
-                // Event delegation for select buttons
-                if (!this.displayElement.dataset.listenerAttached) {
-                    this.displayElement.addEventListener("click", function(e) {
-                        const selectBtn = e.target.closest(".select-university-btn");
-                        if (selectBtn) {
-                            const universityId = parseInt(selectBtn.dataset.universityId, 10);
-                            const universityName = selectBtn.dataset.universityName;
-                            const selectUrl = selectBtn.dataset.url;
-                            if (universityId && universityName && selectUrl) {
-                                if (confirm(`Would you like to select ${universityName}? This will add it to your selected universities.`)) {
-                                    universitySystem.selectUniversity(universityId, selectUrl);
-                                }
-                            } else {
-                                debugLog("Missing data on qualified uni select button", {universityId, universityName, selectUrl});
-                                notificationSystem.showNotification("Cannot select: essential data missing from button.", true);
-                            }
-                        }
-                    });
-                    this.displayElement.dataset.listenerAttached = "true";
-                }
-                debugLog('Qualified universities display initialized successfully from fetched data.');
+                this.initializeDisplay();
             })
             .catch(error => {
-                debugLog('Error fetching or processing qualified universities data', { error: error.message, stack: error.stack });
-                this.displayElement.innerHTML = `<p class="text-danger">${error.message || 'Error loading university data. Please try again.'}</p>`;
+                debugLog('Error fetching universities', { error });
+                this.displayElement.innerHTML = `
+                    <div class="alert alert-danger">
+                        <p class="mb-0">Error loading universities. Please try refreshing the page.</p>
+                    </div>
+                `;
+            })
+            .finally(() => {
+                this.isLoading = false;
             });
         },
-        generateUniversityCardHTML(uniData) {
-            if (!uniData) return '<p class="text-warning">Error displaying university data.</p>';
-            const name = uniData.name || "Unknown University";
-            const selectUrl = uniData.select_url || '#'; 
-            if(selectUrl === '#') {
-                debugLog("Warning: select_url missing for university in qualifiedDisplaySystem", {name: uniData.name, id: uniData.id});
+
+        initializeDisplay() {
+            if (!Array.isArray(this.universities) || this.universities.length === 0) {
+                this.displayElement.innerHTML = `
+                    <div class="alert alert-info">
+                        <p class="mb-0">No qualified universities found.</p>
+                    </div>
+                `;
+                return;
             }
 
-            return `
-                <div class="card mx-auto" style="max-width: 500px; border: 1px solid #dee2e6; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-radius: 8px;">
-                    <div class="card-body text-center">
-                        <h3 class="card-title h5">${name}</h3>
-                        <p class="card-text mb-1"><i class="fas fa-map-marker-alt text-secondary"></i> ${uniData.province || "N/A"}</p>
-                        <p class="card-text mb-1">
-                            <small class="text-muted">
-                                <i class="fas fa-calendar-alt"></i> Due: ${uniData.due_date || "TBD"} |
-                                <i class="fas fa-dollar-sign"></i> Fee: ${uniData.application_fee || "N/A"}
-                            </small>
-                        </p>
-                        <div class="d-flex justify-content-center gap-2 mt-3">
-                            <a href="${uniData.detail_url || '#'}" class="btn btn-outline-secondary btn-sm">View Details</a>
-                            <button class="btn btn-primary btn-sm select-university-btn" 
-                                    data-university-id="${uniData.id}" 
-                                    data-university-name="${name}"
-                                    data-url="${selectUrl}" 
-                                    aria-label="Select ${name}">Select</button>
-                        </div>
-                    </div>
-                </div>`;
+            if (this.intervalId) {
+                clearInterval(this.intervalId);
+            }
+
+            this.currentIndex = 0;
+            this.displayNextUniversity();
+            this.intervalId = setInterval(() => this.displayNextUniversity(), this.intervalMs);
         },
+
         displayNextUniversity() {
-            if (!this.universities || this.universities.length === 0 || !this.displayElement) return;
+            if (!this.displayElement || this.isLoading) return;
+
+            const uni = this.universities[this.currentIndex];
+            if (!uni) return;
+
+            const card = this.createUniversityCard(uni);
+            this.displayElement.innerHTML = '';
+            this.displayElement.appendChild(card);
+
             this.currentIndex = (this.currentIndex + 1) % this.universities.length;
-            const currentUni = this.universities[this.currentIndex];
-            this.displayElement.innerHTML = this.generateUniversityCardHTML(currentUni);
+        },
+
+        createUniversityCard(uni) {
+            const card = document.createElement('div');
+            card.className = 'card h-100';
+            card.innerHTML = `
+                <div class="card-body">
+                    <h5 class="card-title">${uni.name}</h5>
+                    <p class="card-text">
+                        <strong>Minimum APS:</strong> ${uni.minimum_aps}<br>
+                        <strong>Application Fee:</strong> ${uni.application_fee}<br>
+                        <strong>Due Date:</strong> ${uni.due_date}<br>
+                        <strong>Province:</strong> ${uni.province}
+                    </p>
+                    <div class="d-flex justify-content-between">
+                        <a href="${uni.detail_url}" class="btn btn-primary">View Details</a>
+                        <a href="${uni.select_url}" class="btn btn-success">Select University</a>
+                    </div>
+                </div>
+            `;
+            return card;
         }
     };
 
@@ -598,6 +650,122 @@
         }
     };
 
+    // University Recommendations System
+    const universityRecommendationsSystem = {
+        carousel: null,
+        currentIndex: 0,
+        universities: [],
+
+        init() {
+            debugLog('Initializing university recommendations system...');
+            const carouselElement = document.getElementById('universitySlideshow');
+            if (!carouselElement) {
+                debugLog('University slideshow element not found');
+                return;
+            }
+
+            // Initialize Bootstrap carousel
+            this.carousel = new bootstrap.Carousel(carouselElement, {
+                interval: 7000,
+                wrap: true,
+                keyboard: true
+            });
+
+            // Get universities data from the page
+            const universitiesData = window.universitiesData || [];
+            this.universities = universitiesData;
+
+            // Set up event listeners
+            this.setupEventListeners();
+            debugLog('University recommendations system initialized');
+        },
+
+        setupEventListeners() {
+            // Handle university selection
+            document.querySelectorAll('.recommendation-select-btn').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    const universityId = parseInt(button.dataset.universityId, 10);
+                    const universityName = button.dataset.universityName;
+                    const url = button.dataset.url;
+
+                    if (!universityId || !universityName || !url) {
+                        debugLog('Missing university data', { universityId, universityName, url });
+                        notificationSystem.showNotification('Error: Missing university data', true);
+                        return;
+                    }
+
+                    try {
+                        button.disabled = true;
+                        button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Selecting...';
+
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': getCsrfToken(),
+                                'Content-Type': 'application/json'
+                            }
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Failed to select university');
+                        }
+
+                        const data = await response.json();
+                        if (data.success) {
+                            notificationSystem.showNotification(`Successfully selected ${universityName}`);
+                            // Remove the selected university from the carousel
+                            this.removeUniversityFromCarousel(universityId);
+                        } else {
+                            throw new Error(data.message || 'Failed to select university');
+                        }
+                    } catch (error) {
+                        debugLog('Error selecting university', { error: error.message });
+                        notificationSystem.showNotification(error.message || 'Failed to select university', true);
+                        button.disabled = false;
+                        button.innerHTML = 'Select';
+                    }
+                });
+            });
+
+            // Handle carousel events
+            const carouselElement = document.getElementById('universitySlideshow');
+            if (carouselElement) {
+                carouselElement.addEventListener('slide.bs.carousel', (e) => {
+                    this.currentIndex = e.to;
+                });
+            }
+        },
+
+        removeUniversityFromCarousel(universityId) {
+            const carouselElement = document.getElementById('universitySlideshow');
+            if (!carouselElement) return;
+
+            const item = carouselElement.querySelector(`[data-university-id="${universityId}"]`);
+            if (!item) return;
+
+            // Remove the carousel item
+            item.remove();
+
+            // Update carousel indicators
+            const indicators = carouselElement.querySelectorAll('.carousel-indicators button');
+            if (indicators.length > 0) {
+                indicators[indicators.length - 1].remove();
+            }
+
+            // If no more items, show message
+            const remainingItems = carouselElement.querySelectorAll('.carousel-item');
+            if (remainingItems.length === 0) {
+                carouselElement.innerHTML = `
+                    <div class="alert alert-info m-3">
+                        <h4 class="alert-heading">No More Recommendations</h4>
+                        <p class="mb-0">You have selected all recommended universities. Check your selected universities section for more details.</p>
+                    </div>
+                `;
+            }
+        }
+    };
+
     // Single DOMContentLoaded listener for all initializations
     document.addEventListener('DOMContentLoaded', function() {
         if (window.dashboardScriptInitialized) {
@@ -608,66 +776,95 @@
         debugLog('DOM loaded, initializing all dashboard components...');
 
         try {
-            // Initialize core systems
-            notificationSystem.init();
-            formSystem.init(); // General form system setup
-            chatSystem.init();
-            popModalSystem.init();
-            qualifiedDisplaySystem.init(); // Initialize slideshow
+            // Initialize core systems in sequence
+            const initSequence = async () => {
+                // 1. Initialize notification system first (needed by other systems)
+                notificationSystem.init();
+                debugLog('Initializing notification system...');
 
-            // Initialize collapsible marks section (specific to dashboard_student.html)
-            const marksSection = document.getElementById('marksSection');
-            const marksHeader = document.querySelector('[data-bs-target="#marksSection"]');
-            const chevronIcon = marksHeader?.querySelector('.fa-chevron-down');
-            if (marksSection && marksHeader && typeof bootstrap !== 'undefined') {
-                const collapse = new bootstrap.Collapse(marksSection, { toggle: false });
-                if (chevronIcon) {
-                    marksSection.addEventListener('show.bs.collapse', () => chevronIcon.style.transform = 'rotate(0deg)');
-                    marksSection.addEventListener('hide.bs.collapse', () => chevronIcon.style.transform = 'rotate(-90deg)');
-                }
-                marksHeader.addEventListener('click', () => collapse.toggle());
-            } else {
-                debugLog("Marks collapsible section elements not found.");
-            }
-            
-            // Attach listeners for recommendation select buttons
-            document.querySelectorAll('.recommendation-select-btn').forEach(button => {
-                button.addEventListener('click', async function() {
-                    const universityId = parseInt(this.dataset.universityId, 10);
-                    const universityName = this.dataset.universityName;
-                    const url = this.dataset.url; // URL from button's data attribute
-                    if (universityId && universityName && url) {
-                         universitySystem.selectUniversity(universityId, url); // Pass URL directly
-                    } else {
-                        debugLog('Recommendation select button missing data', { id: universityId, name: universityName, url });
-                        notificationSystem.showNotification('Cannot select university: data missing.', true);
+                // 2. Initialize form system
+                formSystem.init();
+                debugLog('Form system initialized (listeners attached elsewhere or dynamically).');
+
+                // 3. Initialize chat system
+                chatSystem.init();
+                debugLog('Initializing chat system...');
+                debugLog('Chat system initialized.');
+
+                // 4. Initialize PoP modal system
+                popModalSystem.init();
+                debugLog('Initializing PoP modal system...');
+                debugLog('PoP modal system initialized.');
+
+                // 5. Initialize university recommendations system
+                universityRecommendationsSystem.init();
+                debugLog('University recommendations system initialized.');
+
+                // 6. Initialize qualified universities display
+                qualifiedDisplaySystem.init();
+                debugLog('Starting qualified universities display initialization...');
+
+                // 7. Initialize marks section
+                const marksSection = document.getElementById('marksSection');
+                const marksHeader = document.querySelector('[data-bs-target="#marksSection"]');
+                const chevronIcon = marksHeader?.querySelector('.fa-chevron-down');
+
+                if (marksSection && marksHeader && typeof bootstrap !== 'undefined') {
+                    const collapse = new bootstrap.Collapse(marksSection, { toggle: false });
+                    if (chevronIcon) {
+                        marksSection.addEventListener('show.bs.collapse', () => chevronIcon.style.transform = 'rotate(0deg)');
+                        marksSection.addEventListener('hide.bs.collapse', () => chevronIcon.style.transform = 'rotate(-90deg)');
                     }
+                    marksHeader.addEventListener('click', () => collapse.toggle());
+                    
+                    // Check if we should expand the marks section
+                    if (sessionStorage.getItem('marksSectionExpanded') === 'true') {
+                        collapse.show();
+                        sessionStorage.removeItem('marksSectionExpanded');
+                    }
+                }
+
+                // 8. Attach form listeners
+                const marksForm = document.getElementById('marksForm');
+                if (marksForm && !marksForm.dataset.listenerAttachedMarks) {
+                    marksForm.addEventListener('submit', (e) => formSystem.handleMarksSubmit(e));
+                    marksForm.dataset.listenerAttachedMarks = 'true';
+                }
+
+                const mainUploadForm = document.getElementById('uploadForm');
+                if (mainUploadForm && !mainUploadForm.dataset.listenerAttachedMainUpload) {
+                    mainUploadForm.addEventListener('submit', (e) => formSystem.handleUploadSubmit(e));
+                    mainUploadForm.dataset.listenerAttachedMainUpload = 'true';
+                }
+
+                // 9. Set up recommendation select buttons
+                document.querySelectorAll('.recommendation-select-btn').forEach(button => {
+                    button.addEventListener('click', async function() {
+                        const universityId = parseInt(this.dataset.universityId, 10);
+                        const universityName = this.dataset.universityName;
+                        const url = this.dataset.url;
+                        if (universityId && universityName && url) {
+                            universitySystem.selectUniversity(universityId, url);
+                        }
+                    });
                 });
+
+                // 10. Set up notification interval
+                if (CONFIG.SUBMISSION_CHECK_INTERVAL > 0 && CONFIG.NOTIFICATION_CHANCE > 0) {
+                    setInterval(() => notificationSystem.simulateNewSubmission(), CONFIG.SUBMISSION_CHECK_INTERVAL);
+                }
+
+                debugLog('All dashboard components and listeners initialized successfully.');
+            };
+
+            // Start initialization sequence
+            initSequence().catch(error => {
+                debugLog('Error during initialization sequence', { error: error.message, stack: error.stack });
+                notificationSystem.showNotification('Error initializing dashboard. Please refresh the page.', true);
             });
-
-            // Attach specific form listeners
-            const marksForm = document.getElementById('marksForm');
-            if (marksForm && !marksForm.dataset.listenerAttachedMarks) {
-                marksForm.addEventListener('submit', (e) => formSystem.handleMarksSubmit(e));
-                marksForm.dataset.listenerAttachedMarks = 'true';
-            } else if (!marksForm) { debugLog('Marks form not found for listener attachment.'); }
-
-            const mainUploadForm = document.getElementById('uploadForm');
-            if (mainUploadForm && !mainUploadForm.dataset.listenerAttachedMainUpload) {
-                mainUploadForm.addEventListener('submit', (e) => formSystem.handleUploadSubmit(e));
-                mainUploadForm.dataset.listenerAttachedMainUpload = 'true';
-            } else if (!mainUploadForm) { debugLog('Main upload form not found for listener attachment.'); }
-
-            // Interval for random notifications
-            if (CONFIG.SUBMISSION_CHECK_INTERVAL > 0 && CONFIG.NOTIFICATION_CHANCE > 0) {
-                setInterval(() => notificationSystem.simulateNewSubmission(), CONFIG.SUBMISSION_CHECK_INTERVAL);
-            }
-
-            debugLog('All dashboard components and listeners initialized successfully.');
 
         } catch (error) {
             debugLog('Critical error during dashboard initialization', { error: error.message, stack: error.stack });
-            // Fallback alert as notificationSystem might not be ready
             alert("A critical error occurred while loading the dashboard. Please refresh the page.");
         }
     });

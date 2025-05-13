@@ -769,22 +769,52 @@ def universities_list(request):
         
         # Convert QuerySet to list of dictionaries with additional data
         for uni in eligible_unis:
+            # Calculate how much above minimum APS the student is
+            aps_difference = student_aps - uni.minimum_aps
+            
+            # Determine qualification status and message
+            if aps_difference >= 5:
+                qualification_status = 'highly_qualified'
+                qualification_message = f"You exceed the minimum APS requirement by {aps_difference} points"
+            elif aps_difference >= 0:
+                qualification_status = 'qualified'
+                qualification_message = f"You meet the minimum APS requirement"
+            else:
+                qualification_status = 'not_qualified'
+                qualification_message = f"You are {abs(aps_difference)} points below the minimum APS requirement"
+            
             uni_data = {
                 'university': uni,
                 'is_selected': uni in profile.selected_universities.all(),
                 'fee': APPLICATION_FEES_2025.get(uni.name, "Not specified"),
-                'due_date': UNIVERSITY_DUE_DATES.get(uni.name, "Not specified")
+                'due_date': UNIVERSITY_DUE_DATES.get(uni.name, "Not specified"),
+                'qualification_status': qualification_status,
+                'qualification_message': qualification_message,
+                'aps_difference': aps_difference
             }
             eligible_universities.append(uni_data)
+    
+    # Sort eligible universities by qualification status and APS difference
+    eligible_universities.sort(key=lambda x: (
+        x['qualification_status'] != 'highly_qualified',
+        x['qualification_status'] != 'qualified',
+        -x['aps_difference']
+    ))
     
     # Get selected universities with details
     selected_with_details = []
     for uni in profile.selected_universities.all():
+        # Calculate qualification status for selected universities too
+        aps_difference = student_aps - uni.minimum_aps if student_aps else 0
+        qualification_status = 'highly_qualified' if aps_difference >= 5 else 'qualified' if aps_difference >= 0 else 'not_qualified'
+        
         uni_data = {
             'university': uni,
             'application_fee': APPLICATION_FEES_2025.get(uni.name, "Not specified"),
             'due_date': UNIVERSITY_DUE_DATES.get(uni.name, "Not specified"),
-            'faculties_open': FACULTIES_OPEN.get(uni.name, [])
+            'faculties_open': FACULTIES_OPEN.get(uni.name, []),
+            'qualification_status': qualification_status,
+            'aps_difference': aps_difference
         }
         selected_with_details.append(uni_data)
     
