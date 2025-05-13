@@ -17,8 +17,8 @@ class ExtendedUserCreationForm(UserCreationForm):
     def clean_username(self):
         username = self.cleaned_data.get('username')
         if username:
-            # Use case-insensitive comparison with iexact
-            if User.objects.filter(username__iexact=username).exists():
+            # Convert both the input and database usernames to lowercase for comparison
+            if User.objects.filter(username__icontains=username).exists():
                 raise forms.ValidationError("A user with that username already exists.")
         return username
 
