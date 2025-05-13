@@ -4,7 +4,10 @@ services:
     env: python
     buildCommand: |
       pip install -r requirements.txt
-      python manage.py migrate
+      echo "Running migrations..."
+      python manage.py showmigrations
+      python manage.py migrate --noinput
+      echo "Collecting static files..."
       python manage.py collectstatic --noinput
     startCommand: |
       cd $(pwd)
@@ -14,6 +17,7 @@ services:
         echo "Waiting for database connection..."
         sleep 2
       done
+      echo "Starting gunicorn..."
       gunicorn varsity_plug.wsgi:application --bind 0.0.0.0:$PORT --chdir $(pwd)
     envVars:
       - key: PYTHON_VERSION
