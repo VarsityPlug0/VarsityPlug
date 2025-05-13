@@ -7,8 +7,9 @@ services:
       python manage.py collectstatic --noinput
       python manage.py migrate
     startCommand: |
+      cd $(pwd)
       export PYTHONPATH=$PYTHONPATH:$(pwd)
-      gunicorn varsity_plug.wsgi:application --bind 0.0.0.0:$PORT
+      gunicorn varsity_plug.wsgi:application --bind 0.0.0.0:$PORT --chdir $(pwd)
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
