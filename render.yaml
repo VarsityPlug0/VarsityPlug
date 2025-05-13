@@ -1,109 +1,38 @@
 services:
   - type: web
-    name: varsity-plug
+    name: varsityplug
     env: python
     buildCommand: |
+      echo "Installing dependencies..."
       pip install -r requirements.txt
-      echo "Checking database connection..."
-      python -c "
-      import os
-      import psycopg2
-      from urllib.parse import urlparse
-      import time
-      max_retries = 5
-      retry_count = 0
-      while retry_count < max_retries:
-          try:
-              url = urlparse(os.getenv('DATABASE_URL'))
-              conn = psycopg2.connect(
-                  dbname=url.path[1:],
-                  user=url.username,
-                  password=url.password,
-                  host=url.hostname,
-                  port=url.port
-              )
-              print('Database connection successful!')
-              # Test if we can create tables
-              with conn.cursor() as cursor:
-                  cursor.execute('SELECT version();')
-                  print(f'PostgreSQL version: {cursor.fetchone()[0]}')
-              conn.close()
-              break
-          except Exception as e:
-              retry_count += 1
-              print(f'Database connection attempt {retry_count} failed: {str(e)}')
-              if retry_count < max_retries:
-                  time.sleep(5)
-              else:
-                  raise Exception('Failed to connect to database after multiple attempts')
-      "
       echo "Running migrations..."
-      python manage.py showmigrations --list
-      echo "Applying migrations in order..."
-      # First, apply auth migrations
-      echo "Applying auth migrations..."
-      python manage.py migrate auth --noinput --verbosity 3
-      # Then contenttypes
-      echo "Applying contenttypes migrations..."
-      python manage.py migrate contenttypes --noinput --verbosity 3
-      # Then sessions
-      echo "Applying sessions migrations..."
-      python manage.py migrate sessions --noinput --verbosity 3
-      # Then admin
-      echo "Applying admin migrations..."
-      python manage.py migrate admin --noinput --verbosity 3
-      # Then your app
-      echo "Applying helper migrations..."
-      python manage.py migrate helper --noinput --verbosity 3
-      # Finally, any remaining migrations
-      echo "Applying any remaining migrations..."
-      python manage.py migrate --noinput --verbosity 3
-      echo "Verifying migrations..."
-      python manage.py showmigrations --list
+      python manage.py showmigrations
+      python manage.py migrate --noinput
       echo "Collecting static files..."
       python manage.py collectstatic --noinput
     startCommand: |
-      cd $(pwd)
-      export PYTHONPATH=$PYTHONPATH:$(pwd)
-      # Wait for database to be ready
-      while ! nc -z $DATABASE_HOST $DATABASE_PORT; do
-        echo "Waiting for database connection..."
-        sleep 2
-      done
-      echo "Starting gunicorn..."
+      echo "Starting application..."
       gunicorn varsity_plug.wsgi:application --bind 0.0.0.0:$PORT --chdir $(pwd)
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
-      - key: DJANGO_SETTINGS_MODULE
-        value: varsity_plug.settings
-      - key: SECRET_KEY
-        generateValue: true
-      - key: WEB_CONCURRENCY
-        value: 4
-      - key: DEBUG
-        value: false
       - key: DATABASE_URL
-        value: postgresql://varsityplug_db_user:UDXToSK9S3Sn2jL6loHYNhMNeIa24Fb2@dpg-d0hnbst6ubrc73ah17g0-a/varsityplug_db
-      - key: DATABASE_HOST
-        value: dpg-d0hnbst6ubrc73ah17g0-a
-      - key: DATABASE_PORT
-        value: 5432
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: varsity-plug-redis
+        fromDatabase:
+          name: varsityplug-db
           property: connectionString
-      - key: OPENAI_API_KEY
-        sync: false
       - key: ALLOWED_HOSTS
         value: varsityplug-nvg2.onrender.com
+      - key: DEBUG
+        value: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
 
 databases:
-  - name: varsity-plug-db
-    databaseName: varsity_plug
-    user: varsity_plug
-    plan: free
+  - name: varsityplug-db
+    databaseName: varsityplug
+    user: varsityplug
 
 services:
   - type: redis
