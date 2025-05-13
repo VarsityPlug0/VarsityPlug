@@ -14,6 +14,15 @@ class ExtendedUserCreationForm(UserCreationForm):
         model = User
         fields = ('username', 'email', 'first_name', 'last_name', 'password1', 'password2')
 
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if username:
+            # Convert to lowercase for comparison
+            username_lower = username.lower()
+            if User.objects.filter(username__lower=username_lower).exists():
+                raise forms.ValidationError("A user with that username already exists.")
+        return username
+
     def save(self, commit=True):
         user = super().save(commit=False)
         user.email = self.cleaned_data['email']
