@@ -510,10 +510,16 @@
             const dataScript = document.getElementById('qualifiedUniversitiesData');
             if (dataScript) {
                 try {
-                    this.universities = JSON.parse(dataScript.textContent);
-                    debugLog('Loaded qualified universities from script tag', { count: this.universities.length });
-                    this.initializeDisplay();
-                    return;
+                    const data = JSON.parse(dataScript.textContent);
+                    if (Array.isArray(data) && data.length > 0) {
+                        this.universities = data;
+                        debugLog('Loaded qualified universities from script tag', { count: this.universities.length });
+                        this.initializeDisplay();
+                        return;
+                    } else {
+                        debugLog('No qualified universities found in script data');
+                        this.displayNoUniversities();
+                    }
                 } catch (error) {
                     debugLog('Error parsing universities data from script', { error });
                 }
@@ -539,9 +545,14 @@
                 return response.json();
             })
             .then(data => {
-                this.universities = data.universities || [];
-                debugLog('Fetched qualified universities data', { count: this.universities.length });
-                this.initializeDisplay();
+                if (Array.isArray(data.universities) && data.universities.length > 0) {
+                    this.universities = data.universities;
+                    debugLog('Fetched qualified universities data', { count: this.universities.length });
+                    this.initializeDisplay();
+                } else {
+                    debugLog('No qualified universities found in API response');
+                    this.displayNoUniversities();
+                }
             })
             .catch(error => {
                 debugLog('Error fetching universities', { error });
@@ -556,13 +567,23 @@
             });
         },
 
+        displayNoUniversities() {
+            this.displayElement.innerHTML = `
+                <div class="alert alert-info">
+                    <h4 class="alert-heading">No Qualified Universities Found</h4>
+                    <p class="mb-0">Your current APS score is below the minimum requirements for our listed universities. Consider:</p>
+                    <ul class="mt-2 mb-0">
+                        <li>Reviewing your marks for any potential errors</li>
+                        <li>Contacting your school for mark verification</li>
+                        <li>Exploring alternative study paths or bridging programs</li>
+                    </ul>
+                </div>
+            `;
+        },
+
         initializeDisplay() {
             if (!Array.isArray(this.universities) || this.universities.length === 0) {
-                this.displayElement.innerHTML = `
-                    <div class="alert alert-info">
-                        <p class="mb-0">No qualified universities found.</p>
-                    </div>
-                `;
+                this.displayNoUniversities();
                 return;
             }
 

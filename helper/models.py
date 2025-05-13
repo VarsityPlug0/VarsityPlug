@@ -183,7 +183,8 @@ class StudentProfile(models.Model):
     def save(self, *args, **kwargs):
         """Updates stored_aps_score with the calculated APS score before saving."""
         calculated_aps = self.aps_score
-        self.stored_aps_score = calculated_aps if calculated_aps is not None else 0
+        if calculated_aps is not None:
+            self.stored_aps_score = calculated_aps
         super().save(*args, **kwargs)
 
     def get_service_fee(self):

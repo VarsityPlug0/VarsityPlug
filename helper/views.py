@@ -434,7 +434,7 @@ def dashboard_student(request):
         'nsc_subjects': NSC_SUBJECTS,
         'student_aps': profile.stored_aps_score,
         'recommended_universities': recommended_universities,
-        'universities': json.dumps(qualified_unis_data, cls=DjangoJSONEncoder),
+        'universities': json.dumps(qualified_unis_data, cls=DjangoJSONEncoder) if qualified_unis_data else '[]',
         'selected_universities': [{
             'id': uni.id,
             'name': uni.name,

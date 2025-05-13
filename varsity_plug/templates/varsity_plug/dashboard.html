@@ -1,0 +1,297 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'dashboard' %}">
+                            <i class="fas fa-home"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'applications' %}">
+                            <i class="fas fa-file-alt"></i> Applications
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'payments' %}">
+                            <i class="fas fa-credit-card"></i> Payments
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'documents' %}">
+                            <i class="fas fa-file-upload"></i> Documents
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'subscription' %}">
+                            <i class="fas fa-crown"></i> Subscription
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Main content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Welcome, {{ user.first_name }}!</h1>
+            </div>
+
+            <!-- APS Score Card -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Your APS Score</h5>
+                            <h2 class="display-4">{{ user.aps_score }}</h2>
+                            <p class="text-muted">Based on your current marks, you qualify for {{ qualified_universities_count }} universities.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Subscription Status</h5>
+                            <p class="card-text">{{ subscription_status }}</p>
+                            {% if not has_active_subscription %}
+                            <a href="{% url 'subscription' %}" class="btn btn-primary">Upgrade Now</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- University Recommendations -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">University Recommendations</h5>
+                </div>
+                <div class="card-body">
+                    {% if recommendations %}
+                        <div class="row">
+                            {% for university in recommendations %}
+                            <div class="col-md-4 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ university.name }}</h5>
+                                        <p class="card-text">Minimum APS: {{ university.min_aps }}</p>
+                                        <a href="{% url 'university_detail' university.id %}" class="btn btn-outline-primary">Learn More</a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <h6>No Recommendations Available</h6>
+                            <p>No universities match your current APS score of {{ user.aps_score }}. Consider:</p>
+                            <ul>
+                                <li>Reviewing your marks for any potential errors</li>
+                                <li>Exploring alternative study paths or bridging programs</li>
+                                <li>Contacting your school for mark verification</li>
+                            </ul>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Document Upload Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Upload Documents</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" action="{% url 'upload_document' %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="document_type" class="form-label">Document Type</label>
+                            <select class="form-select" id="document_type" name="document_type" required>
+                                <option value="">Select Document Type</option>
+                                <option value="id">ID Document</option>
+                                <option value="certificate">Certificate</option>
+                                <option value="transcript">Academic Transcript</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="document_file" class="form-label">Upload File</label>
+                            <input type="file" class="form-control" id="document_file" name="document_file" required>
+                            <div class="form-text">Accepted formats: PDF, JPG, JPEG, PNG (Max size: 5MB)</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Upload Document</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Uploaded Documents Table -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Uploaded Documents</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Document Type</th>
+                                    <th>Document Name</th>
+                                    <th>Uploaded On</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for document in documents %}
+                                <tr>
+                                    <td>{{ document.get_document_type_display }}</td>
+                                    <td>{{ document.file.name }}</td>
+                                    <td>{{ document.uploaded_at|date:"Y-m-d H:i" }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ document.status|lower }}">{{ document.get_status_display }}</span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ document.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">View</a>
+                                        <a href="{% url 'delete_document' document.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center">No documents uploaded yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Varsity Assistant Chat -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Varsity Assistant</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chat-container" id="chatContainer">
+                        <div class="chat-messages" id="chatMessages">
+                            <div class="message assistant">
+                                Hello! I'm here to help with your university applications. Ask me anything!
+                            </div>
+                        </div>
+                        <form id="chatForm" class="chat-input">
+                            <input type="text" id="userInput" class="form-control" placeholder="Type your question...">
+                            <button type="submit" class="btn btn-primary">Send</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 100;
+        padding: 48px 0 0;
+        box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+    }
+
+    .sidebar .nav-link {
+        font-weight: 500;
+        color: #333;
+        padding: 0.5rem 1rem;
+    }
+
+    .sidebar .nav-link.active {
+        color: #2470dc;
+    }
+
+    .sidebar .nav-link:hover {
+        color: #2470dc;
+    }
+
+    .chat-container {
+        height: 400px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chat-messages {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 0.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .message {
+        margin-bottom: 1rem;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+    }
+
+    .message.user {
+        background: #007bff;
+        color: white;
+        margin-left: 20%;
+    }
+
+    .message.assistant {
+        background: #e9ecef;
+        margin-right: 20%;
+    }
+
+    .chat-input {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .chat-input input {
+        flex-grow: 1;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chatForm = document.getElementById('chatForm');
+    const chatMessages = document.getElementById('chatMessages');
+    const userInput = document.getElementById('userInput');
+
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const message = userInput.value.trim();
+        if (message) {
+            // Add user message
+            addMessage(message, 'user');
+            userInput.value = '';
+
+            // Simulate assistant response (replace with actual API call)
+            setTimeout(() => {
+                addMessage('I received your message: ' + message, 'assistant');
+            }, 1000);
+        }
+    });
+
+    function addMessage(text, sender) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}`;
+        messageDiv.textContent = text;
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+});
+</script>
+{% endblock %} 
