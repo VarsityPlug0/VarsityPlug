@@ -494,7 +494,8 @@
             this.displayElement = document.getElementById('qualifiedUniversityDisplayArea');
             
             if (!this.displayElement) {
-                debugLog('Qualified universities display element not found');
+                debugLog('Qualified universities display element not found, will retry in 500ms');
+                setTimeout(() => this.init(), 500);
                 return;
             }
 
@@ -821,9 +822,11 @@
                 universityRecommendationsSystem.init();
                 debugLog('University recommendations system initialized.');
 
-                // 6. Initialize qualified universities display
-                qualifiedDisplaySystem.init();
-                debugLog('Starting qualified universities display initialization...');
+                // 6. Initialize qualified universities display with a small delay
+                setTimeout(() => {
+                    qualifiedDisplaySystem.init();
+                    debugLog('Starting qualified universities display initialization...');
+                }, 100);
 
                 // 7. Initialize marks section
                 const marksSection = document.getElementById('marksSection');
