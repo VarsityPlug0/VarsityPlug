@@ -533,6 +533,66 @@
             this.fetchUniversities();
         },
 
+        initializeDisplay() {
+            if (this.universities.length === 0) {
+                this.displayNoUniversities();
+                return;
+            }
+
+            // Create a grid container
+            const gridContainer = document.createElement('div');
+            gridContainer.className = 'row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4';
+            
+            // Add each university card to the grid
+            this.universities.forEach(uni => {
+                const col = document.createElement('div');
+                col.className = 'col';
+                col.appendChild(this.createUniversityCard(uni));
+                gridContainer.appendChild(col);
+            });
+
+            // Clear the display area and add the grid
+            this.displayElement.innerHTML = '';
+            this.displayElement.appendChild(gridContainer);
+        },
+
+        createUniversityCard(uni) {
+            const card = document.createElement('div');
+            card.className = 'card h-100 shadow-sm';
+            card.innerHTML = `
+                <div class="card-body">
+                    <h5 class="card-title">${uni.name}</h5>
+                    <div class="card-text">
+                        <div class="mb-3">
+                            <strong>Minimum APS:</strong> ${uni.minimum_aps}<br>
+                            <strong>Application Fee:</strong> ${uni.application_fee}<br>
+                            <strong>Due Date:</strong> ${uni.due_date}<br>
+                            <strong>Province:</strong> ${uni.province}
+                        </div>
+                        <div class="d-flex justify-content-between gap-2">
+                            <a href="${uni.detail_url}" class="btn btn-primary flex-grow-1">View Details</a>
+                            <a href="${uni.select_url}" class="btn btn-success flex-grow-1">Select University</a>
+                        </div>
+                    </div>
+                </div>
+            `;
+            return card;
+        },
+
+        displayNoUniversities() {
+            this.displayElement.innerHTML = `
+                <div class="alert alert-info">
+                    <h4 class="alert-heading">No Qualified Universities Found</h4>
+                    <p class="mb-0">Your current APS score is below the minimum requirements for our listed universities. Consider:</p>
+                    <ul class="mt-2 mb-0">
+                        <li>Reviewing your marks for any potential errors</li>
+                        <li>Contacting your school for mark verification</li>
+                        <li>Exploring alternative study paths or bridging programs</li>
+                    </ul>
+                </div>
+            `;
+        },
+
         fetchUniversities() {
             fetch('/universities/api/', {
                 method: 'GET',
@@ -569,71 +629,6 @@
             .finally(() => {
                 this.isLoading = false;
             });
-        },
-
-        displayNoUniversities() {
-            this.displayElement.innerHTML = `
-                <div class="alert alert-info">
-                    <h4 class="alert-heading">No Qualified Universities Found</h4>
-                    <p class="mb-0">Your current APS score is below the minimum requirements for our listed universities. Consider:</p>
-                    <ul class="mt-2 mb-0">
-                        <li>Reviewing your marks for any potential errors</li>
-                        <li>Contacting your school for mark verification</li>
-                        <li>Exploring alternative study paths or bridging programs</li>
-                    </ul>
-                </div>
-            `;
-        },
-
-        initializeDisplay() {
-            if (!Array.isArray(this.universities) || this.universities.length === 0) {
-                this.displayNoUniversities();
-                return;
-            }
-
-            if (this.intervalId) {
-                clearInterval(this.intervalId);
-            }
-
-            this.currentIndex = 0;
-            this.displayNextUniversity();
-            this.intervalId = setInterval(() => this.displayNextUniversity(), this.intervalMs);
-        },
-
-        displayNextUniversity() {
-            if (!this.displayElement || this.isLoading) return;
-
-            const uni = this.universities[this.currentIndex];
-            if (!uni) return;
-
-            const card = this.createUniversityCard(uni);
-            this.displayElement.innerHTML = '';
-            this.displayElement.appendChild(card);
-
-            this.currentIndex = (this.currentIndex + 1) % this.universities.length;
-        },
-
-        createUniversityCard(uni) {
-            const card = document.createElement('div');
-            card.className = 'card h-100';
-            card.innerHTML = `
-                <div class="card-body">
-                    <h5 class="card-title">${uni.name}</h5>
-                    <div class="card-text">
-                        <div class="mb-3">
-                            <strong>Minimum APS:</strong> ${uni.minimum_aps}<br>
-                            <strong>Application Fee:</strong> ${uni.application_fee}<br>
-                            <strong>Due Date:</strong> ${uni.due_date}<br>
-                            <strong>Province:</strong> ${uni.province}
-                        </div>
-                        <div class="d-flex justify-content-between gap-2">
-                            <a href="${uni.detail_url}" class="btn btn-primary flex-grow-1">View Details</a>
-                            <a href="${uni.select_url}" class="btn btn-success flex-grow-1">Select University</a>
-                        </div>
-                    </div>
-                </div>
-            `;
-            return card;
         }
     };
 

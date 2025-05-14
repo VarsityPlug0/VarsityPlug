@@ -360,41 +360,34 @@
         <div class="card-body">
             {% if selected_universities %}
                 <div class="table-responsive">
-                    <table class="table table-striped">
+                    <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th scope="col">Name</th>
-                                <th scope="col">Due Date</th>
-                                <th scope="col">Application Fee</th>
-                                <th scope="col">Actions</th>
+                                <th>University</th>
+                                <th>Minimum APS</th>
+                                <th>Application Fee</th>
+                                <th>Due Date</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for uni in selected_universities %}
-                                <tr>
-                                    <td>{{ uni.name|default:"Unknown University" }}</td>
-                                    <td>{{ uni.due_date|default:"Not specified" }}</td>
-                                    <td>{{ uni.application_fee|default:"Not available" }}</td>
-                                    <td class="d-flex gap-2 flex-wrap">
-                                        <a href="{% url 'helper:university_detail' uni.id %}" class="btn btn-outline-secondary btn-sm" aria-label="View details for {{ uni.name|default:'university' }}">View</a>
-                                        {% if uni.application_fee != "FREE" and uni.application_fee != "Not available" %}
-                                            <a href="{% url 'helper:unified_payment' %}" class="btn btn-success btn-sm" aria-label="Pay application fee for {{ uni.name|default:'university' }}">Pay Fee</a>
-                                            <button class="btn btn-info btn-sm upload-pop-btn" data-uni-id="{{ uni.id }}" data-uni-name="{{ uni.name }}" aria-label="Upload Proof of Payment for {{ uni.name }}">Upload PoP</button>
-                                        {% else %}
-                                            <span class="badge bg-secondary align-self-center">No Fee Required</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
+                            <tr>
+                                <td>{{ uni.name }}</td>
+                                <td>{{ uni.minimum_aps }}</td>
+                                <td>{{ uni.application_fee }}</td>
+                                <td>{{ uni.due_date }}</td>
+                                <td>
+                                    <a href="{{ uni.detail_url }}" class="btn btn-sm btn-primary">View Details</a>
+                                </td>
+                            </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
-                {% if selected_universities %}
-                    <a href="{% url 'helper:unified_payment' %}" class="btn btn-success mt-3" aria-label="Pay all application fees">Pay All Fees</a>
-                {% endif %}
             {% else %}
                 <div class="alert alert-info">
-                    No universities selected. <a href="{% url 'helper:universities_list' %}" class="text-primary text-decoration-underline" aria-label="Browse universities">Browse universities</a> to select.
+                    <p class="mb-0">You haven't selected any universities yet. Browse and select universities that match your APS score.</p>
                 </div>
             {% endif %}
         </div>
