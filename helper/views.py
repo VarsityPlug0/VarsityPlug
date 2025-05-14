@@ -1042,10 +1042,17 @@ def pay_application_fee(request, uni_id):
         )
         
         if application_fee.upper() == "FREE":
-            application.status = 'pending'
-            application.payment_verified = True
-            application.save()
-            messages.success(request, f"Application to {university_db_instance.name} has been initiated. No application fee required.")
+            # For free universities, we only need to check subscription status
+            if subscription_payment.verified:
+                application.status = 'pending'
+                application.payment_verified = True
+                application.save()
+                messages.success(request, f"Application to {university_db_instance.name} has been initiated. No application fee required.")
+            else:
+                application.status = 'not_started'
+                application.payment_verified = False
+                application.save()
+                messages.info(request, f"Your application to {university_db_instance.name} will be processed once your subscription payment is verified.")
             return redirect('helper:application_detail', app_id=application.id)
         
         if request.method == 'POST':
@@ -1081,13 +1088,14 @@ def pay_application_fee(request, uni_id):
         total_payment = profile.get_subscription_fee()
         
         return render(request, 'helper/pay_application_fee.html', {
-            'university': university_db_instance, # Pass the DB model instance
+            'university': university_db_instance,
             'application': application,
-            'application_fee': application_fee, # This is the string value "R100", "Free", etc.
+            'application_fee': application_fee,
             'bank_details': bank_details,
             'student_profile': profile,
             'total_payment': f'R{total_payment}',
-            'is_free_university': application_fee.upper() == "FREE"
+            'is_free_university': application_fee.upper() == "FREE",
+            'subscription_verified': subscription_payment.verified if subscription_payment else False
         })
         
     except University.DoesNotExist:
@@ -1852,7 +1860,7 @@ def payment_statuses(request):
     statuses = []
     for application in applications:
         payment = DocumentUpload.objects.filter(
-            student=student_profile,
+            user=request.user,  # Changed from student to user
             document_type='payment_proof',
             university_id=application.university_id
         ).first()

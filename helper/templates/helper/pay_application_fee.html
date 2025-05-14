@@ -91,32 +91,40 @@
             <p><strong>Application Fee:</strong> {{ application_fee }}</p>
             
             {% if is_free_university %}
-                <div class="alert alert-info">
-                    <h5>No Application Fee Required</h5>
-                    <p>This university does not charge an application fee. Your subscription payment covers the application process.</p>
-                </div>
+                {% if subscription_verified %}
+                    <div class="alert alert-success">
+                        <h5><i class="fas fa-check-circle me-2"></i>Application Ready to Process</h5>
+                        <p>Your subscription is verified and your application to {{ university.name }} will be processed immediately. No application fee is required.</p>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <h5><i class="fas fa-info-circle me-2"></i>Subscription Verification Pending</h5>
+                        <p>Your application to {{ university.name }} will be processed once your subscription payment is verified. No application fee is required.</p>
+                        <p class="mb-0">Please wait for your subscription payment to be verified (usually within 24 hours).</p>
+                    </div>
+                {% endif %}
             {% else %}
                 <div class="alert alert-warning">
-                    <h5>Payment Required</h5>
+                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Payment Required</h5>
                     <p>Please make the payment using the bank details below and upload your proof of payment.</p>
                 </div>
             {% endif %}
         </div>
     </div>
 
-    <div class="card mb-4">
-        <div class="card-body">
-            <h5 class="card-title">Payment Details</h5>
-            <p><strong>Bank:</strong> {{ bank_details.bank_name }}</p>
-            <p><strong>Account Holder:</strong> {{ bank_details.account_holder }}</p>
-            <p><strong>Account Number:</strong> {{ bank_details.account_number }}</p>
-            <p><strong>Branch Code:</strong> {{ bank_details.branch_code }}</p>
-            <p><strong>Reference:</strong> {{ bank_details.reference }}</p>
-            <p><strong>Amount to Pay:</strong> {{ total_payment }}</p>
-        </div>
-    </div>
-
     {% if not is_free_university %}
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Payment Details</h5>
+                <p><strong>Bank:</strong> {{ bank_details.bank_name }}</p>
+                <p><strong>Account Holder:</strong> {{ bank_details.account_holder }}</p>
+                <p><strong>Account Number:</strong> {{ bank_details.account_number }}</p>
+                <p><strong>Branch Code:</strong> {{ bank_details.branch_code }}</p>
+                <p><strong>Reference:</strong> {{ bank_details.reference }}</p>
+                <p><strong>Amount to Pay:</strong> {{ total_payment }}</p>
+            </div>
+        </div>
+
         <div class="card mb-4">
             <div class="card-body">
                 <h5 class="card-title">Upload Payment Proof</h5>
