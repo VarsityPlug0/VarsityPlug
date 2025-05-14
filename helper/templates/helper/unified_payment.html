@@ -33,11 +33,11 @@
             <h4>Bank Details</h4>
         </div>
         <div class="card-body">
-            <p><strong>Bank:</strong> {{ bank_details.bank_name }}</p>
-            <p><strong>Account Holder:</strong> {{ bank_details.account_holder }}</p>
-            <p><strong>Account Number:</strong> {{ bank_details.account_number }}</p>
-            <p><strong>Branch Code:</strong> {{ bank_details.branch_code }}</p>
-            <p><strong>Reference:</strong> {{ bank_details.reference }}</p>
+            <p><strong>Bank:</strong> {{ bank_details.bank_name|default:"Not Available" }}</p>
+            <p><strong>Account Holder:</strong> {{ bank_details.account_holder|default:"Not Available" }}</p>
+            <p><strong>Account Number:</strong> {{ bank_details.account_number|default:"Not Available" }}</p>
+            <p><strong>Branch Code:</strong> {{ bank_details.branch_code|default:"Not Available" }}</p>
+            <p><strong>Reference:</strong> {{ bank_details.reference|default:"Not Available" }}</p>
         </div>
     </div>
 
@@ -57,7 +57,7 @@
             {% for application in applications %}
             <div class="application-item mb-4" data-university-id="{{ application.university_id }}">
                 {% with university=universities_by_id|get_item:application.university_id %}
-                    <h5>{{ university.name|default:'Unknown University' }}</h5>
+                    <h5>{{ university.name|default:"Unknown University" }}</h5>
                 {% endwith %}
                 <div class="row">
                     <div class="col-md-6">
@@ -69,7 +69,7 @@
                         <p><strong>Application Date:</strong> {{ application.application_date|date:"d M Y" }}</p>
                         <p><strong>Application Fee:</strong> 
                             {% with fee=application_fees_dict|get_item:application.university_id %}
-                                {{ fee.name|default:'Not Available' }}
+                                {{ fee.name|default:"Not Available" }}
                             {% endwith %}
                         </p>
                     </div>
@@ -172,7 +172,8 @@
                         statusElement.className = `badge ${getStatusClass(item.status)}`;
                     }
                 });
-            });
+            })
+            .catch(error => console.error('Error updating statuses:', error));
     }
 
     function getStatusClass(status) {
@@ -197,12 +198,6 @@
             if (uniCard) {
                 // Scroll to the university card with smooth animation
                 uniCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                
-                // Add a highlight effect
-                uniCard.classList.add('highlight-university');
-                setTimeout(() => {
-                    uniCard.classList.remove('highlight-university');
-                }, 2000);
             }
         }
     });

@@ -50,6 +50,7 @@ urlpatterns = [
     path('applications/payment-proof/<int:application_id>/', views.view_payment_proof, name='view_payment_proof'),
     path('payments/', views.payments, name='payments'),
     path('payments/unified/', views.unified_payment, name='unified_payment'),
+    path('api/payment-statuses/', views.payment_statuses, name='payment_statuses'),
 
     # AI Chat
     path('chat/', views.chat_history, name='ai_chat'),

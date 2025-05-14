@@ -1,38 +1,18 @@
 services:
   - type: web
-    name: varsityplug
+    name: varsity-plug
     env: python
-    buildCommand: |
-      echo "Installing dependencies..."
-      pip install -r requirements.txt
-      echo "Running migrations..."
-      python manage.py makemigrations
-      python manage.py migrate --noinput
-      echo "Collecting static files..."
-      python manage.py collectstatic --noinput
-    startCommand: |
-      echo "Starting application..."
-      gunicorn varsity_plug.wsgi:application --bind 0.0.0.0:$PORT --chdir $(pwd)
+    buildCommand: pip install -r requirements.txt
+    startCommand: python manage.py migrate && python manage.py collectstatic --noinput && gunicorn varsity_plug.wsgi:application
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.0
-      - key: DATABASE_URL
-        fromDatabase:
-          name: varsityplug-db
-          property: connectionString
-      - key: ALLOWED_HOSTS
-        value: varsityplug-nvg2.onrender.com
-      - key: DEBUG
-        value: false
-      - key: OPENAI_API_KEY
-        sync: false
+        value: 3.9.0
       - key: SECRET_KEY
-        generateValue: true
+        sync: false
+      - key: DATABASE_URL
+        sync: false
       - key: REDIS_URL
-        fromService:
-          type: redis
-          name: varsity-plug-redis
-          property: connectionString
+        sync: false
     healthCheckPath: /health/
     shell: |
       python manage.py shell

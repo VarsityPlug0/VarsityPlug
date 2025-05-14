@@ -1797,3 +1797,26 @@ def payments(request):
         'student_profile': profile
     }
     return render(request, 'helper/payments.html', context)
+
+@login_required
+def payment_statuses(request):
+    """API endpoint to get payment statuses for all applications."""
+    student_profile = get_object_or_404(StudentProfile, user=request.user)
+    applications = ApplicationStatus.objects.filter(student=student_profile)
+    
+    statuses = []
+    for application in applications:
+        payment = DocumentUpload.objects.filter(
+            student=student_profile,
+            document_type='payment_proof',
+            university_id=application.university_id
+        ).first()
+        
+        status = {
+            'id': application.id,
+            'university_id': application.university_id,
+            'status': 'paid' if payment and payment.verified else 'pending' if payment else 'not_paid'
+        }
+        statuses.append(status)
+    
+    return JsonResponse(statuses, safe=False)
