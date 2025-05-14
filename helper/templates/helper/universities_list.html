@@ -10,316 +10,249 @@
         margin: 0 auto;
         padding: 20px;
     }
-    h1 {
-        font-size: 2rem;
-        margin-bottom: 1.5rem;
-    }
-    h2 {
-        font-size: 1.5rem;
-        margin-bottom: 1rem;
-    }
-    h3 {
-        font-size: 1.2rem; /* Slightly smaller for summary */
-        margin-top: 1rem;
-        margin-bottom: 0.5rem;
-    }
-    .university-list, .selected-universities {
-        margin-bottom: 2rem;
-    }
-    .university-card, .selected-card {
-        border: 1px solid #dee2e6; /* Bootstrap border color */
-        border-radius: 0.375rem; /* Bootstrap border radius */
-        padding: 1rem;
-        margin-bottom: 1rem;
-        background-color: #f8f9fa; /* Bootstrap light grey */
-    }
-    .university-card label {
-        font-weight: bold;
-        cursor: pointer;
-        margin-left: 0.5rem; /* Space between checkbox and label */
-    }
-    .university-card p {
-        margin: 0.5rem 0 0.5rem 2rem; /* Indent details below checkbox */
-        font-size: 0.9rem;
-        color: #6c757d; /* Bootstrap secondary text color */
-    }
-    .university-card .btn {
-        margin-left: 2rem; /* Align button with details */
-        margin-top: 0.5rem;
-    }
-    .selected-card {
-         background-color: #fff; /* White background for selected */
-    }
-    .selected-card p {
-        margin: 0.5rem 0;
-    }
-    .btn-apply {
-        margin-top: 0.5rem;
-    }
-    .payment-summary {
-        border: 1px solid #dee2e6;
-        border-radius: 0.375rem;
-        padding: 1.5rem; /* More padding */
-        background-color: #e9ecef; /* Bootstrap lighter grey */
-        margin-top: 1rem;
-    }
-    .payment-summary p {
-        margin: 0.5rem 0;
-        font-size: 1rem;
-    }
-     .payment-summary .summary-item {
-         display: flex;
-         justify-content: space-between;
-     }
-    .payment-summary .total {
-        font-weight: bold;
-        font-size: 1.15rem; /* Slightly larger total */
-        color: #198754; /* Bootstrap success color */
-        border-top: 1px solid #ced4da;
-        padding-top: 0.75rem;
-        margin-top: 0.75rem;
-    }
-    
-    /* Universities grid styling */
-    .universities-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-
     .university-card {
-        border: 1px solid #ddd;
+        border: 1px solid #dee2e6;
         border-radius: 8px;
-        padding: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
         background-color: #fff;
         transition: transform 0.2s;
     }
-
     .university-card:hover {
-        transform: translateY(-5px);
+        transform: translateY(-2px);
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-
-    .form-check {
-        margin: 0;
+    .university-card h5 {
+        color: #2c3e50;
+        margin-bottom: 1rem;
     }
-
-    .form-check-label {
-        width: 100%;
-        cursor: pointer;
+    .university-card p {
+        margin: 0.5rem 0;
+        color: #495057;
     }
-
-    .form-check-label h5 {
-        margin-bottom: 0.5rem;
+    .university-card strong {
         color: #2c3e50;
     }
-
-    .form-check-label p {
-        margin: 0.25rem 0;
-        color: #666;
+    .badge {
+        padding: 0.5em 0.75em;
+        font-weight: 500;
     }
-
-    .selected-universities {
-        margin-top: 2rem;
+    .badge-success {
+        background-color: #28a745;
     }
-
-    .selected-card {
-        border: 1px solid #ddd;
+    .badge-primary {
+        background-color: #007bff;
+    }
+    .badge-warning {
+        background-color: #ffc107;
+        color: #212529;
+    }
+    .text-muted {
+        color: #6c757d !important;
+        font-size: 0.9rem;
+    }
+    .btn {
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+    }
+    .btn-success {
+        background-color: #28a745;
+        border-color: #28a745;
+    }
+    .btn-success:disabled {
+        background-color: #28a745;
+        border-color: #28a745;
+        opacity: 0.8;
+    }
+    .btn-outline-success {
+        color: #28a745;
+        border-color: #28a745;
+    }
+    .btn-outline-success:hover {
+        background-color: #28a745;
+        color: white;
+    }
+    .fas {
+        margin-right: 5px;
+    }
+    .alert {
         border-radius: 8px;
         padding: 1rem;
-        margin-bottom: 1rem;
-        background-color: #f8f9fa;
     }
-
-    .payment-summary {
-        background-color: #fff;
-        border: 1px solid #ddd;
+    .alert-info {
+        background-color: #e3f2fd;
+        border-color: #90caf9;
+        color: #0d47a1;
+    }
+    .alert-warning {
+        background-color: #fff3e0;
+        border-color: #ffb74d;
+        color: #e65100;
+    }
+    .search-form {
+        background-color: #f8f9fa;
         border-radius: 8px;
         padding: 1.5rem;
-        margin-top: 2rem;
+        margin-bottom: 2rem;
     }
-
-    .summary-item {
-        display: flex;
-        justify-content: space-between;
-        margin: 0.5rem 0;
-        padding: 0.5rem 0;
+    .form-label {
+        font-weight: 500;
+        color: #2c3e50;
     }
-
-    .total {
-        font-size: 1.2rem;
-        font-weight: bold;
-        color: #28a745;
+    .form-control, .form-select {
+        border-radius: 6px;
+        border: 1px solid #ced4da;
     }
-
-    .late-fee {
-        color: #dc3545;
-        font-size: 0.9rem;
-        margin-top: 0.25rem;
-        margin-left: 1.5rem;
-    }
-
-    .btn-apply {
-        margin-top: 0.5rem;
-    }
-    
-    /* Responsive adjustments */
-    @media (max-width: 576px) {
-        .main-content-container { padding: 10px; }
-        h1 { font-size: 1.5rem; }
-        h2 { font-size: 1.25rem; }
-        .university-card, .selected-card, .payment-summary { padding: 0.75rem; }
-        .university-card label, .selected-card p, .payment-summary p { font-size: 0.9rem; }
-        .btn, .btn-apply { font-size: 0.9rem; padding: 0.3rem 0.6rem; } /* Smaller padding */
-        .payment-summary .total { font-size: 1rem; }
-        .university-card p, .university-card .btn { margin-left: 0.5rem; } /* Reduce indent on small screens */
-        .universities-grid {
-            grid-template-columns: 1fr;
-        }
+    .form-control:focus, .form-select:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <div class="row">
-        <div class="col-md-12">
-            <h2 class="mb-4">Universities</h2>
-            
-            <!-- Search Form -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <form method="get" class="row g-3">
-                        <div class="col-md-4">
-                            <label for="search" class="form-label">Search Universities</label>
-                            <input type="text" class="form-control" id="search" name="search" value="{{ form.search.value|default:'' }}" placeholder="Enter university name">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="province" class="form-label">Province</label>
-                            <select class="form-select" id="province" name="province">
-                                <option value="">All Provinces</option>
-                                {% for province in form.province.field.choices %}
-                                    <option value="{{ province.0 }}" {% if form.province.value == province.0 %}selected{% endif %}>{{ province.1 }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="min_aps" class="form-label">Minimum APS</label>
-                            <input type="number" class="form-control" id="min_aps" name="min_aps" value="{{ form.min_aps.value|default:'' }}" min="20" max="48">
-                        </div>
-                        <div class="col-md-2 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary w-100">Search</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
-            <!-- APS Score Display -->
-            {% if student_aps %}
-            <div class="alert alert-info mb-4">
-                <h4 class="alert-heading">Your APS Score: {{ student_aps }}</h4>
-                <p class="mb-0">This score is calculated based on your best 6 subjects (excluding Life Orientation).</p>
+    {% if selected_university %}
+    <div class="success-message" id="selectionSuccess">
+        <div>
+            <h4 class="mb-2">Success!</h4>
+            <p class="mb-0">{{ selected_university.message }}</p>
+            <div class="university-details">
+                <p><strong>University:</strong> {{ selected_university.name }}</p>
+                <p><strong>Application Fee:</strong> {{ selected_university.application_fee }}</p>
+                <p><strong>Due Date:</strong> {{ selected_university.due_date }}</p>
+                <p><strong>Total Applications:</strong> {{ selected_university.application_count }}</p>
             </div>
-            {% else %}
-            <div class="alert alert-warning mb-4">
-                <h4 class="alert-heading">No APS Score Available</h4>
-                <p class="mb-0">Please <a href="{% url 'helper:update_marks' %}" class="alert-link">update your marks</a> to see university recommendations.</p>
-            </div>
-            {% endif %}
+        </div>
+        <button type="button" class="close" onclick="document.getElementById('selectionSuccess').style.display='none'">&times;</button>
+    </div>
+    {% endif %}
 
-            <!-- Selected Universities -->
-            {% if selected_with_details %}
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h3 class="mb-0">Your Selected Universities</h3>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        {% for uni_data in selected_with_details %}
-                        <div class="col-md-6 mb-3">
-                            <div class="card h-100 {% if uni_data.qualification_status == 'highly_qualified' %}border-success{% elif uni_data.qualification_status == 'qualified' %}border-primary{% else %}border-warning{% endif %}">
-                                <div class="card-body">
-                                    <h5 class="card-title">{{ uni_data.name }}</h5>
-                                    <p class="card-text">
-                                        <strong>Application Fee:</strong> {{ uni_data.application_fee }}<br>
-                                        <strong>Due Date:</strong> {{ uni_data.due_date }}<br>
-                                        <strong>Status:</strong> 
-                                        {% if uni_data.qualification_status == 'highly_qualified' %}
-                                            <span class="badge bg-success">Highly Qualified</span>
-                                        {% elif uni_data.qualification_status == 'qualified' %}
-                                            <span class="badge bg-primary">Qualified</span>
-                                        {% else %}
-                                            <span class="badge bg-warning">Below Requirements</span>
-                                        {% endif %}
-                                    </p>
-                                    <div class="d-flex justify-content-between">
-                                        <a href="{% url 'helper:university_detail' uni_data.id %}" class="btn btn-outline-primary">View Details</a>
-                                        <form method="post" action="{% url 'helper:deselect_university' uni_data.id %}" class="d-inline">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-outline-danger">Remove</button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
+    <h2 class="mb-4">Universities</h2>
+    
+    <!-- Search Form -->
+    <div class="search-form">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="search" class="form-label">Search Universities</label>
+                <input type="text" class="form-control" id="search" name="search" value="{{ form.search.value|default:'' }}" placeholder="Enter university name">
+            </div>
+            <div class="col-md-3">
+                <label for="province" class="form-label">Province</label>
+                <select class="form-select" id="province" name="province">
+                    <option value="">All Provinces</option>
+                    {% for province in form.province.field.choices %}
+                        <option value="{{ province.0 }}" {% if form.province.value == province.0 %}selected{% endif %}>{{ province.1 }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="min_aps" class="form-label">Minimum APS</label>
+                <input type="number" class="form-control" id="min_aps" name="min_aps" value="{{ form.min_aps.value|default:'' }}" min="20" max="48">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Search</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- APS Score Display -->
+    {% if student_aps %}
+    <div class="alert alert-info mb-4">
+        <h4 class="alert-heading">Your APS Score: {{ student_aps }}</h4>
+        <p class="mb-0">This score is calculated based on your best 6 subjects (excluding Life Orientation).</p>
+    </div>
+    {% else %}
+    <div class="alert alert-warning mb-4">
+        <h4 class="alert-heading">No APS Score Available</h4>
+        <p class="mb-0">Please <a href="{% url 'helper:update_marks' %}" class="alert-link">update your marks</a> to see university recommendations.</p>
+    </div>
+    {% endif %}
+
+    <!-- Selected Universities -->
+    {% if selected_with_details %}
+    <div class="mb-4">
+        <h3 class="mb-3">Your Selected Universities</h3>
+        <div class="row">
+            {% for uni_data in selected_with_details %}
+            <div class="col-md-6 mb-3">
+                <div class="university-card">
+                    <h5>{{ uni_data.name }}</h5>
+                    <p><strong>Application Fee:</strong> {{ uni_data.application_fee }}</p>
+                    <p><strong>Due Date:</strong> {{ uni_data.due_date }}</p>
+                    <p><strong>Status:</strong> 
+                        {% if uni_data.qualification_status == 'highly_qualified' %}
+                            <span class="badge badge-success">Highly Qualified</span>
+                        {% elif uni_data.qualification_status == 'qualified' %}
+                            <span class="badge badge-primary">Qualified</span>
+                        {% else %}
+                            <span class="badge badge-warning">Below Requirements</span>
+                        {% endif %}
+                    </p>
+                    <div class="d-flex justify-content-between mt-3">
+                        <a href="{% url 'helper:university_detail' uni_data.id %}" class="btn btn-outline-primary">View Details</a>
+                        <form method="post" action="{% url 'helper:deselect_university' uni_data.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger">Remove</button>
+                        </form>
                     </div>
                 </div>
             </div>
-            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 
-            <!-- Available Universities -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="mb-0">Available Universities</h3>
-                </div>
-                <div class="card-body">
-                    {% if eligible_universities %}
-                    <div class="row">
-                        {% for uni_data in eligible_universities %}
-                        <div class="col-md-6 mb-3">
-                            <div class="card h-100 {% if uni_data.qualification_status == 'highly_qualified' %}border-success{% elif uni_data.qualification_status == 'qualified' %}border-primary{% else %}border-warning{% endif %}">
-                                <div class="card-body">
-                                    <h5 class="card-title">{{ uni_data.name }}</h5>
-                                    <p class="card-text">
-                                        <strong>Minimum APS:</strong> {{ uni_data.minimum_aps }}<br>
-                                        <strong>Application Fee:</strong> {{ uni_data.fee }}<br>
-                                        <strong>Due Date:</strong> {{ uni_data.due_date }}<br>
-                                        <strong>Status:</strong> 
-                                        {% if uni_data.qualification_status == 'highly_qualified' %}
-                                            <span class="badge bg-success">Highly Qualified</span>
-                                        {% elif uni_data.qualification_status == 'qualified' %}
-                                            <span class="badge bg-primary">Qualified</span>
-                                        {% else %}
-                                            <span class="badge bg-warning">Below Requirements</span>
-                                        {% endif %}
-                                        <br>
-                                        <small class="text-muted">{{ uni_data.qualification_message }}</small>
-                                    </p>
-                                    <div class="d-flex justify-content-between">
-                                        <a href="{% url 'helper:university_detail' uni_data.id %}" class="btn btn-outline-primary">View Details</a>
-                                        {% if not uni_data.is_selected %}
-                                        <form method="post" action="{% url 'helper:select_university' uni_data.id %}" class="d-inline">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-outline-success">Select</button>
-                                        </form>
-                                        {% else %}
-                                        <button class="btn btn-outline-secondary" disabled>Selected</button>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
+    <!-- Available Universities -->
+    <div>
+        <h3 class="mb-3">Available Universities</h3>
+        <div class="row">
+            {% for uni_data in eligible_universities %}
+            <div class="col-md-6 mb-3">
+                <div class="university-card">
+                    <h5>{{ uni_data.name }}</h5>
+                    <p><strong>Minimum APS:</strong> {{ uni_data.minimum_aps }}</p>
+                    <p><strong>Application Fee:</strong> {{ uni_data.fee }}</p>
+                    <p><strong>Due Date:</strong> {{ uni_data.due_date }}</p>
+                    <p><strong>Status:</strong> 
+                        {% if uni_data.qualification_status == 'highly_qualified' %}
+                            <span class="badge badge-success">Highly Qualified</span>
+                        {% elif uni_data.qualification_status == 'qualified' %}
+                            <span class="badge badge-primary">Qualified</span>
+                        {% else %}
+                            <span class="badge badge-warning">Below Requirements</span>
+                        {% endif %}
+                    </p>
+                    <p class="text-muted">{{ uni_data.qualification_message }}</p>
+                    <div class="d-flex justify-content-between mt-3">
+                        <a href="{% url 'helper:university_detail' uni_data.id %}" class="btn btn-outline-primary">View Details</a>
+                        {% if not uni_data.is_selected %}
+                        <form method="post" action="{% url 'helper:select_university' uni_data.id %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-success">
+                                <i class="fas fa-plus"></i> Select
+                            </button>
+                        </form>
+                        {% else %}
+                        <button class="btn btn-success" disabled>
+                            <i class="fas fa-check"></i> Selected
+                        </button>
+                        {% endif %}
                     </div>
-                    {% else %}
-                    <div class="alert alert-info">
-                        No universities match your search criteria. Try adjusting your filters.
-                    </div>
-                    {% endif %}
                 </div>
             </div>
+            {% endfor %}
         </div>
     </div>
 </div>
@@ -327,6 +260,13 @@
 
 {% block extra_js %}
 <script>
-    // Add any JavaScript for dynamic functionality here
+    document.addEventListener('DOMContentLoaded', function() {
+        const successMessage = document.getElementById('selectionSuccess');
+        if (successMessage) {
+            setTimeout(() => {
+                successMessage.style.display = 'none';
+            }, 5000);
+        }
+    });
 </script>
 {% endblock %}
