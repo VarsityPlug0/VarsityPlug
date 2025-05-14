@@ -354,7 +354,7 @@ def dashboard_student(request):
         # These URLs might need to point to new views if selection logic changes
         for uni in recommended_universities_list:
             uni['detail_url'] = reverse('helper:university_detail', args=[uni['id']]) # Fixed closing parenthesis
-            # uni['select_url'] = reverse('helper:select_university', args=[uni['id']]) # select_university view will need total rewrite
+            uni['select_url'] = reverse('helper:select_university', args=[uni['id']]) # Uncommented this line
             # fee and due_date are already in uni dict
 
     qualified_unis_data_for_js = []
