@@ -241,7 +241,11 @@
                                 
                                 <p><strong>Application Fee:</strong> 
                                     {% with fee=application_fees|get_item:application.university_id %}
-                                        {{ fee.name|default:'Not Available' }}
+                                        {% if fee.name == "FREE" %}
+                                            <span class="text-success">Free</span>
+                                        {% else %}
+                                            <span>R{{ fee.value|default:"0" }}</span>
+                                        {% endif %}
                                     {% endwith %}
                                 </p>
                                 

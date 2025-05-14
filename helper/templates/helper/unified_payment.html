@@ -85,7 +85,7 @@
                                 {% if fee.name == "FREE" %}
                                     <span class="text-success">Free</span>
                                 {% else %}
-                                    <span>{{ fee.name|default:"R0" }}</span>
+                                    <span>R{{ fee.value|default:"0" }}</span>
                                 {% endif %}
                             {% endwith %}
                         </p>

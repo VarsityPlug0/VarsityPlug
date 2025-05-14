@@ -1621,64 +1621,42 @@ def unified_payment(request):
     if subscription_payment_doc:
         time_since_upload = timezone.now() - subscription_payment_doc.uploaded_at
         if subscription_payment_doc.verified or time_since_upload.total_seconds() >= 24 * 3600:
-             if not subscription_payment_doc.verified:
-                 subscription_payment_doc.verified = True
-                 subscription_payment_doc.save()
-             subscription_status = "Verified"
+            if not subscription_payment_doc.verified:
+                subscription_payment_doc.verified = True
+                subscription_payment_doc.save()
+            subscription_status = "Verified"
         else:
             subscription_status = "Pending Verification"
             minutes_ago = int(time_since_upload.total_seconds() / 60)
             subscription_status += f" (Uploaded {minutes_ago} minutes ago)"
-    total_application_fees_value = 0
-    for application in applications:
-        payment_proof_doc = DocumentUpload.objects.filter(
-            user=request.user,
-            document_type='payment_proof',
-            university__id=application.university_id
-        ).first()
-        static_uni_data = universities_by_id.get(application.university_id)
-        application_fee_str = "0"
-        if static_uni_data:
-            application_fee_str = static_uni_data.get('application_fee', "0")
-        current_app_fee_value = 0
-        if application_fee_str.upper() != "FREE" and application_fee_str != "0" and application_fee_str != "Not specified" and application_fee_str != "Varies":
-            try:
-                current_app_fee_value = int(application_fee_str.replace('R', '').strip())
-            except ValueError:
-                current_app_fee_value = 0
-        if application_fee_str.upper() == "FREE":
-            application.payment_verified = True
-            application.status = 'pending'
-        elif payment_proof_doc:
-            if payment_proof_doc.verified or (timezone.now() - payment_proof_doc.uploaded_at).total_seconds() >= 24*3600:
-                if not payment_proof_doc.verified:
-                    payment_proof_doc.verified = True
-                    payment_proof_doc.save()
-                application.payment_verified = True
-                application.status = 'pending'
-            else:
-                application.payment_verified = False
-                application.status = 'pending'
-        else:
-            application.payment_verified = False
-            application.status = 'not_started'
-        application.save()
-        if application.payment_verified and application_fee_str.upper() != "FREE":
-            total_application_fees_value += current_app_fee_value
-    display_total_application_fees = 0
+
+    # Initialize application fees dictionary and total
     application_fees_context_dict = {}
-    for app_status in applications:
-        static_data = universities_by_id.get(app_status.university_id)
-        fee_val_str = "0"
+    display_total_application_fees = 0
+
+    # Process each application
+    for application in applications:
+        static_data = universities_by_id.get(application.university_id)
         if static_data:
             fee_val_str = static_data.get('application_fee', "0")
-            application_fees_context_dict[static_data['name']] = fee_val_str
-        if fee_val_str.upper() != "FREE" and fee_val_str != "0" and fee_val_str != "Not specified" and fee_val_str != "Varies":
-            try:
-                display_total_application_fees += int(fee_val_str.replace('R', '').strip())
-            except ValueError:
-                pass
+            application_fees_context_dict[application.university_id] = {
+                'name': fee_val_str,
+                'value': 0
+            }
+            
+            # Calculate fee value if it's not free
+            if fee_val_str.upper() != "FREE" and fee_val_str != "0" and fee_val_str != "Not specified" and fee_val_str != "Varies":
+                try:
+                    fee_value = int(fee_val_str.replace('R', '').strip())
+                    application_fees_context_dict[application.university_id]['value'] = fee_value
+                    display_total_application_fees += fee_value
+                except ValueError:
+                    pass
+
+    # Calculate subscription fee
     subscription_fee_value = profile.get_subscription_fee()
+    total_amount = display_total_application_fees + subscription_fee_value
+
     context = {
         'profile': profile,
         'applications': applications,
@@ -1689,7 +1667,7 @@ def unified_payment(request):
         'subscription_status': subscription_status,
         'total_application_fees': display_total_application_fees,
         'subscription_fee': subscription_fee_value,
-        'total_amount': display_total_application_fees + subscription_fee_value,
+        'total_amount': total_amount,
         'application_fees_dict': application_fees_context_dict
     }
     return render(request, 'helper/unified_payment.html', context)
