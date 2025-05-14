@@ -1688,6 +1688,73 @@ def unified_payment(request):
     )
     all_static_universities = get_all_universities()
     universities_by_id = {uni['id']: uni for uni in all_static_universities}
+    
+    # Handle payment upload
+    if request.method == 'POST':
+        university_id = request.POST.get('university')
+        proof_file = request.FILES.get('payment_proof')
+        reference_number = request.POST.get('reference_number')
+        
+        if university_id and proof_file:
+            try:
+                # Get the university instance
+                university_instance = University.objects.get(id=university_id)
+                
+                # Check if payment proof already exists
+                existing_proof = DocumentUpload.objects.filter(
+                    user=request.user,
+                    document_type='payment_proof',
+                    university=university_instance
+                ).first()
+                
+                if existing_proof and not existing_proof.verified:
+                    messages.warning(request, 'You already have a pending payment proof for this university.')
+                    return redirect('helper:unified_payment')
+                
+                # Create or update payment record
+                payment, created = Payment.objects.get_or_create(
+                    user=request.user,
+                    university=university_instance.name,
+                    defaults={
+                        'payment_status': 'pending',
+                        'proof_of_payment': proof_file
+                    }
+                )
+                
+                if not created:
+                    payment.payment_status = 'pending'
+                    payment.proof_of_payment = proof_file
+                    payment.save()
+                
+                # Create document upload record
+                document = DocumentUpload.objects.create(
+                    user=request.user,
+                    document_type='payment_proof',
+                    file=proof_file,
+                    university=university_instance,
+                    notes=reference_number
+                )
+                
+                # Update application status
+                application = ApplicationStatus.objects.get(
+                    student=profile,
+                    university=university_instance
+                )
+                application.status = 'pending'
+                application.payment_verified = False
+                application.save()
+                
+                messages.success(request, 'Payment proof uploaded successfully. Awaiting verification.')
+                return redirect('helper:unified_payment')
+                
+            except University.DoesNotExist:
+                messages.error(request, 'Invalid university selected.')
+            except ApplicationStatus.DoesNotExist:
+                messages.error(request, 'Application not found for this university.')
+            except Exception as e:
+                messages.error(request, f'An error occurred: {str(e)}')
+    
+    # Get subscription status
     subscription_payment_doc = DocumentUpload.objects.filter(
         user=request.user,
         document_type='subscription_payment'
@@ -1743,7 +1810,8 @@ def unified_payment(request):
         'total_application_fees': display_total_application_fees,
         'subscription_fee': subscription_fee_value,
         'total_amount': total_amount,
-        'application_fees_dict': application_fees_context_dict
+        'application_fees_dict': application_fees_context_dict,
+        'timestamp': int(timezone.now().timestamp())  # Add timestamp for unique reference numbers
     }
     return render(request, 'helper/unified_payment.html', context)
 
@@ -1860,7 +1928,7 @@ def payment_statuses(request):
     statuses = []
     for application in applications:
         payment = DocumentUpload.objects.filter(
-            user=request.user,  # Changed from student to user
+            user=request.user,
             document_type='payment_proof',
             university_id=application.university_id
         ).first()
