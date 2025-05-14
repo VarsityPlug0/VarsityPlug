@@ -616,15 +616,17 @@
             card.innerHTML = `
                 <div class="card-body">
                     <h5 class="card-title">${uni.name}</h5>
-                    <p class="card-text">
-                        <strong>Minimum APS:</strong> ${uni.minimum_aps}<br>
-                        <strong>Application Fee:</strong> ${uni.application_fee}<br>
-                        <strong>Due Date:</strong> ${uni.due_date}<br>
-                        <strong>Province:</strong> ${uni.province}
-                    </p>
-                    <div class="d-flex justify-content-between">
-                        <a href="${uni.detail_url}" class="btn btn-primary">View Details</a>
-                        <a href="${uni.select_url}" class="btn btn-success">Select University</a>
+                    <div class="card-text">
+                        <div class="mb-3">
+                            <strong>Minimum APS:</strong> ${uni.minimum_aps}<br>
+                            <strong>Application Fee:</strong> ${uni.application_fee}<br>
+                            <strong>Due Date:</strong> ${uni.due_date}<br>
+                            <strong>Province:</strong> ${uni.province}
+                        </div>
+                        <div class="d-flex justify-content-between gap-2">
+                            <a href="${uni.detail_url}" class="btn btn-primary flex-grow-1">View Details</a>
+                            <a href="${uni.select_url}" class="btn btn-success flex-grow-1">Select University</a>
+                        </div>
                     </div>
                 </div>
             `;
