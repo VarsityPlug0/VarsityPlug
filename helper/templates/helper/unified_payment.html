@@ -75,18 +75,20 @@
                     </div>
                     <div class="col-md-6">
                         <p><strong>Payment Status:</strong> 
-                            {% with payment=payments|filter_by_university:universities_by_id|get_item:application.university_id %}
-                                {% with fee=application_fees_dict|get_item:application.university_id %}
-                                    {% if fee.name == "FREE" %}
-                                        <span class="badge bg-info">Not Required</span>
-                                    {% elif payment %}
-                                        <span class="badge {% if payment.payment_status == 'paid' %}bg-success{% elif payment.payment_status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
-                                            {{ payment.get_payment_status_display }}
-                                        </span>
-                                    {% else %}
-                                        <span class="badge bg-danger">Not Paid</span>
-                                    {% endif %}
-                                {% endwith %}
+                            {% with fee=application_fees_dict|get_item:application.university_id %}
+                                {% if fee.name == "FREE" %}
+                                    <span class="badge bg-info">Not Required</span>
+                                {% else %}
+                                    {% with payment=payments|filter_by_university:universities_by_id|get_item:application.university_id %}
+                                        {% if payment %}
+                                            <span class="badge {% if payment.payment_status == 'paid' %}bg-success{% elif payment.payment_status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
+                                                {{ payment.get_payment_status_display }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Not Paid</span>
+                                        {% endif %}
+                                    {% endwith %}
+                                {% endif %}
                             {% endwith %}
                         </p>
                         
@@ -130,6 +132,7 @@
                                         <div class="alert alert-warning mt-2">
                                             <i class="fas fa-exclamation-triangle me-2"></i>
                                             Activate your subscription to proceed with this free application.
+                                            <a href="{% url 'helper:pay_subscription_fee' %}" class="btn btn-primary btn-sm ms-2">Pay Subscription</a>
                                         </div>
                                     {% endif %}
                                 {% else %}
