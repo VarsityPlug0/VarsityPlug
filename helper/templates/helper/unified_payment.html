@@ -85,7 +85,7 @@
                                 {% if fee.name == "FREE" %}
                                     <span class="text-success">Free</span>
                                 {% else %}
-                                    {{ fee.name|default:"R0" }}
+                                    <span>{{ fee.name|default:"R0" }}</span>
                                 {% endif %}
                             {% endwith %}
                         </p>
@@ -94,7 +94,7 @@
                         <p><strong>Payment Status:</strong> 
                             {% with fee=application_fees_dict|get_item:application.university_id %}
                                 {% if fee.name == "FREE" %}
-                                    <span class="badge bg-info">Not Required</span>
+                                    <span class="badge bg-success">Not Required</span>
                                 {% else %}
                                     {% with payment=payments|filter_by_university:universities_by_id|get_item:application.university_id %}
                                         {% if payment %}
