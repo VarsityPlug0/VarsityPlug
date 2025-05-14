@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import University, DocumentUpload, StudentProfile, ApplicationStatus, Payment
+from .university_static_data import get_university_by_id
 
 @admin.register(University)
 class UniversityAdmin(admin.ModelAdmin):
@@ -22,15 +23,19 @@ class StudentProfileAdmin(admin.ModelAdmin):
     list_filter = ('subscription_package', 'whatsapp_enabled')
     search_fields = ('user__username', 'user__email', 'phone_number')
     raw_id_fields = ('user',)
-    filter_horizontal = ('selected_universities',)
     readonly_fields = ('stored_aps_score',)
 
 @admin.register(ApplicationStatus)
 class ApplicationStatusAdmin(admin.ModelAdmin):
-    list_display = ('student', 'university', 'status', 'application_date', 'last_updated', 'payment_verified')
+    def university_name(self, obj):
+        uni = get_university_by_id(obj.university_id)
+        return uni['name'] if uni else 'Unknown'
+    university_name.short_description = 'University'
+
+    list_display = ('student', 'university_name', 'status', 'application_date', 'last_updated', 'payment_verified')
     list_filter = ('status', 'payment_verified', 'application_date')
-    search_fields = ('student__user__username', 'university__name', 'tracking_number')
-    raw_id_fields = ('student', 'university')
+    search_fields = ('student__user__username', 'tracking_number')
+    raw_id_fields = ('student',)
     ordering = ('-application_date',)
 
 @admin.register(Payment)

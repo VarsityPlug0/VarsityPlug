@@ -216,7 +216,7 @@
                 <div class="col-md-6 mb-4">
                     <div class="card">
                         <div class="card-body">
-                            <h5 class="card-title">{{ application.university.name }}</h5>
+                            <h5 class="card-title">{{ universities_by_id|dict_get:application.university_id|default:{}|attr:'name' }}</h5>
                             
                             <div class="application-info mt-3">
                                 <p><strong>Status:</strong> 
@@ -235,10 +235,10 @@
                                 
                                 <p><strong>Application Date:</strong> {{ application.created_at|date:"F j, Y" }}</p>
                                 
-                                <p><strong>Application Fee:</strong> {{ application_fees|get_item:application.university.name }}</p>
+                                <p><strong>Application Fee:</strong> {{ application_fees|get_item:universities_by_id|dict_get:application.university_id|default:{}|attr:'name' }}</p>
                                 
                                 {% with payment_proof=application.documentupload_set.all|filter_document_type:'payment_proof'|first %}
-                                    {% if application_fees|get_item:application.university.name == "FREE" %}
+                                    {% if application_fees|get_item:universities_by_id|dict_get:application.university_id|default:{}|attr:'name' == "FREE" %}
                                         <p><strong>Payment Status:</strong> <span class="badge bg-info">Not Required</span></p>
                                     {% elif payment_proof %}
                                         {% if payment_proof.verified %}
@@ -264,7 +264,7 @@
                                     View Details
                                 </a>
                                 
-                                {% with university_fee=application_fees|get_item:application.university.name %}
+                                {% with university_fee=application_fees|get_item:universities_by_id|dict_get:application.university_id|default:{}|attr:'name' %}
                                 {% if university_fee and "FREE" not in university_fee|upper %}
                                     {% if application.documentupload_set.all %}
                                         {% if not application.documentupload_set.all|filter_document_type:'payment_proof' %}

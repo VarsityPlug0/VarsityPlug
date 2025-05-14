@@ -748,40 +748,35 @@ def select_university(request, uni_id):
     """Handle university selection via AJAX."""
     if request.method == 'POST':
         try:
-            university = University.objects.get(id=uni_id)
             profile = get_object_or_404(StudentProfile, user=request.user)
-
-            # Check if student has reached their application limit
-            application_limit = profile.get_application_limit()
-            # Count current selections that are not the one currently being added (if it's already selected)
-            current_selection_count = profile.selected_universities.exclude(id=uni_id).count()
-
-            if current_selection_count >= application_limit and not profile.selected_universities.filter(id=uni_id).exists():
-                upgrade_url = reverse('helper:subscription_selection')
-                return JsonResponse({
-                    'success': False,
-                    'message': f"You have reached your limit of {application_limit} selections for the "
-                               f"{profile.get_subscription_package_display()} package. "
-                               f"Please <a href='{upgrade_url}' class='alert-link'>upgrade your plan</a> to select more.",
-                    'upgrade_url': upgrade_url
-                }, status=403) # Forbidden
+            university = get_university_by_id(uni_id)
+            
+            if not university:
+                return JsonResponse({'success': False, 'message': 'University not found'}, status=404)
 
             # Check if student qualifies for the university (APS score)
-            if profile.stored_aps_score is not None and university.minimum_aps <= profile.stored_aps_score:
-                if not profile.selected_universities.filter(id=uni_id).exists():
-                    profile.selected_universities.add(university)
-                    profile.application_count = profile.selected_universities.count()
+            if profile.stored_aps_score is not None and university['minimum_aps'] <= profile.stored_aps_score:
+                # Get current selected universities from profile
+                selected_unis = profile.selected_universities or []
+                
+                # Check if university is already selected
+                if uni_id not in selected_unis:
+                    # Add university to selected list
+                    selected_unis.append(uni_id)
+                    profile.selected_universities = selected_unis
+                    profile.application_count = len(selected_unis)
                     profile.save()
                     
+                    # Create application status
                     ApplicationStatus.objects.get_or_create(
                         student=profile,
-                        university=university,
+                        university_id=uni_id,
                         defaults={'status': 'pending'}
                     )
-                    message = f'Successfully selected {university.name}.'
+                    message = f'Successfully selected {university["name"]}.'
                 else:
                     # University is already selected, no change but still success
-                    message = f'{university.name} is already in your selected list.'
+                    message = f'{university["name"]} is already in your selected list.'
                 
                 return JsonResponse({
                     'success': True,
@@ -791,10 +786,8 @@ def select_university(request, uni_id):
             else:
                 return JsonResponse({
                     'success': False,
-                    'message': f'Your APS score ({profile.stored_aps_score}) does not meet the minimum requirement ({university.minimum_aps}) for {university.name}.'
+                    'message': f'Your APS score ({profile.stored_aps_score}) does not meet the minimum requirement ({university["minimum_aps"]}) for {university["name"]}.'
                 })
-        except University.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'University not found'}, status=404)
         except Exception as e:
             logger.error(f"Error in select_university: {str(e)}")
             return JsonResponse({'success': False, 'message': 'An unexpected error occurred. Please try again.'}, status=500)
@@ -805,40 +798,51 @@ def select_university(request, uni_id):
 def deselect_university(request, uni_id):
     """Handle university deselection."""
     profile = get_object_or_404(StudentProfile, user=request.user)
-    university = get_object_or_404(University, id=uni_id)
+    university = get_university_by_id(uni_id)
     
-    if university in profile.selected_universities.all():
-        profile.selected_universities.remove(university)
-        profile.application_count -= 1
+    if not university:
+        messages.error(request, "University not found.")
+        return redirect('helper:universities_list')
+    
+    # Get current selected universities from profile
+    selected_unis = profile.selected_universities or []
+    
+    if uni_id in selected_unis:
+        # Remove university from selected list
+        selected_unis.remove(uni_id)
+        profile.selected_universities = selected_unis
+        profile.application_count = len(selected_unis)
         profile.save()
         
+        # Remove application status
         ApplicationStatus.objects.filter(
             student=profile,
-            university=university
+            university_id=uni_id
         ).delete()
         
-        messages.success(request, f"Successfully removed {university.name} from your selections.")
+        messages.success(request, f"Successfully removed {university['name']} from your selections.")
+    else:
+        messages.info(request, f"{university['name']} was not in your selections.")
+        
     return redirect('helper:universities_list')
 
 @login_required
 def application_list(request):
     """Display list of applications."""
     profile = get_object_or_404(StudentProfile, user=request.user)
-    
-    # Only get applications for selected universities
-    applications = ApplicationStatus.objects.filter(
-        student=profile,
-        university__in=profile.selected_universities.all()
-    ).select_related('university') # Optimize to fetch related university
+    applications = ApplicationStatus.objects.filter(student=profile)
+
+    # Build a dict of universities by ID for fast lookup in template
+    all_static_universities = get_all_universities()
+    universities_by_id = {uni['id']: uni for uni in all_static_universities}
 
     # Check payment proof status for each application
     for application in applications:
         payment_proof = DocumentUpload.objects.filter(
             user=request.user,
             document_type='payment_proof',
-            university=application.university
+            university__id=application.university_id
         ).first()
-        
         if payment_proof:
             time_since_upload = timezone.now() - payment_proof.uploaded_at
             if time_since_upload.total_seconds() >= 24 * 3600:
@@ -849,38 +853,35 @@ def application_list(request):
                 application.status = 'not_started'
                 application.payment_verified = False
                 application.save()
-    
+
     # Prepare data for fee calculation
     universities_data_for_fee_calc = []
-    application_fees_dict_for_template = {} # For context if template needs it
-
+    application_fees_dict_for_template = {}
     for application in applications:
-        static_uni_data = get_university_by_id(application.university.id)
-        fee = '0' # Default fee
+        static_uni_data = universities_by_id.get(application.university_id)
+        fee = '0'
         if static_uni_data:
             fee = static_uni_data.get('application_fee', '0')
-            application_fees_dict_for_template[application.university.name] = fee
-        
+            application_fees_dict_for_template[static_uni_data['name']] = fee
         universities_data_for_fee_calc.append({
-            'university': application.university, # This might be the DB model instance
-            'application_fee': fee 
+            'university': static_uni_data,
+            'application_fee': fee
         })
-    
+
     # Calculate payment breakdown using shared function
     payment_breakdown, total_university_fee = calculate_application_fees(universities_data_for_fee_calc)
-    
-    package_cost = profile.get_subscription_fee() # Assuming this method exists and gives an int
-    
+    package_cost = profile.get_subscription_fee()
     total_payment = total_university_fee + package_cost
-    
+
     context = {
         'applications': applications,
+        'universities_by_id': universities_by_id,
         'payment_breakdown': payment_breakdown,
         'total_university_fee': total_university_fee,
         'package_cost': package_cost,
         'total_payment': total_payment,
         'student_profile': profile,
-        'application_fees': application_fees_dict_for_template # Pass the dynamically built dict
+        'application_fees': application_fees_dict_for_template
     }
     return render(request, 'helper/application_list.html', context)
 
@@ -889,25 +890,25 @@ def application_detail(request, app_id):
     """Display application details."""
     profile = get_object_or_404(StudentProfile, user=request.user)
     application = get_object_or_404(ApplicationStatus, id=app_id, student=profile)
-    
-    # Get payment proof document
+    all_static_universities = get_all_universities()
+    universities_by_id = {uni['id']: uni for uni in all_static_universities}
+    university = universities_by_id.get(application.university_id)
     payment_proof = DocumentUpload.objects.filter(
         user=request.user,
         document_type='payment_proof',
-        university=application.university
+        university__id=application.university_id
     ).first()
-    
-    # Check if payment proof exists and 24 hours have passed
+    time_since_upload = None
     if payment_proof:
         time_since_upload = timezone.now() - payment_proof.uploaded_at
-        if time_since_upload.total_seconds() >= 24 * 3600:  # 24 hours in seconds
+        if time_since_upload.total_seconds() >= 24 * 3600:
             application.payment_verified = True
             application.save()
-    
     context = {
         'application': application,
+        'university': university,
         'payment_proof': payment_proof,
-        'time_since_upload': time_since_upload if payment_proof else None
+        'time_since_upload': time_since_upload
     }
     return render(request, 'helper/application_detail.html', context)
 
@@ -1598,28 +1599,23 @@ def upgrade_subscription(request):
 def unified_payment(request):
     """Handle all types of payments in one place."""
     profile = get_object_or_404(StudentProfile, user=request.user)
-    
-    applications = ApplicationStatus.objects.filter(
-        student=profile,
-        university__in=profile.selected_universities.all()
-    ).select_related('university')
-    
-    payments = Payment.objects.filter(user=request.user) # This is a DB Payment model
+    applications = ApplicationStatus.objects.filter(student=profile)
+    payments = Payment.objects.filter(user=request.user)
     documents = DocumentUpload.objects.filter(
         user=request.user,
         document_type__in=['payment_proof', 'subscription_payment']
     )
-    
+    all_static_universities = get_all_universities()
+    universities_by_id = {uni['id']: uni for uni in all_static_universities}
     subscription_payment_doc = DocumentUpload.objects.filter(
         user=request.user,
         document_type='subscription_payment'
     ).first()
-    
     subscription_status = "Not Paid"
     if subscription_payment_doc:
         time_since_upload = timezone.now() - subscription_payment_doc.uploaded_at
         if subscription_payment_doc.verified or time_since_upload.total_seconds() >= 24 * 3600:
-             if not subscription_payment_doc.verified: # Auto-verify after 24h
+             if not subscription_payment_doc.verified:
                  subscription_payment_doc.verified = True
                  subscription_payment_doc.save()
              subscription_status = "Verified"
@@ -1627,110 +1623,69 @@ def unified_payment(request):
             subscription_status = "Pending Verification"
             minutes_ago = int(time_since_upload.total_seconds() / 60)
             subscription_status += f" (Uploaded {minutes_ago} minutes ago)"
-    
-    # Update payment statuses based on document verification
-    total_application_fees_value = 0 # For calculating the grand total
-
+    total_application_fees_value = 0
     for application in applications:
         payment_proof_doc = DocumentUpload.objects.filter(
             user=request.user,
             document_type='payment_proof',
-            university=application.university
+            university__id=application.university_id
         ).first()
-        
-        static_uni_data = get_university_by_id(application.university.id)
+        static_uni_data = universities_by_id.get(application.university_id)
         application_fee_str = "0"
         if static_uni_data:
             application_fee_str = static_uni_data.get('application_fee', "0")
-
         current_app_fee_value = 0
         if application_fee_str.upper() != "FREE" and application_fee_str != "0" and application_fee_str != "Not specified" and application_fee_str != "Varies":
             try:
                 current_app_fee_value = int(application_fee_str.replace('R', '').strip())
             except ValueError:
-                current_app_fee_value = 0 # Default if parsing fails
-
+                current_app_fee_value = 0
         if application_fee_str.upper() == "FREE":
-            application.payment_verified = True # Free applications are considered paid
-            application.status = 'pending' # Or 'submitted' if no further action
-            # ... (logic for Payment model)
+            application.payment_verified = True
+            application.status = 'pending'
         elif payment_proof_doc:
             if payment_proof_doc.verified or (timezone.now() - payment_proof_doc.uploaded_at).total_seconds() >= 24*3600:
-                if not payment_proof_doc.verified: # Auto-verify
+                if not payment_proof_doc.verified:
                     payment_proof_doc.verified = True
                     payment_proof_doc.save()
                 application.payment_verified = True
                 application.status = 'pending'
-                # ... (logic for Payment model)
-            else: # Proof submitted but not yet verified
+            else:
                 application.payment_verified = False
                 application.status = 'pending'
-                # ... (logic for Payment model)
-        else: # No proof submitted
+        else:
             application.payment_verified = False
             application.status = 'not_started'
-            # ... (logic for Payment model)
         application.save()
-        
-        if application.payment_verified and application_fee_str.upper() != "FREE": # Add to total if paid
+        if application.payment_verified and application_fee_str.upper() != "FREE":
             total_application_fees_value += current_app_fee_value
-        elif application_fee_str.upper() != "FREE": # Add to total if not free (as it's an outstanding amount)
-             pass # This loop is more about status; total_application_fees_value calculated below for all selected apps
-
-    # Recalculate total_application_fees_value based on all *selected* applications for display
     display_total_application_fees = 0
     application_fees_context_dict = {}
-    for app_status in applications: # Iterate through ApplicationStatus objects
-        static_data = get_university_by_id(app_status.university.id)
+    for app_status in applications:
+        static_data = universities_by_id.get(app_status.university_id)
         fee_val_str = "0"
         if static_data:
             fee_val_str = static_data.get('application_fee', "0")
-            application_fees_context_dict[app_status.university.name] = fee_val_str # For template display
-        
+            application_fees_context_dict[static_data['name']] = fee_val_str
         if fee_val_str.upper() != "FREE" and fee_val_str != "0" and fee_val_str != "Not specified" and fee_val_str != "Varies":
             try:
                 display_total_application_fees += int(fee_val_str.replace('R', '').strip())
             except ValueError:
                 pass
-
-
-    if request.method == 'POST':
-        # ... (POST handling for payment proof upload) ...
-        # Ensure fee is fetched correctly if a specific university PoP is uploaded
-        if request.FILES.get('payment_proof'):
-            university_name_from_post = request.POST.get('university') # Assuming name is sent
-            # Find the university_db_instance by name from selected ones or all static ones
-            target_uni_id = None
-            if university_name_from_post:
-                 all_static_unis = get_all_universities() # Make sure this is available or imported
-                 for static_uni in all_static_unis:
-                     if static_uni['name'] == university_name_from_post:
-                         target_uni_id = static_uni['id']
-                         break
-            
-            if target_uni_id:
-                university_instance = get_object_or_404(University, id=target_uni_id) # Get DB instance
-                # ... rest of PoP upload logic for a specific uni ...
-                # This section needs careful review to align with how PoP per uni is handled
-            else:
-                messages.error(request, "Could not identify university for PoP upload.")
-
-
     subscription_fee_value = profile.get_subscription_fee()
-    
     context = {
         'profile': profile,
-        'applications': applications, # ApplicationStatus objects
-        'payments': payments, # Payment DB model objects
-        'documents': documents, # DocumentUpload objects
+        'applications': applications,
+        'universities_by_id': universities_by_id,
+        'payments': payments,
+        'documents': documents,
         'subscription_payment_doc': subscription_payment_doc,
         'subscription_status': subscription_status,
-        'total_application_fees': display_total_application_fees, # Sum of fees for selected universities
+        'total_application_fees': display_total_application_fees,
         'subscription_fee': subscription_fee_value,
         'total_amount': display_total_application_fees + subscription_fee_value,
-        'application_fees_dict': application_fees_context_dict # Dict of {uni_name: fee_str}
+        'application_fees_dict': application_fees_context_dict
     }
-    
     return render(request, 'helper/unified_payment.html', context)
 
 @login_required
@@ -1797,50 +1752,40 @@ def payments(request):
         user=request.user,
         document_type='payment_proof'
     )
-    
-    # Update payment statuses based on document verification
+    all_static_universities = get_all_universities()
+    universities_by_id = {uni['id']: uni for uni in all_static_universities}
     for application in applications:
-        # Check for payment proof document
         payment_proof = DocumentUpload.objects.filter(
             user=request.user,
             document_type='payment_proof',
-            university=application.university
+            university__id=application.university_id
         ).first()
-        
-        # Get or create payment record
         payment, created = Payment.objects.get_or_create(
             user=request.user,
-            university=application.university.name,
+            university=universities_by_id.get(application.university_id, {}).get('name', ''),
             defaults={'payment_status': 'not_paid'}
         )
-        
         if payment_proof:
             if payment_proof.verified:
-                # If document is verified, update both application and payment status
                 application.payment_verified = True
                 application.status = 'pending'
                 payment.payment_status = 'paid'
             else:
-                # If document is not verified, set status to pending
                 application.payment_verified = False
                 application.status = 'pending'
                 payment.payment_status = 'pending'
-            
             application.save()
             payment.save()
         else:
-            # If no payment proof exists, ensure status is not_started
             if application.status != 'not_started':
                 application.status = 'not_started'
                 application.payment_verified = False
                 application.save()
-            
-            # Update payment status to not_paid
             payment.payment_status = 'not_paid'
             payment.save()
-    
     context = {
         'applications': applications,
+        'universities_by_id': universities_by_id,
         'payments': payments,
         'documents': documents,
         'student_profile': profile

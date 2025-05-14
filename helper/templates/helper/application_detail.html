@@ -81,7 +81,7 @@
                     <h2 class="mb-0">Application Details</h2>
                 </div>
                 <div class="card-body">
-                    <h3 class="card-title">{{ application.university.name }}</h3>
+                    <h3 class="card-title">{{ university.name }}</h3>
                     
                     <div class="application-info mt-4">
                         <p><strong>Application Status:</strong> {{ application.get_status_display }}</p>
@@ -89,6 +89,12 @@
                         <p><strong>Application Date:</strong> {{ application.created_at|date:"F j, Y" }}</p>
                         
                         <p><strong>Last Updated:</strong> {{ application.updated_at|date:"F j, Y" }}</p>
+                        
+                        <p><strong>Minimum APS:</strong> {{ university.minimum_aps }}</p>
+                        
+                        <p><strong>Application Fee:</strong> {{ university.application_fee }}</p>
+                        
+                        <p><strong>Due Date:</strong> {{ university.due_date }}</p>
                         
                         {% if payment_proof %}
                             {% if payment_proof.verified %}

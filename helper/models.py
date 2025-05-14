@@ -72,7 +72,7 @@ class StudentProfile(models.Model):
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     subscription_package = models.CharField(max_length=20, choices=SUBSCRIPTION_PACKAGES, default='basic')
     application_count = models.IntegerField(default=0)
-    selected_universities = models.ManyToManyField(University, blank=True)
+    selected_universities = models.JSONField(default=list, blank=True)  # Store list of university IDs
     marks = models.JSONField(null=True, blank=True)
     stored_aps_score = models.IntegerField(null=True, blank=True)
     whatsapp_enabled = models.BooleanField(default=False)
@@ -209,7 +209,7 @@ class ApplicationStatus(models.Model):
         ('rejected', 'Rejected'),
     )
     student = models.ForeignKey(StudentProfile, on_delete=models.CASCADE)
-    university = models.ForeignKey(University, on_delete=models.CASCADE)
+    university_id = models.IntegerField()  # Store university ID from static data, now non-nullable
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='not_started')
     application_date = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
@@ -218,11 +218,13 @@ class ApplicationStatus(models.Model):
     tracking_number = models.CharField(max_length=50, blank=True, null=True)
 
     def __str__(self):
-        return f"{self.student.user.username}'s application to {self.university.name}"
+        university = get_university_by_id(self.university_id)
+        university_name = university['name'] if university else 'Unknown University'
+        return f"{self.student.user.username}'s application to {university_name}"
 
     class Meta:
         ordering = ['-application_date']
-        unique_together = ('student', 'university')
+        unique_together = ('student', 'university_id')
         verbose_name = 'Application Status'
         verbose_name_plural = 'Application Statuses'
 
