@@ -68,3 +68,34 @@ def calculate_application_fees(universities_data: List[Dict[str, Any]]) -> Tuple
             continue
     
     return payment_breakdown, total_university_fee 
+
+def calculate_payment_breakdown(universities_data):
+    """Calculate payment breakdown including subscription fees."""
+    total_university_fee = 0
+    breakdown = []
+    
+    # Calculate university application fees
+    for uni_data in universities_data:
+        fee = uni_data.get('fee', 0)
+        total_university_fee += fee
+        breakdown.append({
+            'name': f"Application Fee - University {uni_data.get('id')}",
+            'fee': fee
+        })
+    
+    # Calculate package cost (fixed at R100 per application)
+    package_cost = len(universities_data) * 100
+    breakdown.append({
+        'name': 'Service Fee (R100 per application)',
+        'fee': package_cost
+    })
+    
+    # Calculate total payment
+    total_payment = total_university_fee + package_cost
+    
+    return {
+        'breakdown': breakdown,
+        'total_university_fee': total_university_fee,
+        'package_cost': package_cost,
+        'total_payment': total_payment
+    } 

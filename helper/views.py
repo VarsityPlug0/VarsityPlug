@@ -25,7 +25,7 @@ from .forms import (
 )
 from .university_static_data import get_all_universities, get_university_by_id
 import time
-from .utils import calculate_application_fees
+from .utils import calculate_application_fees, calculate_payment_breakdown
 from django.db import transaction
 
 # Set up logging
@@ -903,7 +903,10 @@ def deselect_university(request, uni_id):
 def application_list(request):
     """Display list of applications."""
     profile = get_object_or_404(StudentProfile, user=request.user)
-    applications = ApplicationStatus.objects.filter(student=profile)
+    applications = ApplicationStatus.objects.filter(student=profile)  # Removed incorrect select_related
+
+    # Get all documents for the user
+    documents = DocumentUpload.objects.filter(user=request.user)
 
     # Build a dict of universities by ID for fast lookup in template
     all_static_universities = get_all_universities()
@@ -932,19 +935,28 @@ def application_list(request):
     application_fees_dict_for_template = {}
     for application in applications:
         static_uni_data = universities_by_id.get(application.university_id)
-        fee = '0'
         if static_uni_data:
-            fee = static_uni_data.get('application_fee', '0')
-            application_fees_dict_for_template[static_uni_data['name']] = fee
-        universities_data_for_fee_calc.append({
-            'university': static_uni_data,
-            'application_fee': fee
-        })
+            fee_str = static_uni_data.get('application_fee', '0')
+            # Convert fee string to numeric value for calculations
+            try:
+                fee_value = int(fee_str.replace('R', '').strip())
+            except ValueError:
+                fee_value = 0
+            
+            application_fees_dict_for_template[application.university_id] = {
+                'name': fee_str,
+                'value': fee_value
+            }
+            universities_data_for_fee_calc.append({
+                'id': application.university_id,
+                'fee': fee_value
+            })
 
-    # Calculate payment breakdown using shared function
-    payment_breakdown, total_university_fee = calculate_application_fees(universities_data_for_fee_calc)
-    package_cost = profile.get_subscription_fee()
-    total_payment = total_university_fee + package_cost
+    # Calculate payment breakdown
+    payment_breakdown = calculate_payment_breakdown(universities_data_for_fee_calc)
+    total_university_fee = payment_breakdown['total_university_fee']
+    package_cost = payment_breakdown['package_cost']
+    total_payment = payment_breakdown['total_payment']
 
     context = {
         'applications': applications,
@@ -954,7 +966,8 @@ def application_list(request):
         'package_cost': package_cost,
         'total_payment': total_payment,
         'student_profile': profile,
-        'application_fees': application_fees_dict_for_template
+        'application_fees_dict': application_fees_dict_for_template,
+        'documents': documents  # Add documents to context
     }
     return render(request, 'helper/application_list.html', context)
 
@@ -1933,11 +1946,38 @@ def payment_statuses(request):
             university_id=application.university_id
         ).first()
         
-        status = {
+        # Get university data for fee information
+        university_data = get_university_by_id(application.university_id)
+        is_free = university_data and university_data.get('application_fee', '').upper() == 'FREE'
+        
+        # Determine payment status
+        if is_free:
+            status = 'free'
+            message = 'No payment required'
+        elif payment:
+            time_since_upload = timezone.now() - payment.uploaded_at
+            if payment.verified or time_since_upload.total_seconds() >= 24 * 3600:
+                if not payment.verified:
+                    payment.verified = True
+                    payment.save()
+                status = 'verified'
+                message = 'Payment verified'
+            else:
+                status = 'pending'
+                minutes_ago = int(time_since_upload.total_seconds() / 60)
+                message = f'Pending verification (Uploaded {minutes_ago} minutes ago)'
+        else:
+            status = 'not_paid'
+            message = 'Payment not uploaded'
+        
+        statuses.append({
             'id': application.id,
             'university_id': application.university_id,
-            'status': 'paid' if payment and payment.verified else 'pending' if payment else 'not_paid'
-        }
-        statuses.append(status)
+            'status': status,
+            'message': message,
+            'is_free': is_free,
+            'uploaded_at': payment.uploaded_at.isoformat() if payment else None,
+            'verified': payment.verified if payment else False
+        })
     
     return JsonResponse(statuses, safe=False)

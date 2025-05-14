@@ -3,6 +3,7 @@ from django.template.defaultfilters import stringfilter
 from django.utils import timezone
 from datetime import timedelta
 from django.utils.safestring import mark_safe
+import json
 
 register = template.Library()
 
@@ -23,6 +24,13 @@ def filter_document_type(documents, doc_type):
     if documents is None:
         return []
     return [doc for doc in documents if doc.document_type == doc_type]
+
+@register.filter(name='filter_documents_by_type')
+def filter_documents_by_type(documents, doc_type):
+    """Filter documents by document type and return a queryset."""
+    if documents is None:
+        return documents
+    return documents.filter(document_type=doc_type)
 
 @register.filter
 def sub(value, arg):
@@ -45,23 +53,13 @@ def subtract_hours(value, hours):
 
 @register.filter
 def time_until(value):
-    """Calculate time until a datetime value."""
-    if not value:
-        return 24  # Default to 24 hours if no value provided
-    try:
-        now = timezone.now()
-        if isinstance(value, str):
-            # If value is a string, try to parse it as a timedelta
-            hours = int(value.split(':')[0])
-            value = now + timedelta(hours=hours)
-        
-        if value > now:
-            delta = value - now
-            hours = delta.total_seconds() / 3600
-            return round(hours, 1)
-        return 0
-    except (ValueError, TypeError, AttributeError):
-        return 24  # Return 24 hours if there's any error in calculation 
+    """Calculate time until a given datetime."""
+    now = timezone.now()
+    if value > now:
+        delta = value - now
+        hours = delta.total_seconds() / 3600
+        return int(hours)
+    return 0
 
 @register.filter
 def filter_by_university(payments, university_name):
@@ -87,4 +85,22 @@ def get_value(dictionary, key):
 def get_elided_page_range(paginator, number, on_each_side=3, on_ends=2):
     return paginator.get_elided_page_range(number=number, 
                                            on_each_side=on_each_side, 
-                                           on_ends=on_ends) 
+                                           on_ends=on_ends)
+
+@register.filter
+def filter_documents_by_university_id(documents, university_id):
+    """Filter documents by university ID."""
+    for doc in documents:
+        if doc.university_id == university_id and doc.document_type == 'payment_proof':
+            return doc
+    return None
+
+@register.filter
+def filter_by_university(documents, university_name):
+    """Filter documents by university name."""
+    return [doc for doc in documents if doc.university.name == university_name]
+
+@register.filter
+def json_encode(value):
+    """Convert a Python value to a JSON string."""
+    return mark_safe(json.dumps(value)) 
