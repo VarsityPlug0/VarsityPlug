@@ -240,7 +240,7 @@
                         <div class="col-md-6 mb-3">
                             <div class="card h-100 {% if uni_data.qualification_status == 'highly_qualified' %}border-success{% elif uni_data.qualification_status == 'qualified' %}border-primary{% else %}border-warning{% endif %}">
                                 <div class="card-body">
-                                    <h5 class="card-title">{{ uni_data.university.name }}</h5>
+                                    <h5 class="card-title">{{ uni_data.name }}</h5>
                                     <p class="card-text">
                                         <strong>Application Fee:</strong> {{ uni_data.application_fee }}<br>
                                         <strong>Due Date:</strong> {{ uni_data.due_date }}<br>
@@ -254,8 +254,8 @@
                                         {% endif %}
                                     </p>
                                     <div class="d-flex justify-content-between">
-                                        <a href="{% url 'helper:university_detail' uni_data.university.id %}" class="btn btn-outline-primary">View Details</a>
-                                        <form method="post" action="{% url 'helper:deselect_university' uni_data.university.id %}" class="d-inline">
+                                        <a href="{% url 'helper:university_detail' uni_data.id %}" class="btn btn-outline-primary">View Details</a>
+                                        <form method="post" action="{% url 'helper:deselect_university' uni_data.id %}" class="d-inline">
                                             {% csrf_token %}
                                             <button type="submit" class="btn btn-outline-danger">Remove</button>
                                         </form>
@@ -281,9 +281,9 @@
                         <div class="col-md-6 mb-3">
                             <div class="card h-100 {% if uni_data.qualification_status == 'highly_qualified' %}border-success{% elif uni_data.qualification_status == 'qualified' %}border-primary{% else %}border-warning{% endif %}">
                                 <div class="card-body">
-                                    <h5 class="card-title">{{ uni_data.university.name }}</h5>
+                                    <h5 class="card-title">{{ uni_data.name }}</h5>
                                     <p class="card-text">
-                                        <strong>Minimum APS:</strong> {{ uni_data.university.minimum_aps }}<br>
+                                        <strong>Minimum APS:</strong> {{ uni_data.minimum_aps }}<br>
                                         <strong>Application Fee:</strong> {{ uni_data.fee }}<br>
                                         <strong>Due Date:</strong> {{ uni_data.due_date }}<br>
                                         <strong>Status:</strong> 
@@ -298,9 +298,9 @@
                                         <small class="text-muted">{{ uni_data.qualification_message }}</small>
                                     </p>
                                     <div class="d-flex justify-content-between">
-                                        <a href="{% url 'helper:university_detail' uni_data.university.id %}" class="btn btn-outline-primary">View Details</a>
+                                        <a href="{% url 'helper:university_detail' uni_data.id %}" class="btn btn-outline-primary">View Details</a>
                                         {% if not uni_data.is_selected %}
-                                        <form method="post" action="{% url 'helper:select_university' uni_data.university.id %}" class="d-inline">
+                                        <form method="post" action="{% url 'helper:select_university' uni_data.id %}" class="d-inline">
                                             {% csrf_token %}
                                             <button type="submit" class="btn btn-outline-success">Select</button>
                                         </form>

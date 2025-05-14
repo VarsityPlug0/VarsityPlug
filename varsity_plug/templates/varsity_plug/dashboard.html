@@ -1,6 +1,10 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block extra_head %}
+<meta name="viewport" content="width=device-width, initial-scale=0.67, maximum-scale=1.0, user-scalable=yes">
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <div class="row">
@@ -40,25 +44,31 @@
         <!-- Main content -->
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                <h1 class="h2">Welcome, {{ user.first_name }}!</h1>
+                <h1 class="h2">Welcome, {{ user.first_name|default:user.username }}!</h1>
             </div>
 
-            <!-- APS Score Card -->
+            <!-- APS Score & Subscription Status Row -->
             <div class="row mb-4">
-                <div class="col-md-6">
-                    <div class="card">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <div class="card h-100">
                         <div class="card-body">
                             <h5 class="card-title">Your APS Score</h5>
-                            <h2 class="display-4">{{ user.aps_score }}</h2>
-                            <p class="text-muted">Based on your current marks, you qualify for {{ qualified_universities_count }} universities.</p>
+                            <h2 class="display-4">{{ user_profile.aps_score|default:"N/A" }}</h2>
+                            {% if user_profile.aps_score is not None %}
+                                <p class="text-muted">Based on your current marks, you qualify for {{ qualified_universities_count }} university/universities.</p>
+                            {% else %}
+                                <p class="text-muted">Your APS score has not been calculated yet. Please update your marks.</p>
+                                <!-- Optional: Add a button to update marks if the URL exists -->
+                                <!-- <a href="{% url 'update_marks_url_name' %}" class="btn btn-info btn-sm">Update Marks</a> -->
+                            {% endif %}
                         </div>
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <div class="card">
+                    <div class="card h-100">
                         <div class="card-body">
                             <h5 class="card-title">Subscription Status</h5>
-                            <p class="card-text">{{ subscription_status }}</p>
+                            <p class="card-text fs-4">{{ subscription_status }}</p>
                             {% if not has_active_subscription %}
                             <a href="{% url 'subscription' %}" class="btn btn-primary">Upgrade Now</a>
                             {% endif %}
@@ -69,35 +79,100 @@
 
             <!-- University Recommendations -->
             <div class="card mb-4">
-                <div class="card-header">
+                <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">University Recommendations</h5>
                 </div>
                 <div class="card-body">
                     {% if recommendations %}
-                        <div class="row">
+                        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4"> {/* g-4 adds gutters */}
                             {% for university in recommendations %}
-                            <div class="col-md-4 mb-3">
-                                <div class="card h-100">
-                                    <div class="card-body">
-                                        <h5 class="card-title">{{ university.name }}</h5>
-                                        <p class="card-text">Minimum APS: {{ university.min_aps }}</p>
-                                        <a href="{% url 'university_detail' university.id %}" class="btn btn-outline-primary">Learn More</a>
+                            <div class="col">
+                                <div class="card h-100 shadow-sm"> {/* h-100 for equal height, shadow-sm for subtle shadow */}
+                                    <div class="card-body d-flex flex-column"> {/* Flex column for footer alignment */}
+                                        <h5 class="card-title text-primary">{{ university.name }}</h5>
+                                        <p class="card-text mb-1"><strong>Minimum APS:</strong> {{ university.minimum_aps|default:"N/A" }}</p>
+                                        <p class="card-text mb-1"><strong>Province:</strong> {{ university.province|default:"N/A" }}</p>
+                                        <p class="card-text mb-1"><strong>Application Fee:</strong> {{ university.application_fee|default:"N/A" }}</p>
+                                        <p class="card-text mb-3"><strong>Due Date:</strong> {{ university.due_date|default:"N/A" }}</p>
+                                        <div class="mt-auto"> {/* Pushes button to bottom */}
+                                            {% if university.id %}
+                                                {# Assuming 'university_detail' is the correct URL name and it's in the same app #}
+                                                {# If University is from helper app, this might need to be e.g. helper:university_detail #}
+                                                <a href="{% url 'university_detail' university.id %}" class="btn btn-outline-primary w-100">Learn More</a>
+                                            {% else %}
+                                                <button class="btn btn-outline-secondary w-100" disabled>Details Unavailable</button>
+                                            {% endif %}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                             {% endfor %}
                         </div>
                     {% else %}
-                        <div class="alert alert-info">
-                            <h6>No Recommendations Available</h6>
-                            <p>No universities match your current APS score of {{ user.aps_score }}. Consider:</p>
-                            <ul>
-                                <li>Reviewing your marks for any potential errors</li>
-                                <li>Exploring alternative study paths or bridging programs</li>
-                                <li>Contacting your school for mark verification</li>
-                            </ul>
+                        <div class="alert alert-info text-center">
+                            <h4 class="alert-heading">No Recommendations Available</h4>
+                            {% if user_profile.aps_score is not None %}
+                                <p>Unfortunately, no universities currently match your APS score of <strong>{{ user_profile.aps_score }}</strong>.</p>
+                                <p>Consider the following actions:</p>
+                                <ul class="list-unstyled">
+                                    <li>Review your marks for any potential errors.</li>
+                                    <li>Explore alternative study paths or bridging programs.</li>
+                                    <li>Contact your school for mark verification.</li>
+                                </ul>
+                                <!-- Optional: Add a button to browse all universities -->
+                                <!-- <a href="{% url 'all_universities_url_name' %}" class="btn btn-secondary mt-2">Browse All Universities</a> -->
+                            {% else %}
+                                <p>Your APS score hasn't been calculated yet. Please update your marks to see recommendations.</p>
+                                <!-- Optional: Add a button to update marks if the URL exists -->
+                                <!-- <a href="{% url 'update_marks_url_name' %}" class="btn btn-primary mt-2">Update Marks Now</a> -->
+                            {% endif %}
                         </div>
                     {% endif %}
+                </div>
+            </div>
+
+            <!-- Qualified Universities (Live Update) Section -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Qualified Universities (Live Update)</h5>
+                </div>
+                <div class="card-body">
+                    <div id="qualifiedUniversityDisplayArea">
+                        <!-- JS will populate this area -->
+                        <p class="text-muted">Loading qualified universities...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Update Marks Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <button class="btn btn-link text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#marksCollapse" aria-expanded="false" aria-controls="marksCollapse">
+                            Update Your Marks
+                        </button>
+                    </h5>
+                </div>
+                <div class="collapse" id="marksCollapse">
+                    <div class="card-body">
+                        <form id="marksForm" method="post" action="{% url 'update_marks' %}"> {# Assuming 'update_marks' is the correct URL name #}
+                            {% csrf_token %}
+                            <p class="text-muted small">Enter your marks for your 6 best subjects (excluding Life Orientation) and Life Orientation itself.</p>
+                            {% for i in "0123456" %}
+                            <div class="row mb-2">
+                                <div class="col-md-6">
+                                    <label for="subject_{{ i }}" class="form-label">Subject {{ forloop.counter }}</label>
+                                    <input type="text" class="form-control form-control-sm" id="subject_{{ i }}" name="subject_{{ i }}" placeholder="e.g., Mathematics">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="mark_{{ i }}" class="form-label">Mark {{ forloop.counter }} (%)</label>
+                                    <input type="number" class="form-control form-control-sm" id="mark_{{ i }}" name="mark_{{ i }}" placeholder="e.g., 75" min="0" max="100">
+                                </div>
+                            </div>
+                            {% endfor %}
+                            <button type="submit" class="btn btn-primary mt-2">Calculate APS & Update</button>
+                        </form>
+                    </div>
                 </div>
             </div>
 
@@ -264,34 +339,21 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'helper/js/dashboard_student.js' %}"></script>
+{# Ensure any inline data needed by dashboard_student.js is available #}
+<script id="qualifiedUniversitiesData" type="application/json">
+    {{ qualified_universities_json|safe|default:'[]' }}
+</script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const chatForm = document.getElementById('chatForm');
-    const chatMessages = document.getElementById('chatMessages');
-    const userInput = document.getElementById('userInput');
-
-    chatForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const message = userInput.value.trim();
-        if (message) {
-            // Add user message
-            addMessage(message, 'user');
-            userInput.value = '';
-
-            // Simulate assistant response (replace with actual API call)
-            setTimeout(() => {
-                addMessage('I received your message: ' + message, 'assistant');
-            }, 1000);
+    // To ensure sidebar link for dashboard is active if it uses a generic base.html
+    document.addEventListener('DOMContentLoaded', function() {
+        const dashboardLink = document.querySelector('.sidebar .nav-link[href*="dashboard"]');
+        if (dashboardLink) {
+            // Remove active class from all sidebar links first
+            document.querySelectorAll('.sidebar .nav-link').forEach(link => link.classList.remove('active'));
+            // Add active class to the dashboard link
+            dashboardLink.classList.add('active');
         }
     });
-
-    function addMessage(text, sender) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${sender}`;
-        messageDiv.textContent = text;
-        chatMessages.appendChild(messageDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-});
 </script>
 {% endblock %} 

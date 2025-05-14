@@ -53,7 +53,7 @@ urlpatterns = [
     path('payments/unified/', views.unified_payment, name='unified_payment'),
 
     # AI Chat
-    path('chat/', views.ai_chat, name='ai_chat'),
+    path('chat/', views.chat_history, name='ai_chat'),
     path('chat/history/', views.chat_history, name='chat_history'),
 
     # Course Advice
