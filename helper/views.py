@@ -361,7 +361,7 @@ def dashboard_student(request):
     for uni in qualified_universities_list:
         js_uni_data = uni.copy()
         js_uni_data['detail_url'] = reverse('helper:university_detail', args=[uni['id']])
-        # js_uni_data['select_url'] = reverse('helper:select_university', args=[uni['id']])
+        js_uni_data['select_url'] = reverse('helper:select_university', args=[uni['id']])
         qualified_unis_data_for_js.append(js_uni_data)
 
     context = {
