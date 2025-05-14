@@ -14,7 +14,6 @@ urlpatterns = [
 
     # Authentication
     path('register/', views.register, name='register'),
-    path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('redirect-after-login/', views.redirect_after_login, name='redirect_after_login'),
     path('subscription-selection/', views.subscription_selection, name='subscription_selection'),

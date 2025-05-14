@@ -103,3 +103,17 @@ def attr(obj, attr_name):
             return obj[attr_name]
         except (KeyError, TypeError):
             return None
+
+@register.filter
+def get_item(dictionary, key):
+    """
+    Safely get an item from a dictionary by key.
+    Returns None if the key doesn't exist or if the input is invalid.
+    """
+    try:
+        if dictionary is None or not isinstance(dictionary, dict):
+            return None
+        return dictionary.get(key)
+    except Exception as e:
+        logger.error(f"get_item error: {str(e)}")
+        return None

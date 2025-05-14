@@ -4,7 +4,7 @@ from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
 from django.http import HttpResponse
-from helper.views import custom_404  # Assuming a custom 404 view in helper app
+from helper.views import custom_404, login_view  # Import the custom login view
 
 # Health check endpoint for Render
 def health_check(request):
@@ -18,8 +18,9 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     # Include URLs from the 'helper' app with namespace
     path('', include('helper.urls')),
-    # Django's built-in authentication URLs (login, password reset, etc.)
-    path('login/', auth_views.LoginView.as_view(template_name='helper/login.html'), name='login'),
+    # Custom login view
+    path('login/', login_view, name='login'),
+    # Django's built-in authentication URLs (password reset, etc.)
     path('logout/', auth_views.LogoutView.as_view(next_page='helper:home'), name='logout'),
     path('password-reset/',
          auth_views.PasswordResetView.as_view(template_name='helper/password_reset.html'),

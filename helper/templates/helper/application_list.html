@@ -216,7 +216,11 @@
                 <div class="col-md-6 mb-4">
                     <div class="card">
                         <div class="card-body">
-                            <h5 class="card-title">{{ universities_by_id|dict_get:application.university_id|default:{}|attr:'name' }}</h5>
+                            <h5 class="card-title">
+                                {% with university=universities_by_id|get_item:application.university_id %}
+                                    {{ university.name|default:'Unknown University' }}
+                                {% endwith %}
+                            </h5>
                             
                             <div class="application-info mt-3">
                                 <p><strong>Status:</strong> 
@@ -235,27 +239,33 @@
                                 
                                 <p><strong>Application Date:</strong> {{ application.created_at|date:"F j, Y" }}</p>
                                 
-                                <p><strong>Application Fee:</strong> {{ application_fees|get_item:universities_by_id|dict_get:application.university_id|default:{}|attr:'name' }}</p>
+                                <p><strong>Application Fee:</strong> 
+                                    {% with fee=application_fees|get_item:application.university_id %}
+                                        {{ fee.name|default:'Not Available' }}
+                                    {% endwith %}
+                                </p>
                                 
                                 {% with payment_proof=application.documentupload_set.all|filter_document_type:'payment_proof'|first %}
-                                    {% if application_fees|get_item:universities_by_id|dict_get:application.university_id|default:{}|attr:'name' == "FREE" %}
-                                        <p><strong>Payment Status:</strong> <span class="badge bg-info">Not Required</span></p>
-                                    {% elif payment_proof %}
-                                        {% if payment_proof.verified %}
-                                            <p><strong>Payment Status:</strong> <span class="badge bg-success">Verified</span></p>
-                                            {% if payment_proof.verification_date %}
-                                                <p><small class="text-muted">Verified on {{ payment_proof.verification_date|date:"F j, Y, g:i a" }}</small></p>
+                                    {% with fee=application_fees|get_item:application.university_id %}
+                                        {% if fee.name == "FREE" %}
+                                            <p><strong>Payment Status:</strong> <span class="badge bg-info">Not Required</span></p>
+                                        {% elif payment_proof %}
+                                            {% if payment_proof.verified %}
+                                                <p><strong>Payment Status:</strong> <span class="badge bg-success">Verified</span></p>
+                                                {% if payment_proof.verification_date %}
+                                                    <p><small class="text-muted">Verified on {{ payment_proof.verification_date|date:"F j, Y, g:i a" }}</small></p>
+                                                {% endif %}
+                                            {% else %}
+                                                <p><strong>Payment Status:</strong> <span class="badge bg-warning">Pending Verification</span></p>
+                                                <p><small class="text-muted">Uploaded {{ payment_proof.uploaded_at|timesince }} ago</small></p>
+                                                {% with verification_time=payment_proof.uploaded_at|add:"24:00:00" %}
+                                                    <p><small class="text-muted">Verification will be available in {{ verification_time|time_until }} hours</small></p>
+                                                {% endwith %}
                                             {% endif %}
                                         {% else %}
-                                            <p><strong>Payment Status:</strong> <span class="badge bg-warning">Pending Verification</span></p>
-                                            <p><small class="text-muted">Uploaded {{ payment_proof.uploaded_at|timesince }} ago</small></p>
-                                            {% with verification_time=payment_proof.uploaded_at|add:"24:00:00" %}
-                                                <p><small class="text-muted">Verification will be available in {{ verification_time|time_until }} hours</small></p>
-                                            {% endwith %}
+                                            <p><strong>Payment Status:</strong> <span class="badge bg-danger">Not Paid</span></p>
                                         {% endif %}
-                                    {% else %}
-                                        <p><strong>Payment Status:</strong> <span class="badge bg-danger">Not Paid</span></p>
-                                    {% endif %}
+                                    {% endwith %}
                                 {% endwith %}
                             </div>
 
@@ -264,20 +274,20 @@
                                     View Details
                                 </a>
                                 
-                                {% with university_fee=application_fees|get_item:universities_by_id|dict_get:application.university_id|default:{}|attr:'name' %}
-                                {% if university_fee and "FREE" not in university_fee|upper %}
-                                    {% if application.documentupload_set.all %}
-                                        {% if not application.documentupload_set.all|filter_document_type:'payment_proof' %}
+                                {% with fee=application_fees|get_item:application.university_id %}
+                                    {% if fee.name and "FREE" not in fee.name|upper %}
+                                        {% if application.documentupload_set.all %}
+                                            {% if not application.documentupload_set.all|filter_document_type:'payment_proof' %}
+                                                <a href="{% url 'helper:unified_payment' %}" class="btn btn-primary btn-sm">
+                                                    Pay Application Fee
+                                                </a>
+                                            {% endif %}
+                                        {% else %}
                                             <a href="{% url 'helper:unified_payment' %}" class="btn btn-primary btn-sm">
                                                 Pay Application Fee
                                             </a>
                                         {% endif %}
-                                    {% else %}
-                                        <a href="{% url 'helper:unified_payment' %}" class="btn btn-primary btn-sm">
-                                            Pay Application Fee
-                                        </a>
                                     {% endif %}
-                                {% endif %}
                                 {% endwith %}
 
                                 {% if application.documentupload_set.all %}

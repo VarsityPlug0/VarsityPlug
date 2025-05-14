@@ -213,7 +213,10 @@ def login_view(request):
             user = form.get_user()
             login(request, user)
             messages.success(request, "Login successful!")
-            return redirect('helper:redirect_after_login')
+            next_url = request.GET.get('next', 'helper:redirect_after_login')
+            return redirect(next_url)
+        else:
+            messages.error(request, "Invalid username or password. Please try again.")
     else:
         form = AuthenticationForm()
     return render(request, 'helper/login.html', {'form': form})
@@ -312,7 +315,7 @@ def subscription_selection(request):
 @login_required
 def dashboard_student(request):
     profile = get_object_or_404(StudentProfile, user=request.user)
-    applications = ApplicationStatus.objects.filter(student=profile) # This will break if ApplicationStatus links to University DB model
+    applications = ApplicationStatus.objects.filter(student=profile)
     documents = DocumentUpload.objects.filter(user=request.user)
     form = DocumentUploadForm()
     
@@ -327,16 +330,16 @@ def dashboard_student(request):
     recommended_universities_list = []
     qualified_universities_list = []
     
-    # Selected universities: If StudentProfile.selected_universities is a M2M to a DB University,
-    # this needs to change. For now, assume we have a method on profile `get_selected_university_ids()`
-    # that returns a list/set of selected university IDs.
-    # selected_uni_ids = profile.get_selected_university_ids() if hasattr(profile, 'get_selected_university_ids') else set()
-    selected_uni_ids = set() # Placeholder
-    # If StudentProfile.selected_universities still points to the DB model, this part needs an alternative:
-    # try:
-    #    selected_uni_ids = set(profile.selected_universities.values_list('id', flat=True))
-    # except Exception:
-    #    selected_uni_ids = set() # Fallback if relation is problematic
+    # Get selected universities from profile
+    selected_uni_ids = profile.selected_universities or []
+    selected_universities = []
+    
+    # Get details for each selected university
+    for uni_id in selected_uni_ids:
+        uni = get_university_by_id(uni_id)
+        if uni:
+            uni['detail_url'] = reverse('helper:university_detail', args=[uni_id])
+            selected_universities.append(uni)
 
     if profile.stored_aps_score is not None:
         qualified_universities_list = [
@@ -350,12 +353,10 @@ def dashboard_student(request):
             if uni['id'] not in selected_uni_ids
         ][:5]
         
-        # Add detail_url and select_url to recommended_universities_list (if needed by template)
-        # These URLs might need to point to new views if selection logic changes
+        # Add detail_url and select_url to recommended_universities_list
         for uni in recommended_universities_list:
-            uni['detail_url'] = reverse('helper:university_detail', args=[uni['id']]) # Fixed closing parenthesis
-            uni['select_url'] = reverse('helper:select_university', args=[uni['id']]) # Uncommented this line
-            # fee and due_date are already in uni dict
+            uni['detail_url'] = reverse('helper:university_detail', args=[uni['id']])
+            uni['select_url'] = reverse('helper:select_university', args=[uni['id']])
 
     qualified_unis_data_for_js = []
     for uni in qualified_universities_list:
@@ -366,7 +367,7 @@ def dashboard_student(request):
 
     context = {
         'profile': profile,
-        'applications': applications, # This will be problematic
+        'applications': applications,
         'documents': documents,
         'form': form,
         'title': 'Dashboard',
@@ -375,9 +376,7 @@ def dashboard_student(request):
         'student_aps': profile.stored_aps_score,
         'recommended_universities': recommended_universities_list,
         'universities': json.dumps(qualified_unis_data_for_js, cls=DjangoJSONEncoder) if qualified_unis_data_for_js else '[]',
-        # 'selected_universities' in context also needs to be re-evaluated based on how selections are stored.
-        # For now, creating a list of dicts from selected_uni_ids if they were actual objects:
-        'selected_universities': [get_university_by_id(uid) for uid in selected_uni_ids if get_university_by_id(uid)],
+        'selected_universities': selected_universities,
     }
     return render(request, 'helper/dashboard_student.html', context)
 
@@ -766,7 +765,6 @@ def select_university(request, uni_id):
                     profile.selected_universities = selected_unis
                     profile.application_count = len(selected_unis)
                     profile.save()
-                    
                     # Create application status
                     ApplicationStatus.objects.get_or_create(
                         student=profile,
@@ -777,11 +775,19 @@ def select_university(request, uni_id):
                 else:
                     # University is already selected, no change but still success
                     message = f'{university["name"]} is already in your selected list.'
-                
+                # Prepare selected university details for frontend
+                selected_university = {
+                    'id': university['id'],
+                    'name': university['name'],
+                    'due_date': university.get('due_date', ''),
+                    'application_fee': university.get('application_fee', ''),
+                    'detail_url': reverse('helper:university_detail', args=[university['id']]),
+                }
                 return JsonResponse({
                     'success': True,
                     'message': message,
-                    'application_count': profile.application_count
+                    'application_count': profile.application_count,
+                    'selected_university': selected_university
                 })
             else:
                 return JsonResponse({

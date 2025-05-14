@@ -56,7 +56,9 @@
             
             {% for application in applications %}
             <div class="application-item mb-4" data-university-id="{{ application.university_id }}">
-                <h5>{{ universities_by_id|dict_get:application.university_id|default:{}|attr:'name' }}</h5>
+                {% with university=universities_by_id|get_item:application.university_id %}
+                    <h5>{{ university.name|default:'Unknown University' }}</h5>
+                {% endwith %}
                 <div class="row">
                     <div class="col-md-6">
                         <p><strong>Status:</strong> 
@@ -66,32 +68,30 @@
                         </p>
                         <p><strong>Application Date:</strong> {{ application.application_date|date:"d M Y" }}</p>
                         <p><strong>Application Fee:</strong> 
-                            {% with fee=application_fees_dict|get_item:universities_by_id|dict_get:application.university_id|default:{}|attr:'name' %}
-                                {% if fee %}
-                                    {{ fee }}
-                                {% else %}
-                                    Not specified
-                                {% endif %}
+                            {% with fee=application_fees_dict|get_item:application.university_id %}
+                                {{ fee.name|default:'Not Available' }}
                             {% endwith %}
                         </p>
                     </div>
                     <div class="col-md-6">
                         <p><strong>Payment Status:</strong> 
-                            {% with payment=payments|filter_by_university:universities_by_id|dict_get:application.university_id|default:{} %}
-                                {% if application_fees_dict|get_item:universities_by_id|dict_get:application.university_id|default:{} == "FREE" %}
-                                    <span class="badge bg-info">Not Required</span>
-                                {% elif payment %}
-                                    <span class="badge {% if payment.payment_status == 'paid' %}bg-success{% elif payment.payment_status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
-                                        {{ payment.get_payment_status_display }}
-                                    </span>
-                                {% else %}
-                                    <span class="badge bg-danger">Not Paid</span>
-                                {% endif %}
+                            {% with payment=payments|filter_by_university:universities_by_id|get_item:application.university_id %}
+                                {% with fee=application_fees_dict|get_item:application.university_id %}
+                                    {% if fee.name == "FREE" %}
+                                        <span class="badge bg-info">Not Required</span>
+                                    {% elif payment %}
+                                        <span class="badge {% if payment.payment_status == 'paid' %}bg-success{% elif payment.payment_status == 'pending' %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {{ payment.get_payment_status_display }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Not Paid</span>
+                                    {% endif %}
+                                {% endwith %}
                             {% endwith %}
                         </p>
                         
                         <!-- Display uploaded document if exists -->
-                        {% with doc=documents|filter_documents_by_university:universities_by_id|dict_get:application.university_id|default:{} %}
+                        {% with doc=documents|filter_documents_by_university:universities_by_id|get_item:application.university_id %}
                             {% if doc %}
                                 <div class="d-flex align-items-center mb-2">
                                     <strong class="me-2">Uploaded Document:</strong>
@@ -119,31 +119,35 @@
                         {% endwith %}
                         
                         {% if application.status != 'completed' %}
-                            {% if application_fees_dict|get_item:universities_by_id|dict_get:application.university_id|default:{} == "FREE" %}
-                                {% if student_profile.subscription_status %}
-                                    <div class="alert alert-success mt-2">
-                                        <i class="fas fa-check-circle me-2"></i>
-                                        No payment proof required for free applications.
-                                    </div>
+                            {% with fee=application_fees_dict|get_item:application.university_id %}
+                                {% if fee.name == "FREE" %}
+                                    {% if student_profile.subscription_status %}
+                                        <div class="alert alert-success mt-2">
+                                            <i class="fas fa-check-circle me-2"></i>
+                                            No payment proof required for free applications.
+                                        </div>
+                                    {% else %}
+                                        <div class="alert alert-warning mt-2">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>
+                                            Activate your subscription to proceed with this free application.
+                                        </div>
+                                    {% endif %}
                                 {% else %}
-                                    <div class="alert alert-warning mt-2">
-                                        <i class="fas fa-exclamation-triangle me-2"></i>
-                                        Activate your subscription to proceed with this free application.
-                                    </div>
+                                    <form method="POST" action="{% url 'helper:unified_payment' %}" enctype="multipart/form-data" class="mt-2">
+                                        {% csrf_token %}
+                                        {% with university=universities_by_id|get_item:application.university_id %}
+                                            <input type="hidden" name="university" value="{{ university.id }}">
+                                        {% endwith %}
+                                        <div class="input-group mb-2">
+                                            <input type="text" name="reference_number" class="form-control" placeholder="Payment Reference Number" required>
+                                        </div>
+                                        <div class="input-group">
+                                            <input type="file" name="payment_proof" class="form-control" required>
+                                            <button type="submit" class="btn btn-primary">Upload Proof</button>
+                                        </div>
+                                    </form>
                                 {% endif %}
-                            {% else %}
-                                <form method="POST" action="{% url 'helper:unified_payment' %}" enctype="multipart/form-data" class="mt-2">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="university" value="{{ universities_by_id|dict_get:application.university_id|default:{} }}">
-                                    <div class="input-group mb-2">
-                                        <input type="text" name="reference_number" class="form-control" placeholder="Payment Reference Number" required>
-                                    </div>
-                                    <div class="input-group">
-                                        <input type="file" name="payment_proof" class="form-control" required>
-                                        <button type="submit" class="btn btn-primary">Upload Proof</button>
-                                    </div>
-                                </form>
-                            {% endif %}
+                            {% endwith %}
                         {% endif %}
                     </div>
                 </div>

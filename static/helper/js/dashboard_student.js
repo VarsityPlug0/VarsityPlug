@@ -162,7 +162,10 @@
                         button.classList.add('btn-success');
                         button.disabled = true; 
                     }
-                    // Consider a less disruptive update or selective reload if needed
+                    // Try to update the selected universities table instantly
+                    if (data.selected_university) {
+                        addSelectedUniversityToTable(data.selected_university);
+                    }
                     debugLog('Reloading page after university selection (standard behavior).'); 
                     setTimeout(() => window.location.reload(), 1500);
                 } else { 
@@ -790,108 +793,51 @@
         }
     };
 
-    // Single DOMContentLoaded listener for all initializations
+    // Add this function to update the selected universities table in the DOM
+    function addSelectedUniversityToTable(uni) {
+        // Find the table body for selected universities
+        const selectedUniSection = document.querySelector('section.card');
+        if (!selectedUniSection) return;
+        
+        const header = selectedUniSection.querySelector('h2.card-header');
+        if (!header || !header.textContent.includes('Selected Universities')) return;
+        
+        const tableBody = selectedUniSection.querySelector('tbody');
+        if (!tableBody) return;
+
+        // Create a new row for the selected university
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${uni.name || 'Unknown University'}</td>
+            <td>${uni.due_date || 'Not specified'}</td>
+            <td>${uni.application_fee || 'Not available'}</td>
+            <td class="d-flex gap-2 flex-wrap">
+                <a href="${uni.detail_url}" class="btn btn-outline-secondary btn-sm" aria-label="View details for ${uni.name || 'university'}">View</a>
+                ${(uni.application_fee !== 'FREE' && uni.application_fee !== 'Not available') ? `
+                    <a href="/applications/pay/${uni.id}/" class="btn btn-success btn-sm" aria-label="Pay application fee for ${uni.name || 'university'}">Pay Fee</a>
+                    <button class="btn btn-info btn-sm upload-pop-btn" data-uni-id="${uni.id}" data-uni-name="${uni.name}" aria-label="Upload Proof of Payment for ${uni.name}">Upload PoP</button>
+                ` : `<span class="badge bg-secondary align-self-center">No Fee Required</span>`}
+            </td>
+        `;
+        tableBody.appendChild(row);
+    }
+
+    // Initialize all systems when the DOM is loaded
     document.addEventListener('DOMContentLoaded', function() {
-        if (window.dashboardScriptInitialized) {
-            debugLog('Dashboard JS already initialized, skipping DOMContentLoaded block.');
-            return;
-        }
-        window.dashboardScriptInitialized = true;
-        debugLog('DOM loaded, initializing all dashboard components...');
+        // Initialize notification system
+        notificationSystem.init();
 
-        try {
-            // Initialize core systems in sequence
-            const initSequence = async () => {
-                // 1. Initialize notification system first (needed by other systems)
-                notificationSystem.init();
-                debugLog('Initializing notification system...');
-
-                // 2. Initialize form system
-                formSystem.init();
-                debugLog('Form system initialized (listeners attached elsewhere or dynamically).');
-
-                // 3. Initialize chat system
-                chatSystem.init();
-                debugLog('Initializing chat system...');
-                debugLog('Chat system initialized.');
-
-                // 4. Initialize PoP modal system
-                popModalSystem.init();
-                debugLog('Initializing PoP modal system...');
-                debugLog('PoP modal system initialized.');
-
-                // 5. Initialize university recommendations system
-                universityRecommendationsSystem.init();
-                debugLog('University recommendations system initialized.');
-
-                // 6. Initialize qualified universities display with a small delay
-                setTimeout(() => {
-                    qualifiedDisplaySystem.init();
-                    debugLog('Starting qualified universities display initialization...');
-                }, 100);
-
-                // 7. Initialize marks section
-                const marksSection = document.getElementById('marksSection');
-                const marksHeader = document.querySelector('[data-bs-target="#marksSection"]');
-                const chevronIcon = marksHeader?.querySelector('.fa-chevron-down');
-
-                if (marksSection && marksHeader && typeof bootstrap !== 'undefined') {
-                    const collapse = new bootstrap.Collapse(marksSection, { toggle: false });
-                    if (chevronIcon) {
-                        marksSection.addEventListener('show.bs.collapse', () => chevronIcon.style.transform = 'rotate(0deg)');
-                        marksSection.addEventListener('hide.bs.collapse', () => chevronIcon.style.transform = 'rotate(-90deg)');
-                    }
-                    marksHeader.addEventListener('click', () => collapse.toggle());
-                    
-                    // Check if we should expand the marks section
-                    if (sessionStorage.getItem('marksSectionExpanded') === 'true') {
-                        collapse.show();
-                        sessionStorage.removeItem('marksSectionExpanded');
-                    }
-                }
-
-                // 8. Attach form listeners
-                const marksForm = document.getElementById('marksForm');
-                if (marksForm && !marksForm.dataset.listenerAttachedMarks) {
-                    marksForm.addEventListener('submit', (e) => formSystem.handleMarksSubmit(e));
-                    marksForm.dataset.listenerAttachedMarks = 'true';
-                }
-
-                const mainUploadForm = document.getElementById('uploadForm');
-                if (mainUploadForm && !mainUploadForm.dataset.listenerAttachedMainUpload) {
-                    mainUploadForm.addEventListener('submit', (e) => formSystem.handleUploadSubmit(e));
-                    mainUploadForm.dataset.listenerAttachedMainUpload = 'true';
-                }
-
-                // 9. Set up recommendation select buttons
-                document.querySelectorAll('.recommendation-select-btn').forEach(button => {
-                    button.addEventListener('click', async function() {
-                        const universityId = parseInt(this.dataset.universityId, 10);
-                        const universityName = this.dataset.universityName;
-                        const url = this.dataset.url;
-                        if (universityId && universityName && url) {
-                            universitySystem.selectUniversity(universityId, url);
-                        }
-                    });
-                });
-
-                // 10. Set up notification interval
-                if (CONFIG.SUBMISSION_CHECK_INTERVAL > 0 && CONFIG.NOTIFICATION_CHANCE > 0) {
-                    setInterval(() => notificationSystem.simulateNewSubmission(), CONFIG.SUBMISSION_CHECK_INTERVAL);
-                }
-
-                debugLog('All dashboard components and listeners initialized successfully.');
-            };
-
-            // Start initialization sequence
-            initSequence().catch(error => {
-                debugLog('Error during initialization sequence', { error: error.message, stack: error.stack });
-                notificationSystem.showNotification('Error initializing dashboard. Please refresh the page.', true);
+        // Initialize university selection system
+        document.querySelectorAll('.recommendation-select-btn').forEach(button => {
+            button.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const universityId = parseInt(button.dataset.universityId, 10);
+                const url = button.dataset.url;
+                await universitySystem.selectUniversity(universityId, url);
             });
+        });
 
-        } catch (error) {
-            debugLog('Critical error during dashboard initialization', { error: error.message, stack: error.stack });
-            alert("A critical error occurred while loading the dashboard. Please refresh the page.");
-        }
+        // Initialize form system
+        formSystem.init();
     });
 })();
