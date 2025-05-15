@@ -231,6 +231,420 @@ UNIVERSITIES = [
         "application_fee": "R115",
         "due_date": "2025-09-30",
         "description": "South Africa's largest distance learning institution."
+    },
+    {
+        "id": 26,
+        "name": "Buffalo City TVET College",
+        "minimum_aps": 20,
+        "province": "Eastern Cape",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A leading TVET college in East London offering vocational and technical education."
+    },
+    {
+        "id": 27,
+        "name": "Eastcape Midlands TVET College",
+        "minimum_aps": 20,
+        "province": "Eastern Cape",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Eastern Cape Midlands region."
+    },
+    {
+        "id": 28,
+        "name": "Ikhala TVET College",
+        "minimum_aps": 20,
+        "province": "Eastern Cape",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Eastern Cape region."
+    },
+    {
+        "id": 29,
+        "name": "King Hintsa TVET College",
+        "minimum_aps": 20,
+        "province": "Eastern Cape",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Eastern Cape region."
+    },
+    {
+        "id": 30,
+        "name": "King Sabata Dalindyebo TVET College",
+        "minimum_aps": 20,
+        "province": "Eastern Cape",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Eastern Cape region."
+    },
+    {
+        "id": 31,
+        "name": "Lovedale TVET College",
+        "minimum_aps": 20,
+        "province": "Eastern Cape",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Eastern Cape region."
+    },
+    {
+        "id": 32,
+        "name": "Port Elizabeth TVET College",
+        "minimum_aps": 20,
+        "province": "Eastern Cape",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Port Elizabeth region."
+    },
+    {
+        "id": 33,
+        "name": "Central Johannesburg TVET College",
+        "minimum_aps": 20,
+        "province": "Gauteng",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Johannesburg region."
+    },
+    {
+        "id": 34,
+        "name": "Ekurhuleni East TVET College",
+        "minimum_aps": 20,
+        "province": "Gauteng",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Ekurhuleni region."
+    },
+    {
+        "id": 35,
+        "name": "Ekurhuleni West TVET College",
+        "minimum_aps": 20,
+        "province": "Gauteng",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Ekurhuleni region."
+    },
+    {
+        "id": 36,
+        "name": "Sedibeng TVET College",
+        "minimum_aps": 20,
+        "province": "Gauteng",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Sedibeng region."
+    },
+    {
+        "id": 37,
+        "name": "South West Gauteng TVET College",
+        "minimum_aps": 20,
+        "province": "Gauteng",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the South West Gauteng region."
+    },
+    {
+        "id": 38,
+        "name": "Tshwane North TVET College",
+        "minimum_aps": 20,
+        "province": "Gauteng",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Tshwane region."
+    },
+    {
+        "id": 39,
+        "name": "Tshwane South TVET College",
+        "minimum_aps": 20,
+        "province": "Gauteng",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Tshwane region."
+    },
+    {
+        "id": 40,
+        "name": "Western TVET College",
+        "minimum_aps": 20,
+        "province": "Gauteng",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Western Gauteng region."
+    },
+    {
+        "id": 41,
+        "name": "Coastal KZN TVET College",
+        "minimum_aps": 20,
+        "province": "KwaZulu-Natal",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the coastal region of KwaZulu-Natal."
+    },
+    {
+        "id": 42,
+        "name": "Elangeni TVET College",
+        "minimum_aps": 20,
+        "province": "KwaZulu-Natal",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the KwaZulu-Natal region."
+    },
+    {
+        "id": 43,
+        "name": "Esayidi TVET College",
+        "minimum_aps": 20,
+        "province": "KwaZulu-Natal",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the KwaZulu-Natal region."
+    },
+    {
+        "id": 44,
+        "name": "Majuba TVET College",
+        "minimum_aps": 20,
+        "province": "KwaZulu-Natal",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the KwaZulu-Natal region."
+    },
+    {
+        "id": 45,
+        "name": "Mnambithi TVET College",
+        "minimum_aps": 20,
+        "province": "KwaZulu-Natal",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the KwaZulu-Natal region."
+    },
+    {
+        "id": 46,
+        "name": "Mthashana TVET College",
+        "minimum_aps": 20,
+        "province": "KwaZulu-Natal",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the KwaZulu-Natal region."
+    },
+    {
+        "id": 47,
+        "name": "Thekwini TVET College",
+        "minimum_aps": 20,
+        "province": "KwaZulu-Natal",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Durban region."
+    },
+    {
+        "id": 48,
+        "name": "Umgungundlovu TVET College",
+        "minimum_aps": 20,
+        "province": "KwaZulu-Natal",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the KwaZulu-Natal region."
+    },
+    {
+        "id": 49,
+        "name": "Umfolozi TVET College",
+        "minimum_aps": 20,
+        "province": "KwaZulu-Natal",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the KwaZulu-Natal region."
+    },
+    {
+        "id": 50,
+        "name": "Umnambithi TVET College",
+        "minimum_aps": 20,
+        "province": "KwaZulu-Natal",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the KwaZulu-Natal region."
+    },
+    {
+        "id": 51,
+        "name": "Capricorn TVET College",
+        "minimum_aps": 20,
+        "province": "Limpopo",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Limpopo region."
+    },
+    {
+        "id": 52,
+        "name": "Lephalale TVET College",
+        "minimum_aps": 20,
+        "province": "Limpopo",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Limpopo region."
+    },
+    {
+        "id": 53,
+        "name": "Letaba TVET College",
+        "minimum_aps": 20,
+        "province": "Limpopo",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Limpopo region."
+    },
+    {
+        "id": 54,
+        "name": "Mopani South East TVET College",
+        "minimum_aps": 20,
+        "province": "Limpopo",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Limpopo region."
+    },
+    {
+        "id": 55,
+        "name": "Sekhukhune TVET College",
+        "minimum_aps": 20,
+        "province": "Limpopo",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Limpopo region."
+    },
+    {
+        "id": 56,
+        "name": "Vhembe TVET College",
+        "minimum_aps": 20,
+        "province": "Limpopo",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Limpopo region."
+    },
+    {
+        "id": 57,
+        "name": "Waterberg TVET College",
+        "minimum_aps": 20,
+        "province": "Limpopo",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Limpopo region."
+    },
+    {
+        "id": 58,
+        "name": "Ehlanzeni TVET College",
+        "minimum_aps": 20,
+        "province": "Mpumalanga",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Mpumalanga region."
+    },
+    {
+        "id": 59,
+        "name": "Gert Sibande TVET College",
+        "minimum_aps": 20,
+        "province": "Mpumalanga",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Mpumalanga region."
+    },
+    {
+        "id": 60,
+        "name": "Nkangala TVET College",
+        "minimum_aps": 20,
+        "province": "Mpumalanga",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Mpumalanga region."
+    },
+    {
+        "id": 61,
+        "name": "Northern Cape Rural TVET College",
+        "minimum_aps": 20,
+        "province": "Northern Cape",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Northern Cape region."
+    },
+    {
+        "id": 62,
+        "name": "Northern Cape Urban TVET College",
+        "minimum_aps": 20,
+        "province": "Northern Cape",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Northern Cape region."
+    },
+    {
+        "id": 63,
+        "name": "Orbit TVET College",
+        "minimum_aps": 20,
+        "province": "North West",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the North West region."
+    },
+    {
+        "id": 64,
+        "name": "Taletso TVET College",
+        "minimum_aps": 20,
+        "province": "North West",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the North West region."
+    },
+    {
+        "id": 65,
+        "name": "Vuselela TVET College",
+        "minimum_aps": 20,
+        "province": "North West",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the North West region."
+    },
+    {
+        "id": 66,
+        "name": "Boland TVET College",
+        "minimum_aps": 20,
+        "province": "Western Cape",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Western Cape region."
+    },
+    {
+        "id": 67,
+        "name": "College of Cape Town",
+        "minimum_aps": 20,
+        "province": "Western Cape",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Cape Town region."
+    },
+    {
+        "id": 68,
+        "name": "False Bay TVET College",
+        "minimum_aps": 20,
+        "province": "Western Cape",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Western Cape region."
+    },
+    {
+        "id": 69,
+        "name": "Northlink TVET College",
+        "minimum_aps": 20,
+        "province": "Western Cape",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Western Cape region."
+    },
+    {
+        "id": 70,
+        "name": "South Cape TVET College",
+        "minimum_aps": 20,
+        "province": "Western Cape",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Western Cape region."
+    },
+    {
+        "id": 71,
+        "name": "West Coast TVET College",
+        "minimum_aps": 20,
+        "province": "Western Cape",
+        "application_fee": "R100",
+        "due_date": "2025-09-30",
+        "description": "A TVET college serving the Western Cape region."
     }
 ]
 

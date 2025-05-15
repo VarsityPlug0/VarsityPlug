@@ -161,6 +161,15 @@
                 <label for="min_aps" class="form-label">Minimum APS</label>
                 <input type="number" class="form-control" id="min_aps" name="min_aps" value="{{ form.min_aps.value|default:'' }}" min="20" max="48">
             </div>
+            <div class="col-md-3">
+                <label for="faculty" class="form-label">Faculty</label>
+                <select class="form-select" id="faculty" name="faculty">
+                    <option value="">All Faculties</option>
+                    {% for faculty in all_faculties %}
+                        <option value="{{ faculty }}" {% if form.faculty.value == faculty %}selected{% endif %}>{{ faculty }}</option>
+                    {% endfor %}
+                </select>
+            </div>
             <div class="col-md-2 d-flex align-items-end">
                 <button type="submit" class="btn btn-primary w-100">Search</button>
             </div>
@@ -235,6 +244,14 @@
                         {% endif %}
                     </p>
                     <p class="text-muted">{{ uni_data.qualification_message }}</p>
+                    {% if uni_data.faculties %}
+                        <p><strong>Available Faculties:</strong></p>
+                        <ul class="list-unstyled">
+                            {% for faculty in uni_data.faculties %}
+                                <li><i class="fas fa-graduation-cap"></i> {{ faculty }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
                     <div class="d-flex justify-content-between mt-3">
                         <a href="{% url 'helper:university_detail' uni_data.id %}" class="btn btn-outline-primary">View Details</a>
                         {% if not uni_data.is_selected %}

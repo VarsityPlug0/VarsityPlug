@@ -154,23 +154,21 @@ class StudentProfileForm(forms.ModelForm):
         }
 
 class UniversitySearchForm(forms.Form):
-    """Form for searching universities."""
-    search = forms.CharField(required=False)
-    province = forms.ChoiceField(
-        required=False,
-        choices=[('', 'All Provinces')] + [
-            ('Eastern Cape', 'Eastern Cape'),
-            ('Free State', 'Free State'),
-            ('Gauteng', 'Gauteng'),
-            ('KwaZulu-Natal', 'KwaZulu-Natal'),
-            ('Limpopo', 'Limpopo'),
-            ('Mpumalanga', 'Mpumalanga'),
-            ('North West', 'North West'),
-            ('Northern Cape', 'Northern Cape'),
-            ('Western Cape', 'Western Cape'),
-        ]
-    )
-    min_aps = forms.IntegerField(required=False, min_value=20, max_value=48)
+    search = forms.CharField(required=False, widget=forms.TextInput(attrs={'placeholder': 'Search universities...'}))
+    province = forms.ChoiceField(required=False, choices=[
+        ('', 'All Provinces'),
+        ('Eastern Cape', 'Eastern Cape'),
+        ('Free State', 'Free State'),
+        ('Gauteng', 'Gauteng'),
+        ('KwaZulu-Natal', 'KwaZulu-Natal'),
+        ('Limpopo', 'Limpopo'),
+        ('Mpumalanga', 'Mpumalanga'),
+        ('Northern Cape', 'Northern Cape'),
+        ('North West', 'North West'),
+        ('Western Cape', 'Western Cape'),
+    ])
+    min_aps = forms.IntegerField(required=False, min_value=20, max_value=48, widget=forms.NumberInput(attrs={'placeholder': 'Minimum APS'}))
+    faculty = forms.ChoiceField(required=False, choices=[('', 'All Faculties')])  # Choices will be populated in the view
 
 class ChatForm(forms.Form):
     """Form for AI chat interactions."""

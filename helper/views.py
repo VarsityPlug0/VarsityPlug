@@ -630,7 +630,17 @@ def verify_document(request, doc_id):
 @login_required
 def universities_list(request):
     profile = get_object_or_404(StudentProfile, user=request.user)
+    
+    # Get all unique faculties for the filter dropdown
+    all_faculties = set()
+    for faculties in FACULTIES_OPEN.values():
+        all_faculties.update(faculties)
+    all_faculties = sorted(list(all_faculties))
+    
+    # Create form with dynamic faculty choices
     form = UniversitySearchForm(request.GET)
+    form.fields['faculty'].choices = [('', 'All Faculties')] + [(f, f) for f in all_faculties]
+    
     student_aps = profile.stored_aps_score
 
     # Get all universities from static data
@@ -645,6 +655,7 @@ def universities_list(request):
         search_query = form.cleaned_data.get('search')
         province_filter = form.cleaned_data.get('province')
         min_aps_filter = form.cleaned_data.get('min_aps') # User's filter input for min_aps
+        faculty_filter = form.cleaned_data.get('faculty') # New faculty filter
 
         if search_query:
             universities_to_display = [uni for uni in universities_to_display if search_query.lower() in uni['name'].lower()]
@@ -654,6 +665,12 @@ def universities_list(request):
         
         if min_aps_filter is not None: # If user filtered by a specific APS
             universities_to_display = [uni for uni in universities_to_display if uni['minimum_aps'] <= min_aps_filter]
+        
+        if faculty_filter: # Filter by faculty
+            universities_to_display = [
+                uni for uni in universities_to_display 
+                if uni['name'] in FACULTIES_OPEN and faculty_filter in FACULTIES_OPEN[uni['name']]
+            ]
     
     # Prepare list for template, checking eligibility based on student's actual APS
     eligible_universities_for_template = []
@@ -677,6 +694,8 @@ def universities_list(request):
             uni_data_for_template['aps_difference'] = aps_difference
             uni_data_for_template['fee'] = uni.get('application_fee', 'N/A')
             uni_data_for_template['is_selected'] = uni['id'] in selected_uni_ids
+            # Add faculties information
+            uni_data_for_template['faculties'] = FACULTIES_OPEN.get(uni['name'], [])
             eligible_universities_for_template.append(uni_data_for_template)
     else: # If student_aps is None, show all universities from the filtered list without qualification status
         for uni in universities_to_display:
@@ -686,6 +705,8 @@ def universities_list(request):
             uni_data_for_template['aps_difference'] = 0
             uni_data_for_template['fee'] = uni.get('application_fee', 'N/A')
             uni_data_for_template['is_selected'] = uni['id'] in selected_uni_ids
+            # Add faculties information
+            uni_data_for_template['faculties'] = FACULTIES_OPEN.get(uni['name'], [])
             eligible_universities_for_template.append(uni_data_for_template)
 
     # Sort eligible universities by qualification status and APS difference
@@ -711,7 +732,8 @@ def universities_list(request):
         'student_aps': student_aps,
         'eligible_universities': eligible_universities_for_template,
         'selected_with_details': selected_with_details,
-        'student_profile': profile
+        'student_profile': profile,
+        'all_faculties': all_faculties  # Add faculties list to context
     }
     return render(request, 'helper/universities_list.html', context)
 
