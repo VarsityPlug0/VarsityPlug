@@ -811,3 +811,39 @@
         width: 100%;
     }
 }
+
+/* Consistent style for service plan buttons on services page */
+.service-btn {
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 10px 24px;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(0,123,255,0.05);
+    outline: none;
+    text-decoration: none;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.service-btn-solid {
+    background-color: #007bff;
+    color: #fff;
+    border: 2px solid #007bff;
+}
+.service-btn-solid:hover, .service-btn-solid:focus {
+    background-color: #0056b3;
+    border-color: #0056b3;
+    color: #fff;
+}
+
+.service-btn-outline {
+    background-color: #fff;
+    color: #007bff;
+    border: 2px solid #007bff;
+}
+.service-btn-outline:hover, .service-btn-outline:focus {
+    background-color: #007bff;
+    color: #fff;
+    border-color: #0056b3;
+}
