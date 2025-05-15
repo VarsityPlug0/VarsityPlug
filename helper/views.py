@@ -377,6 +377,7 @@ def dashboard_student(request):
         'recommended_universities': recommended_universities_list,
         'universities': json.dumps(qualified_unis_data_for_js, cls=DjangoJSONEncoder) if qualified_unis_data_for_js else '[]',
         'selected_universities': selected_universities,
+        'qualified_universities_list': qualified_universities_list,  # Add this line
     }
     return render(request, 'helper/dashboard_student.html', context)
 

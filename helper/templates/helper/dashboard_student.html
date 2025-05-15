@@ -323,14 +323,37 @@
         <h2 class="card-header bg-primary text-white">Qualified Universities (Based on APS: {% if student_aps is not None %}{{ student_aps }}{% else %}Not Calculated{% endif %})</h2>
         <div class="card-body">
             {% if student_aps is not None %}
-                {% if universities and universities != '[]' %}
-                    <script id="qualifiedUniversitiesData" type="application/json">
-                        {{ universities|safe }}
-                    </script>
-                    <div id="qualifiedUniversityDisplayArea" class="text-center" style="min-height: 200px; display: flex; align-items: center; justify-content: center; padding: 1rem 0;">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading universities...</span>
-                        </div>
+                {% if qualified_universities_list %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>University</th>
+                                    <th>Minimum APS</th>
+                                    <th>Application Fee</th>
+                                    <th>Due Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for uni in qualified_universities_list %}
+                                <tr>
+                                    <td>{{ uni.name }}</td>
+                                    <td>{{ uni.minimum_aps }}</td>
+                                    <td>{{ uni.application_fee }}</td>
+                                    <td>{{ uni.due_date }}</td>
+                                    <td>
+                                        <a href="{{ uni.detail_url }}" class="btn btn-sm btn-primary">View Details</a>
+                                        <button class="btn btn-sm btn-success recommendation-select-btn"
+                                                data-university-id="{{ uni.id }}"
+                                                data-university-name="{{ uni.name|escapejs }}"
+                                                data-url="{% url 'helper:select_university' uni.id %}"
+                                                aria-label="Select {{ uni.name }}">Select</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 {% else %}
                     <div class="alert alert-warning">
