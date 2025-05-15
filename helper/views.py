@@ -792,10 +792,23 @@ def select_university(request, uni_id):
                 profile.selected_universities = selected_unis
                 profile.application_count = len(selected_unis)
                 profile.save()
+
+                # Get or create the university in the database
+                university_instance, created = University.objects.get_or_create(
+                    id=uni_id,
+                    defaults={
+                        'name': university['name'],
+                        'province': university.get('province', ''),
+                        'minimum_aps': university['minimum_aps'],
+                        'application_fee': university.get('application_fee', '0'),
+                        'due_date': university.get('due_date', '')
+                    }
+                )
+
                 # Create application status
                 ApplicationStatus.objects.get_or_create(
                     student=profile,
-                    university_id=uni_id,
+                    university=university_instance,
                     defaults={'status': 'pending'}
                 )
                 message = f'Successfully selected {university["name"]}.'
@@ -823,56 +836,7 @@ def select_university(request, uni_id):
                 })
             else:
                 messages.success(request, message)
-                # Get all universities and prepare the context
-                all_universities = get_all_universities()
-                eligible_universities = []
-                selected_with_details = []
-                
-                # Get details for selected universities
-                for selected_id in selected_unis:
-                    selected_uni = get_university_by_id(selected_id)
-                    if selected_uni:
-                        selected_uni['detail_url'] = reverse('helper:university_detail', args=[selected_id])
-                        selected_with_details.append(selected_uni)
-                
-                # Prepare eligible universities list
-                for uni in all_universities:
-                    uni_data = uni.copy()
-                    aps_difference = profile.stored_aps_score - uni['minimum_aps']
-                    qualification_status = 'not_qualified'
-                    qualification_message = f"You are {abs(aps_difference)} points below the minimum APS requirement"
-
-                    if aps_difference >= 5:
-                        qualification_status = 'highly_qualified'
-                        qualification_message = f"You exceed the minimum APS requirement by {aps_difference} points"
-                    elif aps_difference >= 0:
-                        qualification_status = 'qualified'
-                        qualification_message = f"You meet the minimum APS requirement"
-                    
-                    uni_data['qualification_status'] = qualification_status
-                    uni_data['qualification_message'] = qualification_message
-                    uni_data['aps_difference'] = aps_difference
-                    uni_data['fee'] = uni.get('application_fee', 'N/A')
-                    uni_data['is_selected'] = uni['id'] in selected_unis
-                    eligible_universities.append(uni_data)
-                
-                # Sort eligible universities
-                eligible_universities.sort(key=lambda x: (
-                    x['qualification_status'] == 'not_qualified',
-                    x['qualification_status'] == 'unknown',
-                    x['qualification_status'] != 'highly_qualified',
-                    x['qualification_status'] != 'qualified',
-                    -x.get('aps_difference', 0)
-                ))
-                
-                return render(request, 'helper/universities_list.html', {
-                    'selected_university': selected_university,
-                    'student_aps': profile.stored_aps_score,
-                    'form': UniversitySearchForm(),
-                    'eligible_universities': eligible_universities,
-                    'selected_with_details': selected_with_details,
-                    'student_profile': profile
-                })
+                return redirect('helper:universities_list')
         else:
             error_message = f'Your APS score ({profile.stored_aps_score}) does not meet the minimum requirement ({university["minimum_aps"]}) for {university["name"]}.'
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':

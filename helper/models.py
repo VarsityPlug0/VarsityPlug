@@ -209,7 +209,7 @@ class ApplicationStatus(models.Model):
         ('rejected', 'Rejected'),
     )
     student = models.ForeignKey(StudentProfile, on_delete=models.CASCADE)
-    university_id = models.IntegerField()  # Store university ID from static data, now non-nullable
+    university = models.ForeignKey(University, on_delete=models.CASCADE)  # Remove null=True
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='not_started')
     application_date = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
@@ -218,13 +218,11 @@ class ApplicationStatus(models.Model):
     tracking_number = models.CharField(max_length=50, blank=True, null=True)
 
     def __str__(self):
-        university = get_university_by_id(self.university_id)
-        university_name = university['name'] if university else 'Unknown University'
-        return f"{self.student.user.username}'s application to {university_name}"
+        return f"{self.student.user.username}'s application to {self.university.name}"
 
     class Meta:
         ordering = ['-application_date']
-        unique_together = ('student', 'university_id')
+        unique_together = ('student', 'university')
         verbose_name = 'Application Status'
         verbose_name_plural = 'Application Statuses'
 
