@@ -1113,10 +1113,10 @@ def pay_application_fee(request, uni_id):
         
         # Bank details
         bank_details = {
-            'bank_name': 'Standard Bank',
-            'account_holder': 'Varsity Plug',
-            'account_number': '1234567890',
-            'branch_code': '051001',
+            'bank_name': 'FNB/RMB',
+            'account_holder': 'A Maimele',
+            'account_number': '63142712397',
+            'branch_code': '250655',
             'reference': f'VP-{profile.user.username}-{int(time.time())}'
         }
         
@@ -1191,10 +1191,10 @@ def pay_all_application_fees(request):
     total_payment = total_university_fee + package_cost
     
     bank_details = {
-        'bank_name': 'Standard Bank',
-        'account_holder': 'Varsity Plug',
-        'account_number': '1234567890',
-        'branch_code': '051001',
+        'bank_name': 'FNB/RMB',
+        'account_holder': 'A Maimele',
+        'account_number': '63142712397',
+        'branch_code': '250655',
         'reference': f'VP-SUB-ALL-{profile.user.username}-{int(time.time())}' # Modified reference for all
     }
     
@@ -1620,10 +1620,10 @@ def pay_subscription_fee(request):
     
     # Bank details
     bank_details = {
-        'bank_name': 'Standard Bank',
-        'account_holder': 'Varsity Plug',
-        'account_number': '1234567890',
-        'branch_code': '051001',
+        'bank_name': 'FNB/RMB',
+        'account_holder': 'A Maimele',
+        'account_number': '63142712397',
+        'branch_code': '250655',
         'reference': f'VP-SUB-{profile.user.username}-{int(time.time())}'
     }
     
