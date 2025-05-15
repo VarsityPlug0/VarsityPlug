@@ -314,7 +314,16 @@ def subscription_selection(request):
 
 @login_required
 def dashboard_student(request):
-    profile = get_object_or_404(StudentProfile, user=request.user)
+    """Display student dashboard."""
+    try:
+        profile = StudentProfile.objects.get(user=request.user)
+    except StudentProfile.DoesNotExist:
+        # Create a new profile with default values
+        profile = StudentProfile.objects.create(
+            user=request.user,
+            subscription_package='basic'  # Set default package to basic
+        )
+    
     applications = ApplicationStatus.objects.filter(student=profile)
     documents = DocumentUpload.objects.filter(user=request.user)
     form = DocumentUploadForm()
@@ -377,7 +386,7 @@ def dashboard_student(request):
         'recommended_universities': recommended_universities_list,
         'universities': json.dumps(qualified_unis_data_for_js, cls=DjangoJSONEncoder) if qualified_unis_data_for_js else '[]',
         'selected_universities': selected_universities,
-        'qualified_universities_list': qualified_universities_list,  # Add this line
+        'qualified_universities_list': qualified_universities_list,
     }
     return render(request, 'helper/dashboard_student.html', context)
 
